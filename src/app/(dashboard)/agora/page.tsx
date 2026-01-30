@@ -98,10 +98,10 @@ export default function AgoraPage() {
       </Tabs>
 
       {/* Proposals List */}
-      <div className="space-y-4">
+      <div className="space-y-0">
         {proposals.map((proposal) => (
           <Link key={proposal.id} href={`/agora/${proposal.id}`}>
-            <Card className="cursor-pointer p-5 transition-all hover:border-[var(--border-light)]">
+            <Card className="cursor-pointer p-5 transition-all hover:border-[var(--border-light)] mb-4">
               {/* Badges */}
               <div className="mb-3 flex flex-wrap gap-2">
                 <Badge variant={proposal.domainColor}>{proposal.domain}</Badge>

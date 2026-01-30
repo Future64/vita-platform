@@ -176,10 +176,10 @@ export default function ForgePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-0">
                 {projects.map((project) => (
                   <Link key={project.id} href={`/forge/project/${project.id}`}>
-                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
+                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer hover:bg-[var(--bg-elevated)] mb-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -243,10 +243,10 @@ export default function ForgePage() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {recentMergeRequests.map((mr) => (
                   <Link key={mr.id} href={`/forge/mr/${mr.id}`}>
-                    <div className="group p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer">
+                    <div className="group p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer mb-4">
                       <div className="flex items-start gap-2 mb-2">
                         <GitMerge className={`h-4 w-4 flex-shrink-0 mt-0.5 ${mr.status === 'merged' ? 'text-green-500' : 'text-violet-500'}`} />
                         <div className="flex-1 min-w-0">
