@@ -33,8 +33,11 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-[var(--border)] bg-[var(--bg-card)] p-5 lg:block">
-      <div className="mb-3 pl-3 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+    <aside
+      className="hidden w-64 shrink-0 overflow-y-auto border-r p-5 lg:block"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-card)' }}
+    >
+      <div className="mb-3 pl-3 text-[0.6875rem] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
         {title}
       </div>
       <div className="space-y-1">
@@ -64,23 +67,25 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
             </>
           );
 
-          const className = cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all",
-            isActive
-              ? "bg-gradient-to-r from-violet-500 to-pink-500 text-white"
-              : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
-          );
+          const baseClassName = "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all";
+          const className = isActive
+            ? cn(baseClassName, "bg-gradient-to-r from-violet-500 to-pink-500 text-white")
+            : baseClassName;
+
+          const inlineStyle = !isActive ? {
+            color: 'var(--text-secondary)',
+          } : undefined;
 
           if (item.href) {
             return (
-              <Link key={index} href={item.href} className={className}>
+              <Link key={index} href={item.href} className={className} style={inlineStyle}>
                 {content}
               </Link>
             );
           }
 
           return (
-            <button key={index} onClick={item.onClick} className={className}>
+            <button key={index} onClick={item.onClick} className={className} style={inlineStyle}>
               {content}
             </button>
           );

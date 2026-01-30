@@ -8,19 +8,27 @@ export interface InputProps
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, icon, ...props }, ref) => {
+  ({ className, type, icon, style, ...props }, ref) => {
+    const inputStyle = {
+      borderColor: 'var(--border)',
+      backgroundColor: 'var(--bg-elevated)',
+      color: 'var(--text-primary)',
+      ...style
+    };
+
     if (icon) {
       return (
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
             {icon}
           </span>
           <input
             type={type}
             className={cn(
-              "flex h-10 w-full rounded-lg border border-border bg-elevated pl-10 pr-4 text-sm text-primary placeholder:text-muted focus:border-violet-500 focus:outline-none transition-colors",
+              "flex h-10 w-full rounded-lg border pl-10 pr-4 text-sm focus:border-violet-500 focus:outline-none transition-colors placeholder:opacity-60",
               className
             )}
+            style={inputStyle}
             ref={ref}
             {...props}
           />
@@ -32,9 +40,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-lg border border-border bg-elevated px-4 text-sm text-primary placeholder:text-muted focus:border-violet-500 focus:outline-none transition-colors",
+          "flex h-10 w-full rounded-lg border px-4 text-sm focus:border-violet-500 focus:outline-none transition-colors placeholder:opacity-60",
           className
         )}
+        style={inputStyle}
         ref={ref}
         {...props}
       />

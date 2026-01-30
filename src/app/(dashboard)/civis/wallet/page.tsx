@@ -173,7 +173,7 @@ export default function WalletPage() {
               <Wallet className="h-8 w-8 text-white" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[var(--border)]">
             <div>
               <div className="text-xs card-inverted-title opacity-70 mb-1">Ce mois</div>
               <div className="text-lg font-bold text-green-400">

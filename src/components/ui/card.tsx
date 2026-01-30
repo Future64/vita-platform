@@ -8,9 +8,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-border bg-card shadow-sm transition-all hover:border-border-light",
+      "rounded-xl border shadow-sm transition-all",
       className
     )}
+    style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-card)' }}
     {...props}
   />
 ))
@@ -22,7 +23,8 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center justify-between p-4 md:p-5 border-b border-border", className)}
+    className={cn("flex items-center justify-between p-4 md:p-5 border-b", className)}
+    style={{ borderColor: 'var(--border)' }}
     {...props}
   />
 ))

@@ -9,14 +9,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-gradient-to-r from-violet-500 to-pink-500 text-white hover:opacity-90 hover:-translate-y-0.5",
-        secondary: "bg-elevated border border-border-light text-primary hover:bg-card-hover",
-        ghost: "text-secondary hover:bg-elevated hover:text-primary",
+        secondary: "border",
+        ghost: "",
         success: "bg-green-500 text-white hover:bg-green-600",
         danger: "bg-red-500 text-white hover:bg-red-600",
-        outline: "border border-border-light text-primary hover:bg-elevated",
+        outline: "border",
         voteFor: "border-2 border-green-500/30 text-green-500 hover:bg-green-500/10 hover:border-green-500",
         voteAgainst: "border-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500",
-        voteAbstain: "border-2 border-border-light text-muted hover:bg-elevated",
+        voteAbstain: "border-2",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -40,11 +40,37 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, style, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+
+    // Apply CSS variable styles for certain variants
+    let variantStyle: React.CSSProperties = {};
+    if (variant === "secondary") {
+      variantStyle = {
+        backgroundColor: 'var(--bg-elevated)',
+        borderColor: 'var(--border-light)',
+        color: 'var(--text-primary)',
+      };
+    } else if (variant === "ghost") {
+      variantStyle = {
+        color: 'var(--text-secondary)',
+      };
+    } else if (variant === "outline") {
+      variantStyle = {
+        borderColor: 'var(--border-light)',
+        color: 'var(--text-primary)',
+      };
+    } else if (variant === "voteAbstain") {
+      variantStyle = {
+        borderColor: 'var(--border-light)',
+        color: 'var(--text-muted)',
+      };
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
+        style={{ ...variantStyle, ...style }}
         ref={ref}
         {...props}
       />

@@ -13,8 +13,8 @@
   --bg-card-hover: #f1f5f9;
   --bg-elevated: #f1f5f9;
   --bg-code: #f8fafc;
-  --border: rgba(226, 232, 240, 1);
-  --border-light: rgba(203, 213, 225, 1);
+  --border: rgb(226, 232, 240);
+  --border-light: rgb(203, 213, 225);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
@@ -28,8 +28,8 @@
   --bg-card-hover: #1a2234;
   --bg-elevated: #1e293b;
   --bg-code: #0f172a;
-  --border: rgba(71, 85, 105, 1);
-  --border-light: rgba(100, 116, 139, 1);
+  --border: rgb(71, 85, 105);
+  --border-light: rgb(100, 116, 139);
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
@@ -139,7 +139,7 @@ body {
 
 [data-theme="dark"] .card-inverted {
   background-color: #111827 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(71, 85, 105, 1) !important;
 }
 
 .card-inverted-title {
