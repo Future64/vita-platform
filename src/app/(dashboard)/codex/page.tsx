@@ -159,10 +159,10 @@ export default function CodexPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {constitutionArticles.map((article) => (
                   <Link key={article.id} href={`/codex/article/${article.id}`}>
-                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
+                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer hover:bg-[var(--bg-elevated)] mb-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -211,10 +211,10 @@ export default function CodexPage() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {recentLaws.map((law) => (
                   <Link key={law.id} href={`/codex/law/${law.id}`}>
-                    <div className="group p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer">
+                    <div className="group p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer mb-4">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="cyan" className="text-xs">{law.category}</Badge>
                         <span className="text-xs text-[var(--text-muted)]">

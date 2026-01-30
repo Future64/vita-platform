@@ -236,11 +236,11 @@ export default function CivisProfilePage() {
               <CardTitle>Badges ({userData.badges.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {userData.badges.map((badge) => (
                   <div
                     key={badge.id}
-                    className="p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all"
+                    className="p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all mb-4"
                   >
                     <div className="flex items-start gap-3">
                       <div className="text-2xl">{badge.icon}</div>
