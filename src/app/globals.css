@@ -6,20 +6,6 @@
    VITA Design System - CSS Variables
    ======================================== */
 
-@theme {
-  /* Couleurs personnalisées pour Tailwind */
-  --color-base: #f8fafc;
-  --color-card: #ffffff;
-  --color-card-hover: #f1f5f9;
-  --color-elevated: #f1f5f9;
-  --color-code: #f8fafc;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-light: rgba(0, 0, 0, 0.12);
-  --color-primary: #0f172a;
-  --color-secondary: #475569;
-  --color-muted: #94a3b8;
-}
-
 :root {
   /* Light Theme */
   --bg-base: #f8fafc;
@@ -27,8 +13,8 @@
   --bg-card-hover: #f1f5f9;
   --bg-elevated: #f1f5f9;
   --bg-code: #f8fafc;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.12);
+  --border: rgba(226, 232, 240, 1);
+  --border-light: rgba(203, 213, 225, 1);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
@@ -42,25 +28,13 @@
   --bg-card-hover: #1a2234;
   --bg-elevated: #1e293b;
   --bg-code: #0f172a;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-light: rgba(255, 255, 255, 0.1);
+  --border: rgba(71, 85, 105, 1);
+  --border-light: rgba(100, 116, 139, 1);
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-
-  /* Couleurs Tailwind en mode dark */
-  --color-base: #0a0e1a;
-  --color-card: #111827;
-  --color-card-hover: #1a2234;
-  --color-elevated: #1e293b;
-  --color-code: #0f172a;
-  --color-border: rgba(255, 255, 255, 0.06);
-  --color-border-light: rgba(255, 255, 255, 0.1);
-  --color-primary: #f1f5f9;
-  --color-secondary: #94a3b8;
-  --color-muted: #64748b;
 }
 
 /* ========================================
@@ -182,4 +156,20 @@ body {
 
 [data-theme="dark"] .card-inverted-map {
   background-color: #0f172a !important;
+}
+
+/* ========================================
+   Text Color Classes
+   ======================================== */
+
+.text-adaptive-primary {
+  color: var(--text-primary);
+}
+
+.text-adaptive-secondary {
+  color: var(--text-secondary);
+}
+
+.text-adaptive-muted {
+  color: var(--text-muted);
 }

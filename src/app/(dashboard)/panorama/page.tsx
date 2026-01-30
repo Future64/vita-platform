@@ -195,7 +195,7 @@ export default function PanoramaPage() {
         {/* Active Votes */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: 'var(--text-primary)' }}>Votes actifs</CardTitle>
+            <CardTitle>Votes actifs</CardTitle>
             <Button variant="ghost" size="sm" className="text-violet-500">
               Voir
             </Button>
@@ -221,7 +221,7 @@ export default function PanoramaPage() {
         {/* Recent Projects */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: 'var(--text-primary)' }}>Projets récents</CardTitle>
+            <CardTitle>Projets récents</CardTitle>
             <Button variant="ghost" size="sm" className="text-violet-500">
               Voir
             </Button>
