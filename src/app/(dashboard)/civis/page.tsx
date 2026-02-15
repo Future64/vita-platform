@@ -166,9 +166,9 @@ export default function CivisProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Portefeuille Ѵ</CardTitle>
-              <Button variant="ghost" size="sm" className="text-violet-500" href="/civis/wallet">
+              <a href="/civis/wallet" className="text-sm font-medium text-violet-500 hover:text-violet-400 transition-colors">
                 Voir détails
-              </Button>
+              </a>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-4">

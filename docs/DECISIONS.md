@@ -289,4 +289,188 @@ Que se passe-t-il si un utilisateur perd son device/clé ?
 
 ---
 
-*Dernière mise à jour : Janvier 2025*
+### DEC-007 : Structure des modules backend Rust
+
+**Date** : 30 Janvier 2025
+**Statut** : ✅ Adopté
+
+**Contexte**
+Le backend Rust nécessite une organisation claire et modulaire pour supporter toutes les fonctionnalités de VITA.
+
+**Décision**
+Organisation en 9 modules principaux :
+
+```
+src/
+├── config/          # Configuration (immuable + configurable)
+│   ├── parameters.rs
+│   ├── database.rs
+│   └── mod.rs
+├── error.rs         # Gestion centralisée des erreurs
+├── identity/        # Vérification ZK-proofs
+│   ├── zkp.rs
+│   ├── verification.rs
+│   └── mod.rs
+├── monetary/        # Gestion monétaire
+│   ├── balance.rs
+│   ├── emission.rs
+│   ├── redistribution.rs
+│   └── mod.rs
+├── transaction/     # Transactions
+│   ├── processor.rs
+│   ├── offline.rs
+│   ├── validation.rs
+│   ├── settlement.rs
+│   └── mod.rs
+├── crypto/          # Cryptographie
+│   ├── keys.rs
+│   ├── signing.rs
+│   ├── hashing.rs
+│   └── mod.rs
+├── audit/           # Journal immuable
+│   ├── logger.rs
+│   ├── merkle.rs
+│   └── mod.rs
+├── statistics/      # Métriques et dashboard
+│   ├── collector.rs
+│   ├── dashboard.rs
+│   ├── health.rs
+│   └── mod.rs
+├── external/        # APIs externes
+│   ├── population.rs
+│   ├── aggregator.rs
+│   └── mod.rs
+└── api/             # Endpoints REST
+    ├── health.rs
+    ├── identity.rs
+    ├── monetary.rs
+    ├── transaction.rs
+    ├── config.rs
+    ├── statistics.rs
+    ├── admin.rs
+    └── mod.rs
+```
+
+**Raisonnement**
+- Séparation claire des responsabilités
+- Chaque module a un rôle bien défini
+- Facilite les tests unitaires
+- Permet le développement parallèle
+- Respecte les principes SOLID
+
+**Conséquences**
+- Structure claire pour les futurs développeurs
+- Facilite la maintenance
+- Les modules peuvent être testés indépendamment
+- Migration progressive possible
+
+---
+
+### DEC-008 : Protection des paramètres immuables dans le code
+
+**Date** : 30 Janvier 2025
+**Statut** : ✅ Adopté
+
+**Contexte**
+Les paramètres constitutionnels doivent être protégés au niveau du code pour empêcher toute modification.
+
+**Décision**
+Implémentation d'une structure `ImmutableParameters` avec :
+- Valeurs hardcodées dans `Default::default()`
+- Méthode `validate()` qui vérifie les valeurs à chaque chargement
+- Type d'erreur dédié `VitaError::ImmutableParameter`
+- Tests unitaires garantissant l'immutabilité
+
+**Raisonnement**
+- Protection au niveau du code source
+- Toute tentative de modification est rejetée à la compilation
+- Les tests valident automatiquement l'immutabilité
+- Impossible de contourner sans modifier le code source
+
+**Conséquences**
+- Garantie technique de l'immutabilité constitutionnelle
+- Documentation claire des valeurs protégées
+- Erreurs explicites en cas de tentative de modification
+
+---
+
+### DEC-009 : Schéma de base de données PostgreSQL
+
+**Date** : 30 Janvier 2025
+**Statut** : ✅ Adopté
+
+**Contexte**
+La base de données doit supporter toutes les fonctionnalités VITA avec performance et intégrité.
+
+**Décision**
+9 tables principales :
+- `users` : Identités (avec hash ZK-proof)
+- `balances` : Soldes utilisateurs
+- `transactions` : Transactions
+- `emissions` : Historique d'émission quotidienne
+- `config_parameters` : Paramètres configurables (JSONB)
+- `audit_log` : Journal immuable avec chaîne de hashes
+- `votes` : Propositions de vote
+- `vote_ballots` : Votes individuels
+
+**Raisonnement**
+- Normalisation appropriée (évite la redondance)
+- Index optimisés pour les requêtes fréquentes
+- Contraintes d'intégrité au niveau DB
+- JSONB pour flexibilité des paramètres configurables
+- Chaîne de hashes pour audit trail immuable
+
+**Conséquences**
+- Performance optimale pour les opérations critiques
+- Intégrité des données garantie par PostgreSQL
+- Audit trail impossible à falsifier
+- Migrations versionnées avec SQLx
+
+---
+
+### DEC-010 : Valeurs par défaut des paramètres configurables
+
+**Date** : 30 Janvier 2025
+**Statut** : ✅ Adopté (modifiable par vote)
+
+**Contexte**
+Les paramètres configurables ont besoin de valeurs initiales raisonnables.
+
+**Décision**
+Valeurs initiales définies :
+
+**Offline** :
+- `max_tx_amount`: 10 Ѵ
+- `max_tx_count`: 5 transactions
+- `max_duration_hours`: 72h
+- `penalty_rate`: 0.1%/jour
+
+**Redistribution** :
+- `common_pot_rate`: 2%
+- `min_contribution_threshold`: 1 Ѵ
+
+**Service coefficients** :
+- `standard_work`: 1.0
+- `qualified_work`: 1.2-1.5
+- `difficult_work`: 1.3-1.8
+- `rare_expertise`: 1.5-2.0
+- Modificateurs : 1.1-1.3x
+
+**Identity** :
+- `proof_of_life_interval`: 90 jours
+- `grace_period`: 30 jours
+
+**Raisonnement**
+- Valeurs conservatrices pour démarrage
+- Favorisent la sécurité sur la convenience
+- Peuvent être ajustées par vote collectif
+- Basées sur des cas d'usage réalistes
+
+**Conséquences**
+- Système opérationnel dès le départ
+- Valeurs pourront évoluer avec l'usage
+- Communauté décidera des ajustements
+
+---
+
+*Dernière mise à jour : 30 Janvier 2025*

@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL 16 ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: vita-postgres
+    environment:
+      POSTGRES_USER: vita
+      POSTGRES_PASSWORD: vita
+      POSTGRES_DB: vita_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - vita_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vita -d vita_db"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  # ── VITA Core Backend ─────────────────────────────────────────
+  vita-core:
+    build:
+      context: ./services/vita-core
+      dockerfile: Dockerfile
+    container_name: vita-core
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://vita:vita@postgres:5432/vita_db
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  vita_pgdata:

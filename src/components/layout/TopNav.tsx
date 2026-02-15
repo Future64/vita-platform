@@ -3,14 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Flame, 
-  GitBranch, 
-  BookOpen, 
-  User, 
-  Globe, 
-  Bell, 
-  Sun, 
+import {
+  Flame,
+  GitBranch,
+  BookOpen,
+  User,
+  Globe,
+  Wallet,
+  Bell,
+  Sun,
   Moon,
   Menu,
   X
@@ -22,6 +23,7 @@ const modules = [
   { id: "forge", label: "Forge", icon: GitBranch, path: "/forge" },
   { id: "codex", label: "Codex", icon: BookOpen, path: "/codex" },
   { id: "civis", label: "Civis", icon: User, path: "/civis" },
+  { id: "bourse", label: "Bourse", icon: Wallet, path: "/bourse" },
   { id: "panorama", label: "Panorama", icon: Globe, path: "/panorama" },
 ];
 

@@ -147,8 +147,8 @@ export default function AgoraPage() {
                       {proposal.votesFor}%
                     </span>
                     <VoteBar
-                      votesFor={proposal.votesFor}
-                      votesAgainst={proposal.votesAgainst}
+                      votesFor={proposal.votesFor ?? 0}
+                      votesAgainst={proposal.votesAgainst ?? 0}
                       className="w-20"
                     />
                   </div>

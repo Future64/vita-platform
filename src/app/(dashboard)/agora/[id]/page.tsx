@@ -219,7 +219,7 @@ export default function ProposalDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <VoteBar percentage={votePercentage} />
+                <VoteBar votesFor={proposalData.votes.for} votesAgainst={proposalData.votes.against} />
 
                 <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
@@ -233,8 +233,7 @@ export default function ProposalDetailPage() {
                 </div>
 
                 <VoteButtons
-                  onUpvote={() => console.log('Vote pour')}
-                  onDownvote={() => console.log('Vote contre')}
+                  onVote={(vote) => console.log(`Vote: ${vote}`)}
                 />
 
                 <div className="pt-3 border-t border-[var(--border)] text-center">
