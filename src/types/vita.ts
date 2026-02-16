@@ -132,6 +132,95 @@ export interface CreditRequest {
   amount: string;
 }
 
+// Codex (Constitution)
+
+export interface CodexTitle {
+  id: string;
+  number: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface CodexArticle {
+  id: string;
+  title_id: string;
+  number: number;
+  name: string;
+  content: string;
+  rationale: string | null;
+  immutable: boolean;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CodexArticleSummary {
+  id: string;
+  number: number;
+  name: string;
+  immutable: boolean;
+  status: string;
+  version: number;
+}
+
+export interface CodexTitleWithArticles {
+  id: string;
+  number: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+  articles: CodexArticleSummary[];
+}
+
+export interface CodexVersion {
+  id: string;
+  article_id: string;
+  version: number;
+  content: string;
+  rationale: string | null;
+  change_summary: string | null;
+  author_id: string | null;
+  created_at: string;
+}
+
+export interface CodexAmendment {
+  id: string;
+  article_id: string;
+  proposed_content: string;
+  proposed_rationale: string | null;
+  change_summary: string;
+  author_id: string;
+  status: string;
+  co_signatures: number;
+  created_at: string;
+  deliberation_end: string | null;
+  voting_end: string | null;
+}
+
+export interface CodexExport {
+  titles: CodexTitleExport[];
+  exported_at: string;
+  total_articles: number;
+}
+
+export interface CodexTitleExport {
+  number: string;
+  name: string;
+  description: string | null;
+  articles: CodexArticle[];
+}
+
+export interface CreateAmendmentRequest {
+  article_id: string;
+  author_id: string;
+  proposed_content: string;
+  proposed_rationale?: string;
+  change_summary: string;
+}
+
 // API Error
 
 export interface VitaApiError {

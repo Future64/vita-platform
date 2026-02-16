@@ -27,3 +27,4 @@ sha2 = "0.10"
 curve25519-dalek = { version = "4", features = ["serde"] }
 bulletproofs = "5"
 merlin = "3"
+genpdf = "0.2"

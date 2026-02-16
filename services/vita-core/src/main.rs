@@ -1,4 +1,5 @@
 mod api;
+pub mod codex;
 pub mod config;
 pub mod credit;
 pub mod crypto;

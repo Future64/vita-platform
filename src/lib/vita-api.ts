@@ -12,6 +12,12 @@ import type {
   CreditEligibility,
   CreditLoan,
   VitaApiError,
+  CodexTitleWithArticles,
+  CodexArticle,
+  CodexVersion,
+  CodexAmendment,
+  CodexExport,
+  CreateAmendmentRequest,
 } from "@/types/vita";
 
 const API_BASE =
@@ -193,6 +199,75 @@ export async function getCreditLoans(
     headers: headers(),
   });
   return handleResponse<CreditLoan[]>(res);
+}
+
+// --- Codex (Constitution) ---
+
+export async function getCodexTitles(): Promise<CodexTitleWithArticles[]> {
+  const res = await fetch(`${API_BASE}/codex/titles`, { headers: headers() });
+  return handleResponse<CodexTitleWithArticles[]>(res);
+}
+
+export async function getCodexArticles(
+  titleId?: string
+): Promise<CodexArticle[]> {
+  const params = titleId
+    ? `?title_id=${titleId}`
+    : "";
+  const res = await fetch(`${API_BASE}/codex/articles${params}`, {
+    headers: headers(),
+  });
+  return handleResponse<CodexArticle[]>(res);
+}
+
+export async function getCodexArticle(
+  number: number
+): Promise<CodexArticle> {
+  const res = await fetch(`${API_BASE}/codex/articles/${number}`, {
+    headers: headers(),
+  });
+  return handleResponse<CodexArticle>(res);
+}
+
+export async function getCodexArticleVersions(
+  number: number
+): Promise<CodexVersion[]> {
+  const res = await fetch(`${API_BASE}/codex/articles/${number}/versions`, {
+    headers: headers(),
+  });
+  return handleResponse<CodexVersion[]>(res);
+}
+
+export async function createCodexAmendment(
+  body: CreateAmendmentRequest
+): Promise<CodexAmendment> {
+  const res = await fetch(`${API_BASE}/codex/amendments`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return handleResponse<CodexAmendment>(res);
+}
+
+export async function getCodexAmendments(
+  status?: string
+): Promise<CodexAmendment[]> {
+  const params = status ? `?status=${status}` : "";
+  const res = await fetch(`${API_BASE}/codex/amendments${params}`, {
+    headers: headers(),
+  });
+  return handleResponse<CodexAmendment[]>(res);
+}
+
+export async function getCodexExportJson(): Promise<CodexExport> {
+  const res = await fetch(`${API_BASE}/codex/export/json`, {
+    headers: headers(),
+  });
+  return handleResponse<CodexExport>(res);
+}
+
+export function getCodexExportPdfUrl(): string {
+  return `${API_BASE}/codex/export/pdf`;
 }
 
 // --- Health ---

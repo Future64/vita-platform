@@ -1,4 +1,5 @@
 mod accounts;
+mod codex;
 mod credit;
 mod emissions;
 mod health;
@@ -28,6 +29,15 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             // Credit
             .route("/credit/eligibility/{account_id}", web::get().to(credit::get_eligibility))
             .route("/credit/request", web::post().to(credit::request_credit))
-            .route("/credit/loans/{account_id}", web::get().to(credit::get_loans)),
+            .route("/credit/loans/{account_id}", web::get().to(credit::get_loans))
+            // Codex (Constitution)
+            .route("/codex/titles", web::get().to(codex::get_titles))
+            .route("/codex/articles", web::get().to(codex::get_articles))
+            .route("/codex/articles/{number}", web::get().to(codex::get_article))
+            .route("/codex/articles/{number}/versions", web::get().to(codex::get_article_versions))
+            .route("/codex/amendments", web::post().to(codex::create_amendment))
+            .route("/codex/amendments", web::get().to(codex::get_amendments))
+            .route("/codex/export/json", web::get().to(codex::export_json))
+            .route("/codex/export/pdf", web::get().to(codex::export_pdf)),
     );
 }
