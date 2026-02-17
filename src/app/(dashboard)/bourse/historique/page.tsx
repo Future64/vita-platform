@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Wallet,
   Send,
@@ -12,54 +12,53 @@ import {
   Sparkles,
   ArrowUpRight,
   ArrowDownLeft,
-  Landmark,
   Filter,
   Search,
-  Loader2,
+  Download,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useVitaAccount } from "@/hooks/useVitaAccount";
-import type { VitaTransaction, TransactionType } from "@/types/vita";
+import { MOCK_WALLET } from "@/lib/mockBourse";
+import { useToast } from "@/components/ui/Toast";
+import type { TransactionType } from "@/types/bourse";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Wallet, label: "Solde", href: "/bourse" },
-  { icon: Send, label: "Payer", href: "/bourse/payer" },
-  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir" },
+  { icon: Send, label: "Payer", href: "/bourse/payer", permission: "send_vita" },
+  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir", permission: "receive_vita" },
   { icon: Calculator, label: "Calculateur", href: "/bourse/calculateur" },
-  { icon: Clock, label: "Historique", href: "/bourse/historique" },
+  { icon: Clock, label: "Historique", href: "/bourse/historique", permission: "view_transactions" },
   { icon: PiggyBank, label: "Épargne", href: "/bourse/epargne" },
   { icon: HandCoins, label: "Crédit", href: "/bourse/credit" },
 ];
 
-// --- Display helpers ---
+type FilterType = "all" | TransactionType;
+type PeriodFilter = "1m" | "3m" | "6m" | "all";
 
-type DisplayType = "emission" | "sent" | "received" | "common_fund";
+const typeFilters: { key: FilterType; label: string }[] = [
+  { key: "all", label: "Tout" },
+  { key: "emission", label: "Émissions" },
+  { key: "reception", label: "Reçus" },
+  { key: "envoi", label: "Envoyés" },
+];
 
-const txConfig: Record<DisplayType, { icon: typeof Sparkles; label: string; color: string; sign: "+" | "-" }> = {
+const periodFilters: { key: PeriodFilter; label: string }[] = [
+  { key: "1m", label: "Ce mois" },
+  { key: "3m", label: "3 mois" },
+  { key: "6m", label: "6 mois" },
+  { key: "all", label: "Tout" },
+];
+
+const txConfig: Record<TransactionType, { icon: typeof Sparkles; label: string; color: string; sign: "+" | "-" }> = {
   emission: { icon: Sparkles, label: "Émission", color: "green", sign: "+" },
-  received: { icon: ArrowDownLeft, label: "Reçu", color: "green", sign: "+" },
-  sent: { icon: ArrowUpRight, label: "Envoyé", color: "pink", sign: "-" },
-  common_fund: { icon: Landmark, label: "Pot commun", color: "cyan", sign: "-" },
+  reception: { icon: ArrowDownLeft, label: "Reçu", color: "violet", sign: "+" },
+  envoi: { icon: ArrowUpRight, label: "Envoyé", color: "pink", sign: "-" },
 };
-
-function getDisplayType(tx: VitaTransaction, accountId: string): DisplayType {
-  if (tx.tx_type === "emission") return "emission";
-  if (tx.tx_type === "common_fund") return "common_fund";
-  if (tx.to_account_id === accountId) return "received";
-  return "sent";
-}
 
 function formatFullDate(iso: string): string {
   const d = new Date(iso);
@@ -72,272 +71,294 @@ function formatFullDate(iso: string): string {
   return `${day} ${month}. ${year}, ${hours}:${mins}`;
 }
 
-type FilterType = "all" | DisplayType;
-
-// --- Balance chart from transactions ---
-
-function buildBalanceHistory(
-  transactions: VitaTransaction[],
-  accountId: string,
-  currentBalance: number
-): { date: string; solde: number }[] {
-  // Walk backward through transactions to reconstruct daily balances
-  const sorted = [...transactions].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
-  const dailyMap = new Map<string, number>();
-  let runningBalance = currentBalance;
-  const today = new Date().toISOString().slice(0, 10);
-  dailyMap.set(today, runningBalance);
-
-  for (const tx of sorted) {
-    const dateKey = tx.created_at.slice(0, 10);
-    const amount = parseFloat(tx.amount);
-    const display = getDisplayType(tx, accountId);
-
-    // Reverse the transaction to get prior balance
-    if (display === "emission" || display === "received") {
-      runningBalance -= amount;
-    } else {
-      runningBalance += amount;
-    }
-
-    if (!dailyMap.has(dateKey)) {
-      dailyMap.set(dateKey, runningBalance);
-    }
-  }
-
-  const entries = Array.from(dailyMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-  return entries.map(([date, solde]) => {
-    const d = new Date(date);
-    const day = d.getDate();
-    const months = ["jan", "fév", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
-    return { date: `${day} ${months[d.getMonth()]}`, solde: Math.max(0, solde) };
-  });
+function getPeriodStart(period: PeriodFilter): Date | null {
+  if (period === "all") return null;
+  const now = new Date();
+  const months = period === "1m" ? 1 : period === "3m" ? 3 : 6;
+  now.setMonth(now.getMonth() - months);
+  return now;
 }
 
-// --- Page ---
-
 export default function HistoriquePage() {
-  const { account, balance, transactions, loading } = useVitaAccount();
+  const { toast } = useToast();
+  const wallet = MOCK_WALLET;
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [search, setSearch] = useState("");
 
-  const accountId = account?.id ?? "";
-  const balanceNum = parseFloat(balance) || 0;
-
-  const balanceHistory = useMemo(
-    () => buildBalanceHistory(transactions, accountId, balanceNum),
-    [transactions, accountId, balanceNum]
-  );
-
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      if (filterType !== "all") {
-        const display = getDisplayType(tx, accountId);
-        if (display !== filterType) return false;
-      }
+    const periodStart = getPeriodStart(periodFilter);
+
+    return wallet.transactions.filter((tx) => {
+      if (filterType !== "all" && tx.type !== filterType) return false;
+      if (periodStart && new Date(tx.date) < periodStart) return false;
       if (search) {
         const s = search.toLowerCase();
-        const matchNote = tx.note?.toLowerCase().includes(s);
-        const matchFrom = tx.from_account_id?.toLowerCase().includes(s);
-        const matchTo = tx.to_account_id?.toLowerCase().includes(s);
-        if (!matchNote && !matchFrom && !matchTo) return false;
+        const matchMotif = tx.motif?.toLowerCase().includes(s);
+        const matchContrepartie = tx.contrepartie?.toLowerCase().includes(s);
+        if (!matchMotif && !matchContrepartie) return false;
       }
       return true;
     });
-  }, [transactions, filterType, search, accountId]);
+  }, [wallet.transactions, filterType, periodFilter, search]);
 
-  const typeFilters: { key: FilterType; label: string }[] = [
-    { key: "all", label: "Tout" },
-    { key: "emission", label: "Émissions" },
-    { key: "received", label: "Reçus" },
-    { key: "sent", label: "Envoyés" },
-    { key: "common_fund", label: "Pot commun" },
-  ];
+  // Financial summary
+  const summary = useMemo(() => {
+    const recu = filteredTransactions
+      .filter((tx) => tx.type === "reception")
+      .reduce((sum, tx) => sum + tx.montant, 0);
+    const envoye = filteredTransactions
+      .filter((tx) => tx.type === "envoi")
+      .reduce((sum, tx) => sum + tx.montant, 0);
+    const emissions = filteredTransactions
+      .filter((tx) => tx.type === "emission")
+      .reduce((sum, tx) => sum + tx.montant, 0);
+    return { recu, envoye, emissions, soldeNet: recu + emissions - envoye };
+  }, [filteredTransactions]);
 
-  if (loading) {
-    return (
-      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
-        <div className="flex flex-col items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500 mb-4" />
-          <p className="text-sm text-[var(--text-muted)]">Chargement de l&apos;historique...</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const handleExportCSV = useCallback(() => {
+    const headers = ["Date", "Type", "Montant", "Contrepartie", "Motif", "Statut"];
+    const rows = filteredTransactions.map((tx) => [
+      new Date(tx.date).toISOString(),
+      tx.type,
+      tx.montant.toFixed(3),
+      tx.contrepartie || "",
+      tx.motif || "",
+      tx.statut,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vita-historique-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Historique exporte");
+  }, [filteredTransactions, toast]);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
       {/* Header */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500">
-          <Clock className="h-5 w-5 text-white" />
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500">
+            <Clock className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              Historique
+            </h1>
+            <p className="text-sm text-[var(--text-muted)]">
+              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            Historique
-          </h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            Toutes vos transactions VITA
+        <Button variant="secondary" size="sm" onClick={handleExportCSV}>
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Exporter CSV</span>
+        </Button>
+      </div>
+
+      {/* Financial Summary */}
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <p className="text-xs text-[var(--text-muted)]">Émissions</p>
+          <p className="mt-1 text-lg font-bold text-green-500">+{summary.emissions.toFixed(2)} Ѵ</p>
+        </div>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <p className="text-xs text-[var(--text-muted)]">Reçu</p>
+          <p className="mt-1 text-lg font-bold text-violet-500">+{summary.recu.toFixed(2)} Ѵ</p>
+        </div>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <p className="text-xs text-[var(--text-muted)]">Envoyé</p>
+          <p className="mt-1 text-lg font-bold text-pink-500">-{summary.envoye.toFixed(2)} Ѵ</p>
+        </div>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[var(--text-muted)]">Solde net</p>
+            {summary.soldeNet >= 0 ? (
+              <TrendingUp className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5 text-pink-500" />
+            )}
+          </div>
+          <p className={cn("mt-1 text-lg font-bold", summary.soldeNet >= 0 ? "text-green-500" : "text-pink-500")}>
+            {summary.soldeNet >= 0 ? "+" : ""}{summary.soldeNet.toFixed(2)} Ѵ
           </p>
         </div>
       </div>
 
-      {/* Balance chart */}
-      {balanceHistory.length > 1 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Évolution du solde</CardTitle>
-            <Badge variant="violet">{balanceHistory.length} jours</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={balanceHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="soldeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "var(--text-muted)", fontSize: 12 }}
-                    axisLine={{ stroke: "var(--border)" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: "var(--text-muted)", fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={["dataMin - 1", "dataMax + 1"]}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--bg-card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "0.75rem",
-                      fontSize: "0.875rem",
-                    }}
-                    labelStyle={{ color: "var(--text-muted)" }}
-                    formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(3)} Ѵ`, "Solde"]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="solde"
-                    stroke="#8b5cf6"
-                    strokeWidth={2}
-                    fill="url(#soldeGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Filters */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {typeFilters.map((f) => (
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Type filters */}
+          <div className="flex flex-wrap gap-2">
+            {typeFilters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilterType(f.key)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
+                  filterType === f.key
+                    ? "bg-gradient-to-r from-violet-500 to-pink-500 text-white"
+                    : "border border-[var(--border)] text-[var(--text-secondary)] hover:border-violet-500/50"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher..."
+              className="h-9 w-full rounded-lg border bg-[var(--bg-elevated)] pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 sm:w-56"
+              style={{ borderColor: "var(--border)" }}
+            />
+          </div>
+        </div>
+
+        {/* Period filters */}
+        <div className="flex gap-2">
+          {periodFilters.map((f) => (
             <button
               key={f.key}
               type="button"
-              onClick={() => setFilterType(f.key)}
+              onClick={() => setPeriodFilter(f.key)}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
-                filterType === f.key
-                  ? "bg-gradient-to-r from-violet-500 to-pink-500 text-white"
-                  : "border border-[var(--border)] text-[var(--text-secondary)] hover:border-violet-500/50"
+                "rounded-lg px-3 py-1 text-xs font-medium transition-all",
+                periodFilter === f.key
+                  ? "bg-violet-500/15 text-violet-500"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
               {f.label}
             </button>
           ))}
         </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher..."
-            className="h-9 w-full rounded-lg border bg-[var(--bg-elevated)] pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 sm:w-56"
-            style={{ borderColor: "var(--border)" }}
-          />
-        </div>
       </div>
 
-      {/* Transaction list */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="divide-y divide-[var(--border)]">
-            {filteredTransactions.length === 0 ? (
-              <div className="py-12 text-center">
-                <Filter className="mx-auto mb-3 h-10 w-10 text-[var(--text-muted)]" />
-                <p className="text-sm text-[var(--text-muted)]">
-                  Aucune transaction trouvée
-                </p>
-              </div>
-            ) : (
-              filteredTransactions.map((tx) => {
-                const display = getDisplayType(tx, accountId);
-                const config = txConfig[display];
-                const Icon = config.icon;
-                const amount = parseFloat(tx.amount);
-                return (
-                  <div
-                    key={tx.id}
-                    className="flex items-start gap-4 px-4 py-3.5 md:px-5 transition-colors hover:bg-[var(--bg-card-hover)]"
-                  >
-                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", `bg-${config.color}-500/15`)}>
-                      <Icon className={cn("h-5 w-5", `text-${config.color}-500`)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                          {tx.tx_type === "emission"
+      {/* Transaction list — desktop table */}
+      <div className="hidden md:block">
+        <Card>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Type</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Description</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Contrepartie</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Montant</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center">
+                      <Filter className="mx-auto mb-3 h-10 w-10 text-[var(--text-muted)]" />
+                      <p className="text-sm text-[var(--text-muted)]">Aucune transaction trouvée</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((tx) => {
+                    const config = txConfig[tx.type];
+                    const Icon = config.icon;
+                    const isIncoming = tx.type === "emission" || tx.type === "reception";
+                    return (
+                      <tr key={tx.id} className="transition-colors hover:bg-[var(--bg-card-hover)]">
+                        <td className="whitespace-nowrap px-5 py-3.5 text-sm text-[var(--text-secondary)]">
+                          {formatFullDate(tx.date)}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", `bg-${config.color}-500/15`)}>
+                              <Icon className={cn("h-3.5 w-3.5", `text-${config.color}-500`)} />
+                            </div>
+                            <Badge variant={config.color as "green" | "violet" | "pink"}>
+                              {config.label}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm text-[var(--text-primary)]">
+                          {tx.type === "emission"
                             ? "Émission quotidienne"
-                            : tx.note || (display === "received" ? "Paiement reçu" : display === "sent" ? "Paiement envoyé" : "Contribution pot commun")}
-                        </p>
-                        <Badge variant={config.color as "green" | "pink" | "cyan"} className="shrink-0">
-                          {config.label}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                        {tx.from_account_id && display === "received" && (
-                          <span>de {tx.from_account_id.slice(0, 8)}... · </span>
-                        )}
-                        {tx.to_account_id && display === "sent" && (
-                          <span>à {tx.to_account_id.slice(0, 8)}... · </span>
-                        )}
-                        {formatFullDate(tx.created_at)}
-                      </p>
-                      {tx.note && tx.tx_type !== "emission" && (
-                        <p className="mt-1 text-xs text-[var(--text-secondary)] italic">
-                          &ldquo;{tx.note}&rdquo;
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        "shrink-0 font-mono text-sm font-semibold",
-                        config.sign === "+" ? "text-green-500" : "text-pink-500"
-                      )}
+                            : tx.motif || (isIncoming ? "Paiement reçu" : "Paiement envoyé")}
+                        </td>
+                        <td className="px-5 py-3.5 text-sm text-[var(--text-secondary)]">
+                          {tx.contrepartie || "—"}
+                        </td>
+                        <td className={cn("whitespace-nowrap px-5 py-3.5 text-right font-mono text-sm font-semibold", config.sign === "+" ? "text-green-500" : "text-pink-500")}>
+                          {config.sign}{tx.montant.toFixed(2)} Ѵ
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Transaction list — mobile cards */}
+      <div className="md:hidden">
+        <Card>
+          <CardContent className="p-0">
+            <div className="divide-y divide-[var(--border)]">
+              {filteredTransactions.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Filter className="mx-auto mb-3 h-10 w-10 text-[var(--text-muted)]" />
+                  <p className="text-sm text-[var(--text-muted)]">Aucune transaction trouvée</p>
+                </div>
+              ) : (
+                filteredTransactions.map((tx) => {
+                  const config = txConfig[tx.type];
+                  const Icon = config.icon;
+                  const isIncoming = tx.type === "emission" || tx.type === "reception";
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--bg-card-hover)]"
                     >
-                      {config.sign}{amount.toFixed(3)} Ѵ
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", `bg-${config.color}-500/15`)}>
+                        <Icon className={cn("h-5 w-5", `text-${config.color}-500`)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                          {tx.type === "emission"
+                            ? "Émission quotidienne"
+                            : tx.motif || (isIncoming ? "Paiement reçu" : "Paiement envoyé")}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          {tx.contrepartie ? `${tx.contrepartie} · ` : ""}
+                          {formatFullDate(tx.date)}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 font-mono text-sm font-semibold",
+                          config.sign === "+" ? "text-green-500" : "text-pink-500"
+                        )}
+                      >
+                        {config.sign}{tx.montant.toFixed(2)} Ѵ
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </DashboardLayout>
   );
 }

@@ -29,6 +29,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import type { UserPreferences } from "@/types/auth";
 import { cn } from "@/lib/utils";
@@ -169,7 +170,7 @@ function DeleteModal({
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full max-w-md rounded-xl border p-6 shadow-xl"
+        className="relative z-10 mx-4 w-full max-w-md rounded-xl border p-6 shadow-xl"
         style={{
           backgroundColor: "var(--bg-card)",
           borderColor: "var(--border)",
@@ -212,31 +213,14 @@ function DeleteModal({
 
 // ---------- Toast ----------
 
-function Toast({
-  message,
-  visible,
-}: {
-  message: string;
-  visible: boolean;
-}) {
-  if (!visible) return null;
-  return (
-    <div className="fixed bottom-6 right-6 z-[400] flex items-center gap-2 rounded-lg px-4 py-3 shadow-lg bg-green-500 text-white text-sm font-medium animate-in slide-in-from-bottom-2">
-      <Check className="h-4 w-4" />
-      {message}
-    </div>
-  );
-}
-
 // ---------- Main page ----------
 
 export default function ParametresPage() {
   const { user, activeRole, updateProfile, updatePreferences, logout } =
     useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>("compte");
   const [hasChanges, setHasChanges] = useState(false);
-  const [toastMsg, setToastMsg] = useState("");
-  const [toastVisible, setToastVisible] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Form state: Compte
@@ -284,12 +268,6 @@ export default function ParametresPage() {
     }
   }, [user]);
 
-  function showToast(msg: string) {
-    setToastMsg(msg);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
-  }
-
   function markChanged() {
     setHasChanges(true);
   }
@@ -302,7 +280,7 @@ export default function ParametresPage() {
     // Save preferences
     updatePreferences(prefs);
     setHasChanges(false);
-    showToast("Parametres sauvegardes");
+    toast.success("Parametres enregistres");
   }
 
   function handleExportData() {
@@ -315,13 +293,13 @@ export default function ParametresPage() {
     a.download = `vita-export-${user.username}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("Donnees exportees");
+    toast.success("Donnees exportees");
   }
 
   function handleDeleteAccount() {
     setDeleteModalOpen(false);
     logout();
-    showToast("Compte supprime");
+    toast.info("Compte supprime");
   }
 
   function updatePref<K extends keyof UserPreferences>(
@@ -1031,7 +1009,7 @@ export default function ParametresPage() {
                   <Button
                     variant="danger"
                     onClick={() =>
-                      showToast("Toutes les autres sessions deconnectees")
+                      toast.info("Toutes les autres sessions deconnectees")
                     }
                   >
                     Deconnecter toutes les sessions
@@ -1093,7 +1071,7 @@ export default function ParametresPage() {
                     label="Mode developpeur"
                     description="Active les outils de debug et les logs"
                   >
-                    <Toggle checked={false} onChange={() => showToast("Mode dev active")} />
+                    <Toggle checked={false} onChange={() => toast.info("Mode dev active")} />
                   </SettingRow>
                 </SettingsSection>
               </>
@@ -1105,13 +1083,13 @@ export default function ParametresPage() {
       {/* Sticky save bar */}
       {hasChanges && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-3 border-t px-4 py-3"
+          className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-stretch gap-2 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-center sm:gap-3"
           style={{
             backgroundColor: "var(--bg-card)",
             borderColor: "var(--border)",
           }}
         >
-          <span className="text-sm text-[var(--text-secondary)]">
+          <span className="hidden text-sm text-[var(--text-secondary)] sm:inline">
             Modifications non sauvegardees
           </span>
           <Button variant="secondary" onClick={() => {
@@ -1136,7 +1114,6 @@ export default function ParametresPage() {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDeleteAccount}
       />
-      <Toast message={toastMsg} visible={toastVisible} />
     </DashboardLayout>
   );
 }

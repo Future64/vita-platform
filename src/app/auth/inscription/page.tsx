@@ -7,6 +7,7 @@ import { Eye, EyeOff, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 
 // --- Countries list ---
 
@@ -144,6 +145,7 @@ function FieldError({ error }: { error: string | null }) {
 export default function InscriptionPage() {
   const router = useRouter();
   const { register } = useAuth();
+  const { toast } = useToast();
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -213,8 +215,10 @@ export default function InscriptionPage() {
     });
 
     if (success) {
+      toast.success("Bienvenue sur VITA !");
       router.push("/panorama");
     } else {
+      toast.error("Un compte avec cet email ou ce nom d'utilisateur existe deja");
       setGlobalError("Un compte avec cet email ou ce nom d'utilisateur existe deja.");
       setSubmitting(false);
     }

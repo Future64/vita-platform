@@ -29,6 +29,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import { ROLE_METADATA } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +100,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
 
 export default function CivisProfilePage() {
   const { user, activeRole, updateProfile } = useAuth();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
   // Edit form state
@@ -147,6 +149,7 @@ export default function CivisProfilePage() {
       centresInteret: interests,
     });
     setIsEditing(false);
+    toast.success("Profil mis a jour");
   }
 
   function addInterest(interest: string) {

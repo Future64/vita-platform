@@ -20,8 +20,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { ROLE_METADATA } from "@/lib/permissions";
 import { RoleSimulator } from "./RoleSimulator";
+import { NotificationCenter } from "./NotificationCenter";
+import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/lib/i18n";
 
 const modules = [
   { id: "agora", label: "Agora", icon: Flame, path: "/agora" },
@@ -36,6 +40,9 @@ export function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, activeRole } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { toast } = useToast();
+  const { t } = useTranslation();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -65,12 +72,13 @@ export function TopNav() {
   function handleLogout() {
     setAvatarMenuOpen(false);
     logout();
+    toast.info("Vous avez ete deconnecte");
     router.push("/auth/connexion");
   }
 
   return (
     <>
-      <nav className="sticky top-0 z-50 h-16 border-b border-[var(--border)] bg-[var(--bg-card)] dark:bg-[rgba(17,24,39,0.95)] dark:backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 h-16 border-b border-[var(--border)] bg-[var(--bg-card)] dark:bg-[rgba(17,24,39,0.95)] dark:backdrop-blur-xl" role="navigation" aria-label="Navigation principale">
         <div className="flex h-full items-center justify-between px-4 md:px-6">
           {/* Left: Menu + Logo + Nav */}
           <div className="flex items-center gap-4">
@@ -78,6 +86,9 @@ export function TopNav() {
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] lg:hidden"
+              aria-label={t("nav.openMenu")}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -154,18 +165,16 @@ export function TopNav() {
             </div>
 
             {/* Notifications */}
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-[0.625rem] font-semibold text-white">
-                5
-              </span>
-            </button>
+            <NotificationCenter />
 
             {/* Avatar + Dropdown */}
             <div className="relative" ref={avatarMenuRef}>
               <button
                 onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white transition-transform hover:scale-105"
+                aria-label={t("nav.userMenu")}
+                aria-expanded={avatarMenuOpen}
+                aria-haspopup="true"
               >
                 {initials}
               </button>
@@ -205,7 +214,7 @@ export function TopNav() {
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
                     >
                       <User className="h-4 w-4" />
-                      Mon profil
+                      {t("nav.profile")}
                     </Link>
                     <Link
                       href="/parametres"
@@ -213,7 +222,7 @@ export function TopNav() {
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
                     >
                       <Settings className="h-4 w-4" />
-                      Parametres
+                      {t("nav.settings")}
                     </Link>
                   </div>
 
@@ -227,7 +236,7 @@ export function TopNav() {
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10"
                     >
                       <LogOut className="h-4 w-4" />
-                      Se deconnecter
+                      {t("nav.logout")}
                     </button>
                   </div>
                 </div>
@@ -239,12 +248,13 @@ export function TopNav() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[200]">
+        <div className="fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label="Menu de navigation" id="mobile-menu">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
           />
-          <div className="absolute bottom-0 left-0 top-0 w-[300px] max-w-[90vw] overflow-y-auto border-r border-[var(--border)] bg-[var(--bg-card)] p-5">
+          <nav className="absolute bottom-0 left-0 top-0 w-[300px] max-w-[90vw] overflow-y-auto border-r border-[var(--border)] bg-[var(--bg-card)] p-5" aria-label="Navigation mobile">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between border-b border-[var(--border)] pb-5">
               <div className="flex items-center gap-3">
@@ -258,6 +268,7 @@ export function TopNav() {
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
+                aria-label={t("nav.closeMenu")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -285,8 +296,28 @@ export function TopNav() {
                   </Link>
                 );
               })}
+
+              {/* Notifications */}
+              <Link
+                href="/notifications"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-4 py-3.5 text-[0.9375rem] font-medium transition-all",
+                  pathname === "/notifications"
+                    ? "bg-gradient-to-r from-violet-500 to-pink-500 text-white"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+                )}
+              >
+                <Bell className="h-5 w-5" />
+                {t("nav.notifications")}
+                {unreadCount > 0 && (
+                  <span className="ml-auto rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-semibold text-red-500">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
             </div>
-          </div>
+          </nav>
         </div>
       )}
     </>

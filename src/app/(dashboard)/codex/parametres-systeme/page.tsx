@@ -112,7 +112,7 @@ export default function ParametresSystemePage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           variant="pink"
           label="Immuables"
@@ -275,7 +275,7 @@ export default function ParametresSystemePage() {
                                 .map((change) => (
                                   <div
                                     key={change.id}
-                                    className="flex items-center gap-3 text-xs"
+                                    className="flex flex-wrap items-center gap-3 text-xs"
                                   >
                                     <span className="text-[var(--text-muted)] w-20 flex-shrink-0">
                                       {new Date(change.date).toLocaleDateString("fr-FR")}

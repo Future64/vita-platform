@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Wallet,
@@ -13,25 +13,22 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Sparkles,
-  Flame,
   ChevronRight,
-  Loader2,
-  WifiOff,
-  UserPlus,
+  Timer,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-import { Button } from "@/components/ui/button";
-import { useVitaAccount } from "@/hooks/useVitaAccount";
-import type { VitaTransaction } from "@/types/vita";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { MOCK_WALLET } from "@/lib/mockBourse";
+import type { Transaction } from "@/types/bourse";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Wallet, label: "Solde", href: "/bourse" },
-  { icon: Send, label: "Payer", href: "/bourse/payer" },
-  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir" },
+  { icon: Send, label: "Payer", href: "/bourse/payer", permission: "send_vita" },
+  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir", permission: "receive_vita" },
   { icon: Calculator, label: "Calculateur", href: "/bourse/calculateur" },
-  { icon: Clock, label: "Historique", href: "/bourse/historique" },
+  { icon: Clock, label: "Historique", href: "/bourse/historique", permission: "view_transactions" },
   { icon: PiggyBank, label: "Épargne", href: "/bourse/epargne" },
   { icon: HandCoins, label: "Crédit", href: "/bourse/credit" },
 ];
@@ -43,6 +40,7 @@ const quickActions = [
     icon: Send,
     href: "/bourse/payer",
     gradient: "from-violet-500 to-purple-600",
+    permission: "send_vita" as const,
   },
   {
     label: "Recevoir",
@@ -50,6 +48,7 @@ const quickActions = [
     icon: QrCode,
     href: "/bourse/recevoir",
     gradient: "from-pink-500 to-rose-600",
+    permission: "receive_vita" as const,
   },
   {
     label: "Calculateur",
@@ -57,19 +56,19 @@ const quickActions = [
     icon: Calculator,
     href: "/bourse/calculateur",
     gradient: "from-cyan-500 to-blue-600",
+    permission: undefined,
   },
 ];
 
-function TransactionIcon({ tx, accountId }: { tx: VitaTransaction; accountId: string }) {
-  if (tx.tx_type === "emission") {
+function TransactionIcon({ tx }: { tx: Transaction }) {
+  if (tx.type === "emission") {
     return (
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/15">
         <Sparkles className="h-5 w-5 text-green-500" />
       </div>
     );
   }
-  const isIncoming = tx.to_account_id === accountId;
-  if (isIncoming) {
+  if (tx.type === "reception") {
     return (
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15">
         <ArrowDownLeft className="h-5 w-5 text-violet-500" />
@@ -93,179 +92,107 @@ function formatTxDate(iso: string): string {
   return `Il y a ${diffDays}j`;
 }
 
-export default function BoursePage() {
-  const { account, balance, transactions, emissions, loading, error, connected, setup, claim } =
-    useVitaAccount();
-  const [emissionAnimating, setEmissionAnimating] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [setupName, setSetupName] = useState("");
-
-  const balanceNum = parseFloat(balance) || 0;
-  const daysSinceJoin = account
-    ? Math.floor((Date.now() - new Date(account.created_at).getTime()) / 86400000) + 1
-    : 0;
-  const emissionCount = emissions.length;
-
-  // Check if today's emission was already claimed
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const emittedToday = emissions.some((e) => e.emission_date === todayStr);
+function useAnimatedCounter(target: number, duration: number = 1500): number {
+  const [value, setValue] = useState(0);
 
   useEffect(() => {
-    if (emittedToday) {
-      const timer = setTimeout(() => setEmissionAnimating(true), 500);
-      return () => clearTimeout(timer);
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(eased * target);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+
+  return value;
+}
+
+function useCountdown(targetIso: string) {
+  const [remaining, setRemaining] = useState({ h: 0, m: 0, s: 0 });
+
+  useEffect(() => {
+    function update() {
+      const diff = new Date(targetIso).getTime() - Date.now();
+      if (diff <= 0) {
+        setRemaining({ h: 0, m: 0, s: 0 });
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setRemaining({ h, m, s });
     }
-  }, [emittedToday]);
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [targetIso]);
 
-  const handleClaim = async () => {
-    setClaiming(true);
-    await claim();
-    setClaiming(false);
-  };
+  return remaining;
+}
 
-  const recentTxs = transactions.slice(0, 5);
+export default function BoursePage() {
+  const wallet = MOCK_WALLET;
+  const animatedSolde = useAnimatedCounter(wallet.solde);
+  const countdown = useCountdown(wallet.prochaineEmission);
 
-  // --- Loading state ---
-  if (loading) {
-    return (
-      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
-        <div className="flex flex-col items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500 mb-4" />
-          <p className="text-sm text-[var(--text-muted)]">Chargement du portefeuille...</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const recentTxs = useMemo(() => wallet.transactions.slice(0, 5), [wallet.transactions]);
+  const joursDeVie = Math.floor(wallet.solde);
 
-  // --- No account / offline ---
-  if (!account) {
-    return (
-      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
-        <div className="mx-auto max-w-md py-12">
-          <div className="text-center">
-            {!connected ? (
-              <>
-                <WifiOff className="mx-auto mb-4 h-12 w-12 text-[var(--text-muted)]" />
-                <h2 className="mb-2 text-xl font-bold text-[var(--text-primary)]">
-                  Backend non disponible
-                </h2>
-                <p className="mb-6 text-sm text-[var(--text-muted)]">
-                  Lancez le serveur Rust avec <code className="font-mono text-violet-500">cargo run</code> dans{" "}
-                  <code className="font-mono text-violet-500">services/vita-core/</code>
-                </p>
-              </>
-            ) : (
-              <>
-                <UserPlus className="mx-auto mb-4 h-12 w-12 text-violet-500" />
-                <h2 className="mb-2 text-xl font-bold text-[var(--text-primary)]">
-                  Bienvenue dans VITA
-                </h2>
-                <p className="mb-6 text-sm text-[var(--text-muted)]">
-                  Créez votre compte pour recevoir 1 Ѵ par jour
-                </p>
-              </>
-            )}
-
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-
-            {connected && (
-              <Card className="text-left mb-4">
-                <CardContent>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                    Votre nom (optionnel)
-                  </label>
-                  <input
-                    type="text"
-                    value={setupName}
-                    onChange={(e) => setSetupName(e.target.value)}
-                    placeholder="Ex: Marie Dupont"
-                    className="mb-4 h-11 w-full rounded-xl border bg-[var(--bg-elevated)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    style={{ borderColor: "var(--border)" }}
-                  />
-                  <Button className="w-full" onClick={() => setup(setupName || undefined)}>
-                    <UserPlus className="h-4 w-4" />
-                    Créer mon compte VITA
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // --- Main dashboard ---
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
-      {/* Error banner */}
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
+      {/* Balance Card */}
+      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 p-6 md:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_70%)]" />
+        <div className="relative z-10">
+          <p className="mb-1 text-sm font-medium text-white/70">
+            Solde actuel
+          </p>
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-5xl font-extrabold tracking-tight text-white md:text-6xl">
+              {animatedSolde.toFixed(2)}
+            </h1>
+            <span className="text-3xl font-bold text-white/80">Ѵ</span>
+          </div>
+          <p className="mt-2 text-sm text-white/60">
+            &asymp; {joursDeVie} jours de vie
+          </p>
 
-      {/* Header: Balance */}
-      <div className="mb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-1 text-sm font-medium text-[var(--text-muted)]">
-              Solde actuel
-            </p>
-            <div className="flex items-baseline gap-3">
-              <h1 className="text-5xl font-extrabold tracking-tight text-[var(--text-primary)]">
-                {balanceNum.toFixed(3)}
-              </h1>
-              <span className="bg-gradient-to-r from-violet-500 to-pink-500 bg-clip-text text-3xl font-bold text-transparent">
-                Ѵ
-              </span>
-            </div>
-            {emittedToday ? (
-              <div
-                className={`mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-500 transition-all duration-700 ${
-                  emissionAnimating
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-2 opacity-0"
-                }`}
-              >
+          {/* Emission status */}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {wallet.emissionAujourdHui ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
                 +1 Ѵ reçu aujourd&apos;hui
               </div>
-            ) : account.verified ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-2"
-                onClick={handleClaim}
-                disabled={claiming}
-              >
-                {claiming ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5 text-green-500" />
-                )}
-                Réclamer +1 Ѵ
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-xs text-[var(--text-muted)]">Membre depuis</p>
-              <p className="text-lg font-bold text-[var(--text-primary)]">
-                Jour {daysSinceJoin}
-              </p>
-            </div>
-            <div className="h-10 w-px bg-[var(--border)]" />
-            <div className="text-right">
-              <p className="text-xs text-[var(--text-muted)]">Émissions</p>
-              <p className="flex items-center gap-1 text-lg font-bold text-orange-500">
-                <Flame className="h-4 w-4" />
-                {emissionCount}
-              </p>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white/70">
+                <Timer className="h-3.5 w-3.5" />
+                Émission en attente
+              </div>
+            )}
+
+            {/* Countdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/50">Prochaine émission</span>
+              <div className="flex items-center gap-1 font-mono text-sm font-bold text-white">
+                <span className="rounded bg-white/15 px-1.5 py-0.5">
+                  {String(countdown.h).padStart(2, "0")}
+                </span>
+                <span className="text-white/40">:</span>
+                <span className="rounded bg-white/15 px-1.5 py-0.5">
+                  {String(countdown.m).padStart(2, "0")}
+                </span>
+                <span className="text-white/40">:</span>
+                <span className="rounded bg-white/15 px-1.5 py-0.5">
+                  {String(countdown.s).padStart(2, "0")}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -274,25 +201,26 @@ export default function BoursePage() {
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
-          variant="violet"
-          label="Solde"
-          value={`${balanceNum.toFixed(3)} Ѵ`}
-        />
-        <StatCard
           variant="green"
           label="Émissions totales"
-          value={`${emissionCount} Ѵ`}
+          value={`${wallet.totalEmissions} Ѵ`}
           trend={{ value: "+1/jour", direction: "up" }}
         />
         <StatCard
+          variant="violet"
+          label="Total reçu"
+          value={`${wallet.totalRecu.toFixed(2)} Ѵ`}
+        />
+        <StatCard
           variant="pink"
-          label="Reçu total"
-          value={`${parseFloat(account.total_received || "0").toFixed(3)} Ѵ`}
+          label="Total envoyé"
+          value={`${wallet.totalEnvoye.toFixed(2)} Ѵ`}
         />
         <StatCard
           variant="cyan"
-          label="Vérifié"
-          value={account.verified ? "Oui" : "Non"}
+          label="Streak émissions"
+          value="42 jours"
+          trend={{ value: "record", direction: "up" }}
         />
       </div>
 
@@ -304,7 +232,7 @@ export default function BoursePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {quickActions.map((action) => {
             const Icon = action.icon;
-            return (
+            const card = (
               <Link key={action.label} href={action.href}>
                 <div className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:border-violet-500/50 hover:-translate-y-0.5 hover:shadow-lg">
                   <div
@@ -322,6 +250,15 @@ export default function BoursePage() {
                 </div>
               </Link>
             );
+
+            if (action.permission) {
+              return (
+                <PermissionGate key={action.label} permission={action.permission}>
+                  {card}
+                </PermissionGate>
+              );
+            }
+            return card;
           })}
         </div>
       </div>
@@ -347,33 +284,32 @@ export default function BoursePage() {
               </div>
             ) : (
               recentTxs.map((tx) => {
-                const isIncoming =
-                  tx.tx_type === "emission" || tx.to_account_id === account.id;
-                const amount = parseFloat(tx.amount);
+                const isIncoming = tx.type === "emission" || tx.type === "reception";
                 return (
                   <div
                     key={tx.id}
                     className="flex items-center gap-4 px-4 py-3.5 md:px-5 transition-colors hover:bg-[var(--bg-card-hover)]"
                   >
-                    <TransactionIcon tx={tx} accountId={account.id} />
+                    <TransactionIcon tx={tx} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                        {tx.tx_type === "emission"
+                        {tx.type === "emission"
                           ? "Émission quotidienne"
-                          : tx.note || (isIncoming ? "Paiement reçu" : "Paiement envoyé")}
+                          : tx.motif || (isIncoming ? "Paiement reçu" : "Paiement envoyé")}
                       </p>
                       <p className="text-xs text-[var(--text-muted)]">
-                        {formatTxDate(tx.created_at)}
+                        {tx.contrepartie ? `${tx.contrepartie} · ` : ""}
+                        {formatTxDate(tx.date)}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
                       <p
-                        className={`text-sm font-semibold ${
+                        className={`text-sm font-semibold font-mono ${
                           isIncoming ? "text-green-500" : "text-pink-500"
                         }`}
                       >
                         {isIncoming ? "+" : "-"}
-                        {amount.toFixed(3)} Ѵ
+                        {tx.montant.toFixed(2)} Ѵ
                       </p>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import { ROLE_METADATA, ROLE_PERMISSIONS, ROLES_ORDERED } from "@/lib/permissions";
 import type { UserRole } from "@/types/auth";
 
@@ -19,6 +20,7 @@ const ROLE_EMOJIS: Record<UserRole, string> = {
 
 export function RoleSimulator() {
   const { user, simulatedRole, setSimulatedRole } = useAuth();
+  const { toast } = useToast();
 
   // Only visible for real dieu users
   if (!user || user.role !== "dieu") return null;
@@ -32,6 +34,8 @@ export function RoleSimulator() {
         onChange={(e) => {
           const val = e.target.value as UserRole;
           setSimulatedRole(val === "dieu" ? null : val);
+          const label = ROLE_METADATA[val].label;
+          toast.info(`Simulation : ${label}`);
         }}
         className="h-9 rounded-lg border px-2.5 pr-7 text-xs font-medium transition-colors focus:border-violet-500 focus:outline-none"
         style={{

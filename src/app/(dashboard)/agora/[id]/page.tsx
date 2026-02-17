@@ -26,6 +26,7 @@ import { EventTimeline } from "@/components/ui/event-timeline";
 import { VoteBar } from "@/components/ui/progress";
 import Link from "next/link";
 import { getProposalById } from "@/lib/mockProposals";
+import { useToast } from "@/components/ui/Toast";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Vote, label: "Propositions", href: "/agora" },
@@ -64,6 +65,7 @@ const timelineEvents = [
 export default function ProposalDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const { toast } = useToast();
 
   const proposal = useMemo(() => getProposalById(id), [id]);
 
@@ -320,7 +322,7 @@ export default function ProposalDetailPage() {
 
                   <PermissionGate permission="vote_proposal">
                     <VoteButtons
-                      onVote={(vote) => console.log(`Vote: ${vote}`)}
+                      onVote={(vote) => toast.success(`Vote "${vote}" enregistre`)}
                     />
                   </PermissionGate>
 

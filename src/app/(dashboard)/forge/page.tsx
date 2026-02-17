@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   GitBranch,
   GitPullRequest,
@@ -8,18 +9,22 @@ import {
   Users,
   Star,
   GitMerge,
-  Clock
+  Search,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/ui/stat-card";
 import { ListItem } from "@/components/ui/list-item";
-import { Tabs } from "@/components/ui/tabs";
 import Link from "next/link";
+import {
+  FORGE_PROJECTS,
+  FORGE_MERGE_REQUESTS,
+  FORGE_USERS,
+  LANGUAGE_COLORS,
+} from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
@@ -28,99 +33,28 @@ const sidebarItems: SidebarItem[] = [
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
-const projects = [
-  {
-    id: "constitution-v3",
-    name: "Constitution v3.0",
-    description: "Révision majeure de la constitution avec nouveaux articles sur l'IA",
-    language: "Markdown",
-    stars: 247,
-    forks: 45,
-    branches: 12,
-    openMRs: 8,
-    lastUpdate: "il y a 2h",
-    contributors: 34,
-    status: "active",
-  },
-  {
-    id: "economic-simulator",
-    name: "Simulateur Économique",
-    description: "Outil de simulation de l'impact économique des propositions",
-    language: "Python",
-    stars: 189,
-    forks: 28,
-    branches: 7,
-    openMRs: 4,
-    lastUpdate: "il y a 5h",
-    contributors: 19,
-    status: "active",
-  },
-  {
-    id: "voting-system",
-    name: "Système de Vote v2",
-    description: "Amélioration du système de vote avec délégation progressive",
-    language: "TypeScript",
-    stars: 321,
-    forks: 67,
-    branches: 15,
-    openMRs: 12,
-    lastUpdate: "il y a 1j",
-    contributors: 42,
-    status: "active",
-  },
-  {
-    id: "eco-tracker",
-    name: "Eco Tracker",
-    description: "Application de suivi des actions écologiques",
-    language: "React",
-    stars: 156,
-    forks: 31,
-    branches: 9,
-    openMRs: 6,
-    lastUpdate: "il y a 3j",
-    contributors: 23,
-    status: "active",
-  },
-];
-
-const recentMergeRequests = [
-  {
-    id: "mr-1",
-    title: "Ajout article 47 sur l'IA éthique",
-    project: "Constitution v3.0",
-    author: "Marie Dupont",
-    status: "open",
-    votes: { approve: 12, reject: 2 },
-    created: "il y a 3h",
-  },
-  {
-    id: "mr-2",
-    title: "Fix: Calcul des bonus écologiques",
-    project: "Eco Tracker",
-    author: "Jean Martin",
-    status: "open",
-    votes: { approve: 8, reject: 0 },
-    created: "il y a 1j",
-  },
-  {
-    id: "mr-3",
-    title: "Feature: Délégation de vote",
-    project: "Système de Vote v2",
-    author: "Sophie Chen",
-    status: "merged",
-    votes: { approve: 15, reject: 1 },
-    created: "il y a 2j",
-  },
-];
-
-const languageColors: Record<string, string> = {
-  Markdown: "text-cyan-500",
-  Python: "text-blue-500",
-  TypeScript: "text-violet-500",
-  React: "text-cyan-500",
+const statusBadge: Record<string, { variant: "green" | "orange" | "violet"; label: string }> = {
+  active: { variant: "green", label: "Actif" },
+  draft: { variant: "orange", label: "Brouillon" },
+  archived: { variant: "violet", label: "Archivé" },
 };
 
 export default function ForgePage() {
+  const [search, setSearch] = useState("");
+
+  const filteredProjects = useMemo(() => {
+    if (!search.trim()) return FORGE_PROJECTS;
+    const q = search.toLowerCase();
+    return FORGE_PROJECTS.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.language.toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const recentMRs = FORGE_MERGE_REQUESTS.slice(0, 3);
+
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
@@ -146,7 +80,7 @@ export default function ForgePage() {
         <StatCard
           variant="violet"
           label="Projets actifs"
-          value="24"
+          value={String(FORGE_PROJECTS.length)}
           trend={{ value: "+3", direction: "up" }}
         />
         <StatCard
@@ -158,12 +92,12 @@ export default function ForgePage() {
         <StatCard
           variant="green"
           label="MR ouverts"
-          value="47"
+          value={String(FORGE_MERGE_REQUESTS.filter((mr) => mr.status === "open" || mr.status === "voting").length)}
         />
         <StatCard
           variant="orange"
           label="Commits (30j)"
-          value="1,247"
+          value="1 247"
           trend={{ value: "+15%", direction: "up" }}
         />
       </div>
@@ -174,60 +108,83 @@ export default function ForgePage() {
           <Card>
             <CardHeader>
               <CardTitle>Projets</CardTitle>
-              <div className="flex gap-2">
-                <Input placeholder="Rechercher..." className="w-64" />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rechercher..."
+                  className="h-9 w-full rounded-lg border bg-[var(--bg-elevated)] pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 sm:w-64"
+                  style={{ borderColor: "var(--border)" }}
+                />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-0">
-                {projects.map((project) => (
-                  <Link key={project.id} href={`/forge/project/${project.id}`}>
-                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer hover:bg-[var(--bg-elevated)] mb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Code className="h-4 w-4 text-violet-500" />
-                            <h3 className="font-semibold text-[var(--text-primary)]">
-                              {project.name}
-                            </h3>
-                            <Badge variant="green" className="text-xs">Actif</Badge>
+              <div className="space-y-4">
+                {filteredProjects.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">
+                    Aucun projet trouvé pour &ldquo;{search}&rdquo;
+                  </div>
+                ) : (
+                  filteredProjects.map((project) => {
+                    const badge = statusBadge[project.status];
+                    return (
+                      <Link key={project.id} href={`/forge/project/${project.id}`}>
+                        <div className="group rounded-lg border border-[var(--border)] p-4 transition-all hover:border-violet-500/50 hover:bg-[var(--bg-elevated)] hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Code className="h-4 w-4 text-violet-500" />
+                                <h3 className="font-semibold text-[var(--text-primary)]">
+                                  {project.name}
+                                </h3>
+                                <Badge variant={badge.variant} className="text-xs">
+                                  {badge.label}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-[var(--text-secondary)] mb-3">
+                                {project.description}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-[var(--text-secondary)] mb-3">
-                            {project.description}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-                          <span className={`flex items-center gap-1 ${languageColors[project.language]}`}>
-                            <div className="h-2 w-2 rounded-full bg-current" />
-                            {project.language}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3" />
-                            {project.stars}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <GitBranch className="h-3 w-3" />
-                            {project.branches} branches
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <GitPullRequest className="h-3 w-3" />
-                            {project.openMRs} MR
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {project.contributors}
-                          </span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
+                              <span
+                                className={`flex items-center gap-1 ${
+                                  LANGUAGE_COLORS[project.language] || "text-[var(--text-muted)]"
+                                }`}
+                              >
+                                <div className="h-2 w-2 rounded-full bg-current" />
+                                {project.language}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3" />
+                                {project.stars}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <GitBranch className="h-3 w-3" />
+                                {project.branches}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <GitPullRequest className="h-3 w-3" />
+                                {project.openMRs} MR
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {project.contributors}
+                              </span>
+                            </div>
+                            <div className="text-xs text-[var(--text-muted)]">
+                              {project.lastUpdate}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {project.lastUpdate}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>
@@ -246,12 +203,20 @@ export default function ForgePage() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-0">
-                {recentMergeRequests.map((mr) => (
-                  <Link key={mr.id} href={`/forge/mr/${mr.id}`}>
-                    <div className="group p-3 rounded-lg border border-[var(--border)] hover:border-violet-500 transition-all cursor-pointer mb-4">
+              <div className="space-y-4">
+                {recentMRs.map((mr) => (
+                  <Link key={mr.id} href={`/forge/project/${mr.projectId}/mr/${mr.id}`}>
+                    <div className="group rounded-lg border border-[var(--border)] p-3 transition-all hover:border-violet-500/50 cursor-pointer">
                       <div className="flex items-start gap-2 mb-2">
-                        <GitMerge className={`h-4 w-4 flex-shrink-0 mt-0.5 ${mr.status === 'merged' ? 'text-green-500' : 'text-violet-500'}`} />
+                        <GitMerge
+                          className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                            mr.status === "merged"
+                              ? "text-green-500"
+                              : mr.status === "approved"
+                              ? "text-cyan-500"
+                              : "text-violet-500"
+                          }`}
+                        />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm text-[var(--text-primary)] mb-1 truncate">
                             {mr.title}
@@ -263,14 +228,25 @@ export default function ForgePage() {
                             <span className="text-[var(--text-muted)]">
                               par {mr.author}
                             </span>
-                            {mr.status === 'open' && (
+                            {(mr.status === "open" || mr.status === "voting") && (
                               <div className="flex items-center gap-2">
-                                <span className="text-green-500">✓ {mr.votes.approve}</span>
-                                <span className="text-pink-500">✗ {mr.votes.reject}</span>
+                                <span className="text-green-500">
+                                  ✓ {mr.votes.approve}
+                                </span>
+                                <span className="text-pink-500">
+                                  ✗ {mr.votes.reject}
+                                </span>
                               </div>
                             )}
-                            {mr.status === 'merged' && (
-                              <Badge variant="green" className="text-xs">Merged</Badge>
+                            {mr.status === "merged" && (
+                              <Badge variant="green" className="text-xs">
+                                Merged
+                              </Badge>
+                            )}
+                            {mr.status === "approved" && (
+                              <Badge variant="cyan" className="text-xs">
+                                Approuvé
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -289,42 +265,26 @@ export default function ForgePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold">
-                      MD
+                {FORGE_USERS.slice(0, 3).map((user) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
+                        {user.initials}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-[var(--text-primary)]">
+                          {user.name}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          {user.commits} commits
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--text-primary)]">Marie Dupont</div>
-                      <div className="text-xs text-[var(--text-muted)]">247 commits</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-semibold text-violet-500">12 projets</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-gradient-cyan flex items-center justify-center text-white text-xs font-semibold">
-                      JM
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--text-primary)]">Jean Martin</div>
-                      <div className="text-xs text-[var(--text-muted)]">189 commits</div>
+                    <div className="text-sm font-semibold text-violet-500">
+                      {user.projects} projets
                     </div>
                   </div>
-                  <div className="text-sm font-semibold text-cyan-500">8 projets</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-gradient-green flex items-center justify-center text-white text-xs font-semibold">
-                      SC
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--text-primary)]">Sophie Chen</div>
-                      <div className="text-xs text-[var(--text-muted)]">156 commits</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-semibold text-green-500">6 projets</div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>

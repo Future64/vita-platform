@@ -7,10 +7,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 
 export default function ConnexionPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { toast } = useToast();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,6 @@ export default function ConnexionPage() {
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,8 +30,10 @@ export default function ConnexionPage() {
     const success = login(identifier, password);
 
     if (success) {
+      toast.success("Connecte avec succes");
       router.push("/panorama");
     } else {
+      toast.error("Identifiants incorrects");
       setError("Identifiants incorrects");
       setShake(true);
       setTimeout(() => setShake(false), 500);
@@ -39,8 +42,7 @@ export default function ConnexionPage() {
   }
 
   function handleForgotPassword() {
-    setToast("Fonctionnalite a venir");
-    setTimeout(() => setToast(null), 3000);
+    toast.info("Fonctionnalite a venir");
   }
 
   const inputStyle = {
@@ -185,20 +187,6 @@ export default function ConnexionPage() {
           S&apos;inscrire
         </Link>
       </p>
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2.5 text-sm shadow-lg"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--bg-card)",
-            color: "var(--text-primary)",
-          }}
-        >
-          {toast}
-        </div>
-      )}
 
       {/* Shake animation */}
       <style jsx>{`

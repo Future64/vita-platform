@@ -17,25 +17,25 @@ import {
   Shield,
   MapPin,
   Package,
-  Wrench,
+  SprayCan,
   BookOpen,
-  Truck,
+  Wrench,
   Stethoscope,
+  Wheat,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-// --- Sidebar (shared with other Bourse pages) ---
+import { VALUATION_PRESETS, computeValuation, type ValuationPreset } from "@/lib/mockBourse";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Wallet, label: "Solde", href: "/bourse" },
-  { icon: Send, label: "Payer", href: "/bourse/payer" },
-  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir" },
+  { icon: Send, label: "Payer", href: "/bourse/payer", permission: "send_vita" },
+  { icon: QrCode, label: "Recevoir", href: "/bourse/recevoir", permission: "receive_vita" },
   { icon: Calculator, label: "Calculateur", href: "/bourse/calculateur" },
-  { icon: Clock, label: "Historique", href: "/bourse/historique" },
+  { icon: Clock, label: "Historique", href: "/bourse/historique", permission: "view_transactions" },
   { icon: PiggyBank, label: "Épargne", href: "/bourse/epargne" },
   { icon: HandCoins, label: "Crédit", href: "/bourse/credit" },
 ];
@@ -115,66 +115,15 @@ const coefficients: CoefficientDef[] = [
   },
 ];
 
-// --- Presets ---
+// --- Preset icons ---
 
-interface Preset {
-  name: string;
-  icon: typeof Wrench;
-  hours: number;
-  minutes: number;
-  F: number;
-  P: number;
-  R: number;
-  L: number;
-  M: number;
-}
-
-const presets: Preset[] = [
-  {
-    name: "Plombier 2h urgence",
-    icon: Wrench,
-    hours: 2,
-    minutes: 0,
-    F: 0.3,
-    P: 0.1,
-    R: 0.2,
-    L: 0.2,
-    M: 0.09,
-  },
-  {
-    name: "Cours particulier 1h",
-    icon: BookOpen,
-    hours: 1,
-    minutes: 0,
-    F: 0.4,
-    P: 0,
-    R: 0.1,
-    L: 0.1,
-    M: 0,
-  },
-  {
-    name: "Aide au déménagement 4h",
-    icon: Truck,
-    hours: 4,
-    minutes: 0,
-    F: 0,
-    P: 0.3,
-    R: 0.1,
-    L: 0,
-    M: 0,
-  },
-  {
-    name: "Consultation médicale 30min",
-    icon: Stethoscope,
-    hours: 0,
-    minutes: 30,
-    F: 0.5,
-    P: 0,
-    R: 0.4,
-    L: 0.2,
-    M: 0,
-  },
-];
+const presetIcons: Record<string, typeof Wrench> = {
+  "Ménage 3h": SprayCan,
+  "Cours particulier maths 1h": BookOpen,
+  "Plomberie urgence 2h": Wrench,
+  "Chirurgie 4h": Stethoscope,
+  "Récolte agricole 8h": Wheat,
+};
 
 // --- Slider component ---
 
@@ -279,7 +228,6 @@ function CoefficientSlider({
           value={value * 10}
           onChange={(e) => {
             const raw = parseInt(e.target.value) / 10;
-            // Snap to nearest stop
             const snapped = def.stops.reduce((closest, stop) =>
               Math.abs(stop.value - raw) < Math.abs(closest.value - raw) ? stop : closest
             );
@@ -333,8 +281,8 @@ export default function CalculateurPage() {
     return `~${V.toFixed(1)} jours de vie`;
   }, [V]);
 
-  function applyPreset(preset: Preset) {
-    setHours(preset.hours);
+  function applyPreset(preset: ValuationPreset) {
+    setHours(preset.heures);
     setMinutes(preset.minutes);
     setF(preset.F);
     setP(preset.P);
@@ -343,9 +291,9 @@ export default function CalculateurPage() {
     setM(preset.M);
   }
 
-  function computePresetValue(preset: Preset): number {
-    const pT = (preset.hours + preset.minutes / 60) / 16;
-    return pT * (1 + preset.F + preset.P + preset.R + preset.L) + preset.M;
+  function computePresetValue(preset: ValuationPreset): number {
+    const result = computeValuation(preset.heures, preset.minutes, preset.F, preset.P, preset.R, preset.L, preset.M);
+    return result.total;
   }
 
   return (
@@ -582,12 +530,12 @@ export default function CalculateurPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-[var(--border)]">
-                {presets.map((preset) => {
-                  const Icon = preset.icon;
+                {VALUATION_PRESETS.map((preset) => {
+                  const Icon = presetIcons[preset.nom] || Calculator;
                   const pV = computePresetValue(preset);
                   return (
                     <button
-                      key={preset.name}
+                      key={preset.nom}
                       type="button"
                       onClick={() => applyPreset(preset)}
                       className="flex w-full items-center gap-3 px-4 py-3.5 md:px-5 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
@@ -597,13 +545,10 @@ export default function CalculateurPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                          {preset.name}
+                          {preset.nom}
                         </p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          {preset.hours > 0 ? `${preset.hours}h` : ""}
-                          {preset.minutes > 0 ? `${preset.minutes}min` : ""}
-                          {" · "}F:{preset.F} P:{preset.P} R:{preset.R} L:{preset.L}
-                          {preset.M > 0 ? ` · M:${preset.M}` : ""}
+                          {preset.description}
                         </p>
                       </div>
                       <span className="shrink-0 font-mono text-sm font-bold text-violet-500">
@@ -616,7 +561,7 @@ export default function CalculateurPage() {
             </CardContent>
           </Card>
 
-          {/* Formula reminder */}
+          {/* Formula reminder + link to Codex */}
           <Card>
             <CardContent>
               <div className="rounded-lg bg-[var(--bg-elevated)] p-4">
@@ -630,6 +575,13 @@ export default function CalculateurPage() {
                   Multiplicateur total : 1.0 &agrave; 2.6 (écart max entre services).
                   Les plages de coefficients sont définies par vote collectif en Agora.
                 </p>
+                <Link
+                  href="/codex/technique/valorisation"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-violet-500 hover:text-violet-400 transition-colors"
+                >
+                  Voir dans le Codex
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
               </div>
             </CardContent>
           </Card>

@@ -31,6 +31,7 @@ import {
   CATEGORY_METADATA,
 } from "@/lib/mockParameters";
 import { getProposalsForParameter } from "@/lib/mockProposals";
+import { useToast } from "@/components/ui/Toast";
 import type { SystemParameter, ParameterCategory } from "@/types/parameters";
 
 const sidebarItems: SidebarItem[] = [
@@ -47,6 +48,7 @@ const CATEGORY_ICONS: Record<ParameterCategory, React.ReactNode> = {
 };
 
 export default function AdminPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selectedParam, setSelectedParam] = useState<SystemParameter | null>(null);
   const [proposedValue, setProposedValue] = useState("");
@@ -96,6 +98,7 @@ export default function AdminPage() {
   const handleSubmit = () => {
     if (!selectedParam || !proposedValue || justification.length < 100) return;
     setSubmitted(true);
+    toast.success("Proposition soumise a l'Agora");
   };
 
   const isValueValid = useMemo(() => {
@@ -154,7 +157,7 @@ export default function AdminPage() {
         </div>
 
         {/* Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             variant="violet"
             label="Gouvernance"

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { ROLE_METADATA } from "@/lib/permissions";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import type { Permission } from "@/types/auth";
+import { useTranslation } from "@/lib/i18n";
 
 export interface SidebarItem {
   icon: LucideIcon;
@@ -94,14 +96,19 @@ function SidebarLink({
 export function Sidebar({ items, title = "Menu" }: SidebarProps) {
   const pathname = usePathname();
   const { user, activeRole } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { t } = useTranslation();
   const roleMeta = ROLE_METADATA[activeRole];
 
   const isSettingsActive = pathname === "/parametres";
+  const isNotificationsActive = pathname === "/notifications";
 
   return (
     <aside
       className="hidden w-64 shrink-0 overflow-y-auto border-r lg:block"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-card)" }}
+      role="navigation"
+      aria-label={title}
     >
       <div className="flex h-full flex-col">
         {/* User info + role badge */}
@@ -153,11 +160,21 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
           </div>
         </div>
 
-        {/* Settings at bottom */}
+        {/* Notifications + Settings at bottom */}
         {activeRole !== "suspendu" && (
-          <div className="border-t p-3" style={{ borderColor: "var(--border)" }}>
+          <div className="border-t p-3 space-y-1" style={{ borderColor: "var(--border)" }}>
             <SidebarLink
-              item={{ icon: Settings, label: "Paramètres", href: "/parametres" }}
+              item={{
+                icon: Bell,
+                label: t("nav.notifications"),
+                href: "/notifications",
+                badge: unreadCount > 0 ? String(unreadCount) : undefined,
+                badgeVariant: "red" as const,
+              }}
+              isActive={isNotificationsActive}
+            />
+            <SidebarLink
+              item={{ icon: Settings, label: t("nav.settings"), href: "/parametres" }}
               isActive={isSettingsActive}
             />
           </div>
