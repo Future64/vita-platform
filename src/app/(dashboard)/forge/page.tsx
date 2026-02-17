@@ -13,6 +13,7 @@ import {
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/ui/stat-card";
@@ -132,10 +133,12 @@ export default function ForgePage() {
             Projets ouverts et contributions citoyennes
           </p>
         </div>
-        <Button variant="primary">
-          <GitBranch className="h-4 w-4" />
-          Nouveau projet
-        </Button>
+        <PermissionGate permission="create_branch">
+          <Button variant="primary">
+            <GitBranch className="h-4 w-4" />
+            Nouveau projet
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Stats Grid */}

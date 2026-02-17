@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   ArrowLeft,
   GitBranch,
@@ -350,10 +351,12 @@ export default function ProjectDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Branches ({branches.length})</CardTitle>
-              <Button variant="primary" size="sm">
-                <GitBranch className="h-4 w-4" />
-                Nouvelle branche
-              </Button>
+              <PermissionGate permission="create_branch">
+                <Button variant="primary" size="sm">
+                  <GitBranch className="h-4 w-4" />
+                  Nouvelle branche
+                </Button>
+              </PermissionGate>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">

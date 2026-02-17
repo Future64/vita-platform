@@ -18,6 +18,7 @@ import { SearchInput } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VoteBar } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Flame, label: "En cours", href: "/agora", badge: "12", badgeVariant: "pink" },
@@ -68,10 +69,12 @@ export default function AgoraPage() {
           </h1>
           <p className="text-sm text-[var(--text-muted)]">12 propositions actives</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4" />
-          Nouvelle
-        </Button>
+        <PermissionGate permission="create_proposal">
+          <Button>
+            <Plus className="h-4 w-4" />
+            Nouvelle
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Filters */}

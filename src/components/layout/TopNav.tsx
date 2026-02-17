@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Flame,
   GitBranch,
@@ -14,9 +14,14 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_METADATA } from "@/lib/permissions";
+import { RoleSimulator } from "./RoleSimulator";
 
 const modules = [
   { id: "agora", label: "Agora", icon: Flame, path: "/agora" },
@@ -29,16 +34,39 @@ const modules = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout, activeRole } = useAuth();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-  };
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   const currentModule = modules.find((m) => pathname.startsWith(m.path))?.id;
+
+  const initials = user
+    ? `${user.prenom.charAt(0)}${user.nom.charAt(0)}`.toUpperCase()
+    : "??";
+
+  const roleMeta = ROLE_METADATA[activeRole];
+
+  // Close avatar menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target as Node)) {
+        setAvatarMenuOpen(false);
+      }
+    }
+    if (avatarMenuOpen) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [avatarMenuOpen]);
+
+  function handleLogout() {
+    setAvatarMenuOpen(false);
+    logout();
+    router.push("/auth/connexion");
+  }
 
   return (
     <>
@@ -88,8 +116,11 @@ export function TopNav() {
             </div>
           </div>
 
-          {/* Right: Theme + Notifications + Avatar */}
+          {/* Right: RoleSimulator + Theme + Notifications + Avatar */}
           <div className="flex items-center gap-3 md:gap-4">
+            {/* Role Simulator (dieu only) */}
+            <RoleSimulator />
+
             {/* Theme Toggle */}
             <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-1">
               <button
@@ -130,9 +161,77 @@ export function TopNav() {
               </span>
             </button>
 
-            {/* Avatar */}
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">
-              JD
+            {/* Avatar + Dropdown */}
+            <div className="relative" ref={avatarMenuRef}>
+              <button
+                onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white transition-transform hover:scale-105"
+              >
+                {initials}
+              </button>
+
+              {avatarMenuOpen && (
+                <div
+                  className="absolute right-0 top-12 z-50 w-64 rounded-xl border shadow-lg"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--bg-card)",
+                  }}
+                >
+                  {/* User info */}
+                  <div className="border-b p-4" style={{ borderColor: "var(--border)" }}>
+                    <div className="text-sm font-semibold text-[var(--text-primary)]">
+                      {user?.prenom} {user?.nom}
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)]">
+                      @{user?.username}
+                    </div>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2 w-2 rounded-full"
+                        style={{ backgroundColor: roleMeta.color }}
+                      />
+                      <span className="text-xs font-medium" style={{ color: roleMeta.color }}>
+                        {roleMeta.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Links */}
+                  <div className="p-1.5">
+                    <Link
+                      href="/civis"
+                      onClick={() => setAvatarMenuOpen(false)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+                    >
+                      <User className="h-4 w-4" />
+                      Mon profil
+                    </Link>
+                    <Link
+                      href="/parametres"
+                      onClick={() => setAvatarMenuOpen(false)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Parametres
+                    </Link>
+                  </div>
+
+                  {/* Separator */}
+                  <div className="mx-3 h-px" style={{ backgroundColor: "var(--border)" }} />
+
+                  {/* Logout */}
+                  <div className="p-1.5">
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Se deconnecter
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

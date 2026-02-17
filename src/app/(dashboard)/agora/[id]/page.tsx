@@ -11,6 +11,7 @@ import {
   Calendar
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { formatNumber } from "@/lib/format";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -232,9 +233,11 @@ export default function ProposalDetailPage() {
                   </div>
                 </div>
 
-                <VoteButtons
-                  onVote={(vote) => console.log(`Vote: ${vote}`)}
-                />
+                <PermissionGate permission="vote_proposal">
+                  <VoteButtons
+                    onVote={(vote) => console.log(`Vote: ${vote}`)}
+                  />
+                </PermissionGate>
 
                 <div className="pt-3 border-t border-[var(--border)] text-center">
                   <div className="text-xs text-[var(--text-muted)] mb-1">Participation</div>

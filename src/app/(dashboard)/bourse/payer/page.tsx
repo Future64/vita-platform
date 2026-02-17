@@ -22,6 +22,7 @@ import {
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { cn } from "@/lib/utils";
 import { useVitaAccount } from "@/hooks/useVitaAccount";
 import { transfer, ApiError } from "@/lib/vita-api";
@@ -390,14 +391,16 @@ function PayerPageContent() {
             </CardContent>
           </Card>
 
-          <Button
-            className="w-full h-12 text-base"
-            disabled={!isValid}
-            onClick={() => setStep("confirm")}
-          >
-            Continuer
-            <ArrowRight className="h-5 w-5" />
-          </Button>
+          <PermissionGate permission="send_vita">
+            <Button
+              className="w-full h-12 text-base"
+              disabled={!isValid}
+              onClick={() => setStep("confirm")}
+            >
+              Continuer
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </PermissionGate>
         </div>
       </div>
     </DashboardLayout>
