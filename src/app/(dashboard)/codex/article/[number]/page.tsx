@@ -10,6 +10,9 @@ import {
   Lock,
   Unlock,
   Clock,
+  Settings,
+  Code,
+  History,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -25,6 +28,9 @@ import {
 
 const sidebarItems: SidebarItem[] = [
   { icon: BookOpen, label: "Constitution", href: "/codex" },
+  { icon: Settings, label: "Parametres", href: "/codex/parametres-systeme" },
+  { icon: Code, label: "Documentation", href: "/codex/technique/emission-quotidienne" },
+  { icon: History, label: "Registre", href: "/codex/registre" },
   { icon: PenTool, label: "Proposer", href: "/codex/amendement/nouveau" },
 ];
 
