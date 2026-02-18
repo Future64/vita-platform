@@ -131,6 +131,24 @@ body {
   }
 }
 
+@keyframes marqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  overflow: hidden;
+}
+
+.marquee-content {
+  animation: marqueeScroll 40s linear infinite;
+  width: max-content;
+}
+
 /* ========================================
    Font Mono
    ======================================== */

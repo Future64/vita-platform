@@ -48,6 +48,12 @@ import {
   generateRandomActivity,
   type ActivityItem,
 } from "@/lib/mockPanorama";
+import dynamic from "next/dynamic";
+
+const WorldActivityMap = dynamic(
+  () => import("@/components/modules/panorama/WorldActivityMap"),
+  { ssr: false }
+);
 
 const sidebarItems: SidebarItem[] = [
   { icon: Globe, label: "Dashboard", href: "/panorama" },
@@ -356,6 +362,23 @@ export default function PanoramaPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ============================================
+          SECTION 2b — Activité mondiale (carte)
+          ============================================ */}
+      <Card className="mb-6 overflow-hidden">
+        <CardHeader>
+          <CardTitle>Activite mondiale</CardTitle>
+          <span className="text-xs text-[var(--text-muted)]">
+            {d.topPays.length > 0 ? `${47} pays actifs` : ""} — {formatNumber(d.utilisateursVerifies)} citoyens verifies
+          </span>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="h-[350px] sm:h-[400px] md:h-[450px]">
+            <WorldActivityMap />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ============================================
           SECTION 3 + 4 + 5 — Three columns
