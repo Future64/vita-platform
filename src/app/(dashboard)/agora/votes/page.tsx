@@ -8,7 +8,6 @@ import {
   FileText,
   Vote,
   Archive,
-  Shield,
   Clock,
   CheckCircle2,
   Settings,
@@ -36,7 +35,6 @@ const sidebarItems: SidebarItem[] = [
   { icon: FileText, label: "Propositions", href: "/agora/proposals" },
   { icon: Vote, label: "Votes actifs", href: "/agora/votes", badge: "3", badgeVariant: "green" },
   { icon: Archive, label: "Archives", href: "/agora/archives" },
-  { icon: Shield, label: "Administration", href: "/admin", permission: "access_admin_panel" },
 ];
 
 type SortOption = "deadline" | "participation" | "type";

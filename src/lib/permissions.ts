@@ -65,7 +65,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'create_version_travail', 'create_revision', 'create_demande_integration', 'approve_demande_integration',
     'send_vita', 'receive_vita', 'view_balance', 'view_transactions',
     'edit_own_profile', 'view_all_profiles',
-    'view_audit_logs',
+    'access_admin_panel', 'suspend_user', 'view_audit_logs',
   ],
 
   auditeur: [
@@ -74,7 +74,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'comment_proposal',
     'view_balance', 'view_transactions', 'view_others_transactions',
     'edit_own_profile', 'view_all_profiles',
-    'view_audit_logs', 'view_system_stats',
+    'access_admin_panel', 'view_audit_logs', 'view_system_stats',
     'receive_vita',
   ],
 

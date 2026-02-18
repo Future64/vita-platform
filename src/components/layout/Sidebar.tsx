@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -102,6 +102,7 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
 
   const isSettingsActive = pathname === "/parametres";
   const isNotificationsActive = pathname === "/notifications";
+  const isAdminActive = pathname.startsWith("/administration");
 
   return (
     <aside
@@ -177,6 +178,12 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
               item={{ icon: Settings, label: t("nav.settings"), href: "/parametres" }}
               isActive={isSettingsActive}
             />
+            <PermissionGate permission="access_admin_panel" hide>
+              <SidebarLink
+                item={{ icon: Shield, label: "Administration", href: "/administration" }}
+                isActive={isAdminActive}
+              />
+            </PermissionGate>
           </div>
         )}
       </div>
