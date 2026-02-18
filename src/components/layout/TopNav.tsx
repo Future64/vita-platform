@@ -78,7 +78,7 @@ export function TopNav() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 h-16 border-b border-[var(--border)] bg-[var(--bg-card)] dark:bg-[rgba(17,24,39,0.95)] dark:backdrop-blur-xl" role="navigation" aria-label="Navigation principale">
+      <nav className="sticky top-0 z-50 h-16 border-b border-[var(--border)] backdrop-blur-xl" style={{ backgroundColor: "color-mix(in srgb, var(--bg-card) 92%, transparent)" }} role="navigation" aria-label="Navigation principale">
         <div className="flex h-full items-center justify-between px-4 md:px-6">
           {/* Left: Menu + Logo + Nav */}
           <div className="flex items-center gap-4">
