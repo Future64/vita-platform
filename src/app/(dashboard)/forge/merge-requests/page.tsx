@@ -25,54 +25,54 @@ import { StatCard } from "@/components/ui/stat-card";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { formatNumber } from "@/lib/format";
 import {
-  getAllMergeRequests,
+  getAllDemandesIntegration,
   FORGE_PROJECTS,
-  type ForgeMergeRequest,
+  type ForgeDemandeIntegration,
 } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
-type StatusFilter = "all" | "open" | "voting" | "approved" | "merged" | "rejected" | "closed";
+type StatusFilter = "all" | "open" | "voting" | "approved" | "integrated" | "rejected" | "closed";
 type SortOption = "recent" | "votes" | "comments";
 
-const STATUS_CONFIG: Record<ForgeMergeRequest["status"], { icon: typeof GitPullRequest; color: string; label: string; badgeVariant: "green" | "orange" | "violet" | "cyan" | "red" | "yellow" }> = {
+const STATUS_CONFIG: Record<ForgeDemandeIntegration["status"], { icon: typeof GitPullRequest; color: string; label: string; badgeVariant: "green" | "orange" | "violet" | "cyan" | "red" | "yellow" }> = {
   open: { icon: GitPullRequest, color: "text-green-500", label: "Ouvert", badgeVariant: "green" },
   voting: { icon: GitPullRequest, color: "text-violet-500", label: "En vote", badgeVariant: "violet" },
   approved: { icon: CheckCircle2, color: "text-cyan-500", label: "Approuvé", badgeVariant: "cyan" },
-  merged: { icon: GitMerge, color: "text-green-500", label: "Merged", badgeVariant: "green" },
+  integrated: { icon: GitMerge, color: "text-green-500", label: "Intégré", badgeVariant: "green" },
   rejected: { icon: X, color: "text-red-500", label: "Rejeté", badgeVariant: "red" },
   closed: { icon: X, color: "text-[var(--text-muted)]", label: "Fermé", badgeVariant: "yellow" },
 };
 
-export default function MergeRequestsPage() {
+export default function DemandesIntegrationPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("recent");
 
-  const allMRs = useMemo(() => getAllMergeRequests(), []);
+  const allDIs = useMemo(() => getAllDemandesIntegration(), []);
 
-  const filteredMRs = useMemo(() => {
-    let result = [...allMRs];
+  const filteredDIs = useMemo(() => {
+    let result = [...allDIs];
 
     if (statusFilter !== "all") {
-      result = result.filter((mr) => mr.status === statusFilter);
+      result = result.filter((di) => di.status === statusFilter);
     }
     if (projectFilter !== "all") {
-      result = result.filter((mr) => mr.projectId === projectFilter);
+      result = result.filter((di) => di.projectId === projectFilter);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (mr) =>
-          mr.title.toLowerCase().includes(q) ||
-          mr.author.toLowerCase().includes(q) ||
-          mr.sourceBranch.toLowerCase().includes(q)
+        (di) =>
+          di.title.toLowerCase().includes(q) ||
+          di.author.toLowerCase().includes(q) ||
+          di.sourceVersion.toLowerCase().includes(q)
       );
     }
 
@@ -89,13 +89,13 @@ export default function MergeRequestsPage() {
     }
 
     return result;
-  }, [allMRs, search, statusFilter, projectFilter, sort]);
+  }, [allDIs, search, statusFilter, projectFilter, sort]);
 
-  const openCount = allMRs.filter((mr) => mr.status === "open" || mr.status === "voting").length;
-  const mergedCount = allMRs.filter((mr) => mr.status === "merged").length;
-  const approvedCount = allMRs.filter((mr) => mr.status === "approved").length;
-  const avgVotes = allMRs.length > 0
-    ? Math.round(allMRs.reduce((acc, mr) => acc + mr.totalVotes, 0) / allMRs.length)
+  const openCount = allDIs.filter((di) => di.status === "open" || di.status === "voting").length;
+  const integratedCount = allDIs.filter((di) => di.status === "integrated").length;
+  const approvedCount = allDIs.filter((di) => di.status === "approved").length;
+  const avgVotes = allDIs.length > 0
+    ? Math.round(allDIs.reduce((acc, di) => acc + di.totalVotes, 0) / allDIs.length)
     : 0;
 
   return (
@@ -104,16 +104,16 @@ export default function MergeRequestsPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            Merge Requests
+            Demandes d&apos;intégration
           </h1>
           <p className="text-sm text-[var(--text-muted)]">
-            {allMRs.length} merge requests — {openCount} ouvertes
+            {allDIs.length} demandes d&apos;intégration — {openCount} ouvertes
           </p>
         </div>
-        <PermissionGate permission="create_merge_request">
+        <PermissionGate permission="create_demande_integration">
           <Button variant="primary">
             <GitPullRequest className="h-4 w-4" />
-            Nouvelle MR
+            Nouvelle DI
           </Button>
         </PermissionGate>
       </div>
@@ -122,7 +122,7 @@ export default function MergeRequestsPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard variant="green" label="Ouvertes" value={String(openCount)} />
         <StatCard variant="cyan" label="Approuvées" value={String(approvedCount)} />
-        <StatCard variant="violet" label="Merged" value={String(mergedCount)} />
+        <StatCard variant="violet" label="Intégrées" value={String(integratedCount)} />
         <StatCard variant="orange" label="Votes moyen" value={String(avgVotes)} />
       </div>
 
@@ -143,7 +143,7 @@ export default function MergeRequestsPage() {
           <option value="open">Ouvertes</option>
           <option value="voting">En vote</option>
           <option value="approved">Approuvées</option>
-          <option value="merged">Merged</option>
+          <option value="integrated">Intégrées</option>
           <option value="rejected">Rejetées</option>
           <option value="closed">Fermées</option>
         </select>
@@ -168,15 +168,15 @@ export default function MergeRequestsPage() {
         </select>
       </div>
 
-      {/* MR list */}
+      {/* Liste des DI */}
       <div className="space-y-4">
-        {filteredMRs.map((mr) => {
-          const config = STATUS_CONFIG[mr.status];
+        {filteredDIs.map((di) => {
+          const config = STATUS_CONFIG[di.status];
           const StatusIcon = config.icon;
-          const approvalPct = mr.totalVotes > 0 ? Math.round((mr.votes.approve / mr.totalVotes) * 100) : 0;
+          const approvalPct = di.totalVotes > 0 ? Math.round((di.votes.approve / di.totalVotes) * 100) : 0;
 
           return (
-            <Link key={mr.id} href={`/forge/project/${mr.projectId}/mr/${mr.id}`}>
+            <Link key={di.id} href={`/forge/project/${di.projectId}/mr/${di.id}`}>
               <Card className="cursor-pointer p-5 transition-all hover:border-[var(--border-light)] mb-4">
                 <div className="flex items-start gap-3">
                   {/* Status icon */}
@@ -186,12 +186,12 @@ export default function MergeRequestsPage() {
                     {/* Title row */}
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h3 className="text-base font-semibold text-[var(--text-primary)]">
-                        {mr.title}
+                        {di.title}
                       </h3>
                       <Badge variant={config.badgeVariant} className="text-xs">
                         {config.label}
                       </Badge>
-                      {mr.hasConflicts && (
+                      {di.hasConflicts && (
                         <Badge className="text-xs bg-red-500/15 text-red-500">
                           <AlertTriangle className="h-3 w-3" />
                           Conflits
@@ -201,33 +201,33 @@ export default function MergeRequestsPage() {
 
                     {/* Meta */}
                     <p className="text-sm text-[var(--text-muted)] mb-2">
-                      #{mr.number} · {mr.project} · par {mr.author} · {mr.created}
+                      #{di.number} · {di.project} · par {di.author} · {di.created}
                     </p>
 
-                    {/* Branches */}
+                    {/* Versions */}
                     <div className="flex items-center gap-2 mb-3 text-xs">
                       <code className="rounded bg-[var(--bg-elevated)] px-2 py-0.5 font-mono text-violet-500">
-                        {mr.sourceBranch}
+                        {di.sourceVersion}
                       </code>
                       <span className="text-[var(--text-muted)]">&rarr;</span>
                       <code className="rounded bg-[var(--bg-elevated)] px-2 py-0.5 font-mono text-[var(--text-secondary)]">
-                        {mr.targetBranch}
+                        {di.targetVersion}
                       </code>
                     </div>
 
                     {/* Stats row */}
                     <div className="flex flex-wrap items-center gap-4 text-xs">
                       {/* Approval indicator */}
-                      {(mr.status === "open" || mr.status === "voting") && (
+                      {(di.status === "open" || di.status === "voting") && (
                         <div className="flex items-center gap-2">
                           <span className="text-green-500 font-medium">
-                            {mr.votes.approve} pour
+                            {di.votes.approve} pour
                           </span>
                           <span className="text-red-500 font-medium">
-                            {mr.votes.reject} contre
+                            {di.votes.reject} contre
                           </span>
                           <span className="text-[var(--text-muted)]">
-                            {mr.votes.abstain} abst.
+                            {di.votes.abstain} abst.
                           </span>
                           <span className="text-[var(--text-muted)]">
                             ({approvalPct}%)
@@ -238,28 +238,28 @@ export default function MergeRequestsPage() {
                       {/* Diff stats */}
                       <span className="flex items-center gap-1 text-green-500">
                         <Plus className="h-3 w-3" />
-                        {formatNumber(mr.additions)}
+                        {formatNumber(di.additions)}
                       </span>
                       <span className="flex items-center gap-1 text-red-500">
                         <Minus className="h-3 w-3" />
-                        {formatNumber(mr.deletions)}
+                        {formatNumber(di.deletions)}
                       </span>
                       <span className="text-[var(--text-muted)]">
-                        {mr.filesChanged} fichier{mr.filesChanged > 1 ? "s" : ""}
+                        {di.filesChanged} fichier{di.filesChanged > 1 ? "s" : ""}
                       </span>
 
                       {/* Comments */}
-                      {mr.comments.length > 0 && (
+                      {di.comments.length > 0 && (
                         <span className="flex items-center gap-1 text-[var(--text-muted)]">
                           <MessageCircle className="h-3 w-3" />
-                          {mr.comments.length}
+                          {di.comments.length}
                         </span>
                       )}
 
                       {/* Author avatar */}
                       <div className="ml-auto flex items-center gap-2">
                         <Avatar size="sm">
-                          <AvatarFallback>{mr.authorInitials}</AvatarFallback>
+                          <AvatarFallback>{di.authorInitials}</AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
@@ -270,9 +270,9 @@ export default function MergeRequestsPage() {
           );
         })}
 
-        {filteredMRs.length === 0 && (
+        {filteredDIs.length === 0 && (
           <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucune merge request ne correspond à votre recherche.
+            Aucune demande d&apos;intégration ne correspond à votre recherche.
           </div>
         )}
       </div>

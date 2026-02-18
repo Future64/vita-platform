@@ -17,16 +17,16 @@ import { SearchInput } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/format";
 import {
-  getAllCommits,
-  groupCommitsByDay,
+  getAllRevisions,
+  groupRevisionsByDay,
   ACTIVITY_HEATMAP,
-  type ForgeCommit,
+  type ForgeRevision,
 } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
@@ -43,24 +43,24 @@ function getHeatmapColor(count: number): string {
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-export default function CommitsPage() {
+export default function RevisionsPage() {
   const [search, setSearch] = useState("");
-  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [versionFilter, setVersionFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("recent");
 
-  const allCommits = useMemo(() => getAllCommits(), []);
+  const allRevisions = useMemo(() => getAllRevisions(), []);
 
-  // Extract unique branches
-  const branches = useMemo(() => {
-    const set = new Set(allCommits.map((c) => c.branch));
+  // Extract unique versions de travail
+  const versions = useMemo(() => {
+    const set = new Set(allRevisions.map((c) => c.versionTravail));
     return Array.from(set).sort();
-  }, [allCommits]);
+  }, [allRevisions]);
 
-  const filteredCommits = useMemo(() => {
-    let result = [...allCommits];
+  const filteredRevisions = useMemo(() => {
+    let result = [...allRevisions];
 
-    if (branchFilter !== "all") {
-      result = result.filter((c) => c.branch === branchFilter);
+    if (versionFilter !== "all") {
+      result = result.filter((c) => c.versionTravail === versionFilter);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -68,7 +68,7 @@ export default function CommitsPage() {
         (c) =>
           c.message.toLowerCase().includes(q) ||
           c.author.toLowerCase().includes(q) ||
-          c.hash.toLowerCase().includes(q)
+          c.ref.toLowerCase().includes(q)
       );
     }
 
@@ -85,22 +85,22 @@ export default function CommitsPage() {
     }
 
     return result;
-  }, [allCommits, search, branchFilter, sort]);
+  }, [allRevisions, search, versionFilter, sort]);
 
-  const grouped = useMemo(() => groupCommitsByDay(filteredCommits), [filteredCommits]);
+  const grouped = useMemo(() => groupRevisionsByDay(filteredRevisions), [filteredRevisions]);
 
-  const totalAdditions = allCommits.reduce((acc, c) => acc + c.additions, 0);
-  const totalDeletions = allCommits.reduce((acc, c) => acc + c.deletions, 0);
+  const totalAdditions = allRevisions.reduce((acc, c) => acc + c.additions, 0);
+  const totalDeletions = allRevisions.reduce((acc, c) => acc + c.deletions, 0);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-          Commits récents
+          Révisions récentes
         </h1>
         <p className="text-sm text-[var(--text-muted)]">
-          {allCommits.length} commits — {formatNumber(totalAdditions)} ajouts, {formatNumber(totalDeletions)} suppressions
+          {allRevisions.length} révisions — {formatNumber(totalAdditions)} ajouts, {formatNumber(totalDeletions)} suppressions
         </p>
       </div>
 
@@ -127,7 +127,7 @@ export default function CommitsPage() {
                     key={di}
                     className="h-3 w-3 rounded-sm transition-colors"
                     style={{ backgroundColor: getHeatmapColor(count) }}
-                    title={`${count} commit${count !== 1 ? "s" : ""}`}
+                    title={`${count} révision${count !== 1 ? "s" : ""}`}
                   />
                 ))}
               </div>
@@ -158,11 +158,11 @@ export default function CommitsPage() {
         />
         <select
           className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
-          value={branchFilter}
-          onChange={(e) => setBranchFilter(e.target.value)}
+          value={versionFilter}
+          onChange={(e) => setVersionFilter(e.target.value)}
         >
-          <option value="all">Toutes branches</option>
-          {branches.map((b) => (
+          <option value="all">Toutes versions</option>
+          {versions.map((b) => (
             <option key={b} value={b}>{b}</option>
           ))}
         </select>
@@ -188,16 +188,16 @@ export default function CommitsPage() {
                 {group.day}
               </span>
               <Badge variant="violet" className="text-xs shrink-0">
-                {group.commits.length} commit{group.commits.length > 1 ? "s" : ""}
+                {group.revisions.length} révision{group.revisions.length > 1 ? "s" : ""}
               </Badge>
               <div className="h-px flex-1 bg-[var(--border)]" />
             </div>
 
-            {/* Commits for this day */}
+            {/* Révisions du jour */}
             <div className="space-y-2 pl-4 border-l-2 border-[var(--border)] ml-2">
-              {group.commits.map((commit) => (
+              {group.revisions.map((revision) => (
                 <div
-                  key={commit.hash}
+                  key={revision.ref}
                   className="relative pl-5 py-2"
                 >
                   {/* Timeline dot */}
@@ -215,17 +215,17 @@ export default function CommitsPage() {
                         {/* Message */}
                         <div className="flex items-center gap-2 mb-1">
                           <code className="text-xs font-mono text-violet-500 bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded shrink-0">
-                            {commit.hash}
+                            {revision.ref}
                           </code>
                           <h4 className="text-sm font-medium text-[var(--text-primary)] truncate">
-                            {commit.message}
+                            {revision.message}
                           </h4>
                         </div>
 
                         {/* Description */}
-                        {commit.description && (
+                        {revision.description && (
                           <p className="text-xs text-[var(--text-muted)] mb-1 line-clamp-1">
-                            {commit.description}
+                            {revision.description}
                           </p>
                         )}
 
@@ -233,30 +233,30 @@ export default function CommitsPage() {
                         <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
                           <div className="flex items-center gap-1.5">
                             <Avatar size="sm">
-                              <AvatarFallback>{commit.authorInitials}</AvatarFallback>
+                              <AvatarFallback>{revision.authorInitials}</AvatarFallback>
                             </Avatar>
-                            <span>{commit.author}</span>
+                            <span>{revision.author}</span>
                           </div>
                           <code className="font-mono text-[var(--text-muted)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
-                            {commit.branch}
+                            {revision.versionTravail}
                           </code>
                           <span className="flex items-center gap-1 text-green-500">
                             <Plus className="h-3 w-3" />
-                            {commit.additions}
+                            {revision.additions}
                           </span>
                           <span className="flex items-center gap-1 text-red-500">
                             <Minus className="h-3 w-3" />
-                            {commit.deletions}
+                            {revision.deletions}
                           </span>
                           <span className="flex items-center gap-1">
                             <FileText className="h-3 w-3" />
-                            {commit.filesChanged}
+                            {revision.filesChanged}
                           </span>
                         </div>
                       </div>
 
                       <span className="text-xs text-[var(--text-muted)] shrink-0">
-                        {commit.date}
+                        {revision.date}
                       </span>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function CommitsPage() {
 
         {grouped.length === 0 && (
           <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucun commit ne correspond à votre recherche.
+            Aucune révision ne correspond à votre recherche.
           </div>
         )}
       </div>

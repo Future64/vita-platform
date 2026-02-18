@@ -21,15 +21,15 @@ import { ListItem } from "@/components/ui/list-item";
 import Link from "next/link";
 import {
   FORGE_PROJECTS,
-  FORGE_MERGE_REQUESTS,
+  FORGE_DEMANDES_INTEGRATION,
   FORGE_USERS,
   LANGUAGE_COLORS,
 } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
@@ -53,7 +53,7 @@ export default function ForgePage() {
     );
   }, [search]);
 
-  const recentMRs = FORGE_MERGE_REQUESTS.slice(0, 3);
+  const recentDIs = FORGE_DEMANDES_INTEGRATION.slice(0, 3);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
@@ -67,7 +67,7 @@ export default function ForgePage() {
             Projets ouverts et contributions citoyennes
           </p>
         </div>
-        <PermissionGate permission="create_branch">
+        <PermissionGate permission="create_version_travail">
           <Button variant="primary">
             <GitBranch className="h-4 w-4" />
             Nouveau projet
@@ -91,12 +91,12 @@ export default function ForgePage() {
         />
         <StatCard
           variant="green"
-          label="MR ouverts"
-          value={String(FORGE_MERGE_REQUESTS.filter((mr) => mr.status === "open" || mr.status === "voting").length)}
+          label="DI ouvertes"
+          value={String(FORGE_DEMANDES_INTEGRATION.filter((di) => di.status === "open" || di.status === "voting").length)}
         />
         <StatCard
           variant="orange"
-          label="Commits (30j)"
+          label="Révisions (30j)"
           value="1 247"
           trend={{ value: "+15%", direction: "up" }}
         />
@@ -165,11 +165,11 @@ export default function ForgePage() {
                               </span>
                               <span className="flex items-center gap-1">
                                 <GitBranch className="h-3 w-3" />
-                                {project.branches}
+                                {project.versionsTravail}
                               </span>
                               <span className="flex items-center gap-1">
                                 <GitPullRequest className="h-3 w-3" />
-                                {project.openMRs} MR
+                                {project.openDIs} DI
                               </span>
                               <span className="flex items-center gap-1">
                                 <Users className="h-3 w-3" />
@@ -192,10 +192,10 @@ export default function ForgePage() {
 
         {/* Sidebar */}
         <div className="space-y-5">
-          {/* Recent Merge Requests */}
+          {/* Demandes d'intégration récentes */}
           <Card>
             <CardHeader>
-              <CardTitle>Merge Requests</CardTitle>
+              <CardTitle>Demandes d&apos;intégration</CardTitle>
               <Link href="/forge/merge-requests">
                 <Button variant="ghost" size="sm" className="text-violet-500">
                   Voir
@@ -204,46 +204,46 @@ export default function ForgePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentMRs.map((mr) => (
-                  <Link key={mr.id} href={`/forge/project/${mr.projectId}/mr/${mr.id}`}>
+                {recentDIs.map((di) => (
+                  <Link key={di.id} href={`/forge/project/${di.projectId}/mr/${di.id}`}>
                     <div className="group rounded-lg border border-[var(--border)] p-3 transition-all hover:border-violet-500/50 cursor-pointer">
                       <div className="flex items-start gap-2 mb-2">
                         <GitMerge
                           className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
-                            mr.status === "merged"
+                            di.status === "integrated"
                               ? "text-green-500"
-                              : mr.status === "approved"
+                              : di.status === "approved"
                               ? "text-cyan-500"
                               : "text-violet-500"
                           }`}
                         />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm text-[var(--text-primary)] mb-1 truncate">
-                            {mr.title}
+                            {di.title}
                           </h4>
                           <div className="text-xs text-[var(--text-muted)] mb-2">
-                            {mr.project}
+                            {di.project}
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-[var(--text-muted)]">
-                              par {mr.author}
+                              par {di.author}
                             </span>
-                            {(mr.status === "open" || mr.status === "voting") && (
+                            {(di.status === "open" || di.status === "voting") && (
                               <div className="flex items-center gap-2">
                                 <span className="text-green-500">
-                                  ✓ {mr.votes.approve}
+                                  ✓ {di.votes.approve}
                                 </span>
                                 <span className="text-pink-500">
-                                  ✗ {mr.votes.reject}
+                                  ✗ {di.votes.reject}
                                 </span>
                               </div>
                             )}
-                            {mr.status === "merged" && (
+                            {di.status === "integrated" && (
                               <Badge variant="green" className="text-xs">
-                                Merged
+                                Intégré
                               </Badge>
                             )}
-                            {mr.status === "approved" && (
+                            {di.status === "approved" && (
                               <Badge variant="cyan" className="text-xs">
                                 Approuvé
                               </Badge>
@@ -276,7 +276,7 @@ export default function ForgePage() {
                           {user.name}
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
-                          {user.commits} commits
+                          {user.revisions} révisions
                         </div>
                       </div>
                     </div>
@@ -299,19 +299,19 @@ export default function ForgePage() {
                 <ListItem
                   icon={GitCommit}
                   iconVariant="violet"
-                  title="15 commits"
+                  title="15 révisions"
                   subtitle="Aujourd'hui"
                 />
                 <ListItem
                   icon={GitPullRequest}
                   iconVariant="green"
-                  title="4 MR merged"
+                  title="4 DI intégrées"
                   subtitle="Cette semaine"
                 />
                 <ListItem
                   icon={GitBranch}
                   iconVariant="cyan"
-                  title="7 nouvelles branches"
+                  title="7 nouvelles versions"
                   subtitle="Ce mois"
                 />
               </div>

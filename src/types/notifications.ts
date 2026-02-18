@@ -6,7 +6,7 @@ export type NotificationType =
   | "vita_recu" // J'ai reçu des Ѵ
   | "emission_quotidienne" // Émission quotidienne créditée
   | "proposition_commentee" // Quelqu'un a commenté ma proposition
-  | "mr_approuvee" // Ma merge request a été approuvée
+  | "di_approuvee" // Ma demande d'intégration a été approuvée
   | "role_change" // Mon rôle a changé
   | "parametre_modifie" // Un paramètre système a été modifié
   | "systeme" // Notification système (maintenance, mise à jour)

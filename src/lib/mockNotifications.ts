@@ -78,10 +78,10 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
   },
   {
     id: "notif-007",
-    type: "mr_approuvee",
-    titre: "Merge request approuvée",
+    type: "di_approuvee",
+    titre: "Demande d'intégration approuvée",
     message:
-      'Votre MR « Clarification Art. 3 - Vie privée » sur constitution-v3 a été approuvée par 4 reviewers.',
+      'Votre DI « Clarification Art. 3 - Vie privée » sur constitution-v3 a été approuvée par 4 relecteurs.',
     date: ago(28),
     lue: false,
     lien: "/forge/project/constitution-v3/mr/mr-001",

@@ -1,10 +1,10 @@
-// Mock data for the Forge module (Git-like legislative versioning)
+// Mock data for the Forge module (versioning législatif)
 
 export interface ForgeUser {
   id: string;
   name: string;
   initials: string;
-  commits: number;
+  revisions: number;
   projects: number;
 }
 
@@ -14,10 +14,10 @@ export interface ForgeProject {
   description: string;
   language: string;
   stars: number;
-  forks: number;
+  derivations: number;
   watchers: number;
-  branches: number;
-  openMRs: number;
+  versionsTravail: number;
+  openDIs: number;
   contributors: number;
   license: string;
   lastUpdate: string;
@@ -25,34 +25,34 @@ export interface ForgeProject {
   status: "active" | "archived" | "draft";
 }
 
-export interface ForgeBranch {
+export interface ForgeVersionTravail {
   id: string;
   name: string;
   projectId: string;
-  commits: number;
+  revisions: number;
   lastUpdate: string;
   protected: boolean;
   author: string;
   authorInitials: string;
-  aheadMain: number;
-  behindMain: number;
+  aheadOfficielle: number;
+  behindOfficielle: number;
 }
 
-export interface ForgeCommit {
-  hash: string;
+export interface ForgeRevision {
+  ref: string;
   message: string;
   description?: string;
   author: string;
   authorInitials: string;
   date: string;
   dateIso: string;
-  branch: string;
+  versionTravail: string;
   additions: number;
   deletions: number;
   filesChanged: number;
 }
 
-export interface ForgeMergeRequest {
+export interface ForgeDemandeIntegration {
   id: string;
   number: number;
   title: string;
@@ -61,9 +61,9 @@ export interface ForgeMergeRequest {
   projectId: string;
   author: string;
   authorInitials: string;
-  sourceBranch: string;
-  targetBranch: string;
-  status: "open" | "voting" | "approved" | "merged" | "rejected" | "closed";
+  sourceVersion: string;
+  targetVersion: string;
+  status: "open" | "voting" | "approved" | "integrated" | "rejected" | "closed";
   votes: { approve: number; reject: number; abstain: number };
   totalVotes: number;
   quorum: number;
@@ -89,15 +89,15 @@ export interface ForgeComment {
   replyTo?: string;
 }
 
-export interface ForgeDiffFile {
+export interface ForgeComparaisonFile {
   filePath: string;
   type: "add" | "modify" | "delete";
   additions: number;
   deletions: number;
-  lines: ForgeDiffLine[];
+  lines: ForgeComparaisonLine[];
 }
 
-export interface ForgeDiffLine {
+export interface ForgeComparaisonLine {
   type: "context" | "add" | "remove";
   lineOld?: number;
   lineNew?: number;
@@ -109,12 +109,12 @@ export interface ForgeDiffLine {
 // ============================================================
 
 export const FORGE_USERS: ForgeUser[] = [
-  { id: "u1", name: "Marie Dupont", initials: "MD", commits: 247, projects: 12 },
-  { id: "u2", name: "Jean Martin", initials: "JM", commits: 189, projects: 8 },
-  { id: "u3", name: "Sophie Chen", initials: "SC", commits: 156, projects: 6 },
-  { id: "u4", name: "Alex Rivera", initials: "AR", commits: 98, projects: 5 },
-  { id: "u5", name: "Fatima Benali", initials: "FB", commits: 72, projects: 4 },
-  { id: "u6", name: "Luca Moretti", initials: "LM", commits: 63, projects: 3 },
+  { id: "u1", name: "Marie Dupont", initials: "MD", revisions: 247, projects: 12 },
+  { id: "u2", name: "Jean Martin", initials: "JM", revisions: 189, projects: 8 },
+  { id: "u3", name: "Sophie Chen", initials: "SC", revisions: 156, projects: 6 },
+  { id: "u4", name: "Alex Rivera", initials: "AR", revisions: 98, projects: 5 },
+  { id: "u5", name: "Fatima Benali", initials: "FB", revisions: 72, projects: 4 },
+  { id: "u6", name: "Luca Moretti", initials: "LM", revisions: 63, projects: 3 },
 ];
 
 // ============================================================
@@ -128,10 +128,10 @@ export const FORGE_PROJECTS: ForgeProject[] = [
     description: "Révision majeure de la constitution avec nouveaux articles sur l'IA et les droits numériques",
     language: "Markdown",
     stars: 247,
-    forks: 45,
+    derivations: 45,
     watchers: 89,
-    branches: 4,
-    openMRs: 2,
+    versionsTravail: 4,
+    openDIs: 2,
     contributors: 34,
     license: "CC BY-SA 4.0",
     lastUpdate: "il y a 2h",
@@ -144,10 +144,10 @@ export const FORGE_PROJECTS: ForgeProject[] = [
     description: "Amélioration du système de vote avec délégation progressive et quorum dynamique",
     language: "TypeScript",
     stars: 321,
-    forks: 67,
+    derivations: 67,
     watchers: 112,
-    branches: 3,
-    openMRs: 1,
+    versionsTravail: 3,
+    openDIs: 1,
     contributors: 42,
     license: "MIT",
     lastUpdate: "il y a 1j",
@@ -157,163 +157,163 @@ export const FORGE_PROJECTS: ForgeProject[] = [
 ];
 
 // ============================================================
-// BRANCHES (per project)
+// VERSIONS DE TRAVAIL (par projet)
 // ============================================================
 
-export const FORGE_BRANCHES: Record<string, ForgeBranch[]> = {
+export const FORGE_VERSIONS_TRAVAIL: Record<string, ForgeVersionTravail[]> = {
   "constitution-v3": [
     {
       id: "br-main-c",
-      name: "main",
+      name: "version officielle",
       projectId: "constitution-v3",
-      commits: 247,
+      revisions: 247,
       lastUpdate: "il y a 2h",
       protected: true,
       author: "Marie Dupont",
       authorInitials: "MD",
-      aheadMain: 0,
-      behindMain: 0,
+      aheadOfficielle: 0,
+      behindOfficielle: 0,
     },
     {
       id: "br-ai-ethics",
       name: "feature/ai-ethics",
       projectId: "constitution-v3",
-      commits: 15,
+      revisions: 15,
       lastUpdate: "il y a 3h",
       protected: false,
       author: "Marie Dupont",
       authorInitials: "MD",
-      aheadMain: 5,
-      behindMain: 1,
+      aheadOfficielle: 5,
+      behindOfficielle: 1,
     },
     {
       id: "br-digital-rights",
       name: "feature/digital-rights",
       projectId: "constitution-v3",
-      commits: 23,
+      revisions: 23,
       lastUpdate: "il y a 1j",
       protected: false,
       author: "Jean Martin",
       authorInitials: "JM",
-      aheadMain: 8,
-      behindMain: 2,
+      aheadOfficielle: 8,
+      behindOfficielle: 2,
     },
     {
       id: "br-typos",
       name: "fix/article-9-typos",
       projectId: "constitution-v3",
-      commits: 3,
+      revisions: 3,
       lastUpdate: "il y a 2j",
       protected: false,
       author: "Sophie Chen",
       authorInitials: "SC",
-      aheadMain: 2,
-      behindMain: 0,
+      aheadOfficielle: 2,
+      behindOfficielle: 0,
     },
   ],
   "voting-system": [
     {
       id: "br-main-v",
-      name: "main",
+      name: "version officielle",
       projectId: "voting-system",
-      commits: 189,
+      revisions: 189,
       lastUpdate: "il y a 1j",
       protected: true,
       author: "Alex Rivera",
       authorInitials: "AR",
-      aheadMain: 0,
-      behindMain: 0,
+      aheadOfficielle: 0,
+      behindOfficielle: 0,
     },
     {
       id: "br-delegation",
       name: "feature/delegation-progressive",
       projectId: "voting-system",
-      commits: 12,
+      revisions: 12,
       lastUpdate: "il y a 5h",
       protected: false,
       author: "Sophie Chen",
       authorInitials: "SC",
-      aheadMain: 6,
-      behindMain: 0,
+      aheadOfficielle: 6,
+      behindOfficielle: 0,
     },
     {
       id: "br-quorum",
       name: "feature/dynamic-quorum",
       projectId: "voting-system",
-      commits: 8,
+      revisions: 8,
       lastUpdate: "il y a 2j",
       protected: false,
       author: "Fatima Benali",
       authorInitials: "FB",
-      aheadMain: 3,
-      behindMain: 1,
+      aheadOfficielle: 3,
+      behindOfficielle: 1,
     },
   ],
 };
 
 // ============================================================
-// COMMITS (per branch)
+// RÉVISIONS (par version de travail)
 // ============================================================
 
-export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
+export const FORGE_REVISIONS: Record<string, ForgeRevision[]> = {
   "br-ai-ethics": [
     {
-      hash: "a3f2b1c",
+      ref: "a3f2b1c",
       message: "Ajout article 47 : Éthique de l'IA et gouvernance",
       description: "Nouvel article définissant les principes fondamentaux de l'utilisation de l'IA dans le cadre VITA.",
       author: "Marie Dupont",
       authorInitials: "MD",
       date: "il y a 3h",
       dateIso: "2025-01-15T10:00:00Z",
-      branch: "feature/ai-ethics",
+      versionTravail: "feature/ai-ethics",
       additions: 42,
       deletions: 3,
       filesChanged: 2,
     },
     {
-      hash: "b5c8d2e",
+      ref: "b5c8d2e",
       message: "Ajout section sur la transparence algorithmique",
       author: "Marie Dupont",
       authorInitials: "MD",
       date: "il y a 6h",
       dateIso: "2025-01-15T07:00:00Z",
-      branch: "feature/ai-ethics",
+      versionTravail: "feature/ai-ethics",
       additions: 28,
       deletions: 0,
       filesChanged: 1,
     },
     {
-      hash: "c9d3e4f",
+      ref: "c9d3e4f",
       message: "Définition des droits face aux décisions automatisées",
       author: "Jean Martin",
       authorInitials: "JM",
       date: "il y a 1j",
       dateIso: "2025-01-14T14:00:00Z",
-      branch: "feature/ai-ethics",
+      versionTravail: "feature/ai-ethics",
       additions: 35,
       deletions: 2,
       filesChanged: 1,
     },
     {
-      hash: "d1e5f6a",
+      ref: "d1e5f6a",
       message: "Ajout préambule sur le droit à l'explication",
       author: "Sophie Chen",
       authorInitials: "SC",
       date: "il y a 2j",
       dateIso: "2025-01-13T16:00:00Z",
-      branch: "feature/ai-ethics",
+      versionTravail: "feature/ai-ethics",
       additions: 18,
       deletions: 0,
       filesChanged: 1,
     },
     {
-      hash: "e2f6a7b",
-      message: "Création de la branche et structure initiale",
+      ref: "e2f6a7b",
+      message: "Création de la version et structure initiale",
       author: "Marie Dupont",
       authorInitials: "MD",
       date: "il y a 4j",
       dateIso: "2025-01-11T09:00:00Z",
-      branch: "feature/ai-ethics",
+      versionTravail: "feature/ai-ethics",
       additions: 12,
       deletions: 0,
       filesChanged: 3,
@@ -321,37 +321,37 @@ export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
   ],
   "br-digital-rights": [
     {
-      hash: "f3a7b8c",
+      ref: "f3a7b8c",
       message: "Mise à jour article 12 : Droits numériques",
       author: "Jean Martin",
       authorInitials: "JM",
       date: "il y a 1j",
       dateIso: "2025-01-14T11:00:00Z",
-      branch: "feature/digital-rights",
+      versionTravail: "feature/digital-rights",
       additions: 56,
       deletions: 12,
       filesChanged: 3,
     },
     {
-      hash: "g4b8c9d",
+      ref: "g4b8c9d",
       message: "Ajout droit à la portabilité des données",
       author: "Jean Martin",
       authorInitials: "JM",
       date: "il y a 2j",
       dateIso: "2025-01-13T09:00:00Z",
-      branch: "feature/digital-rights",
+      versionTravail: "feature/digital-rights",
       additions: 24,
       deletions: 0,
       filesChanged: 1,
     },
     {
-      hash: "h5c9d0e",
+      ref: "h5c9d0e",
       message: "Clarification du droit à l'oubli numérique",
       author: "Fatima Benali",
       authorInitials: "FB",
       date: "il y a 3j",
       dateIso: "2025-01-12T15:00:00Z",
-      branch: "feature/digital-rights",
+      versionTravail: "feature/digital-rights",
       additions: 19,
       deletions: 7,
       filesChanged: 1,
@@ -359,25 +359,25 @@ export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
   ],
   "br-typos": [
     {
-      hash: "i6d0e1f",
+      ref: "i6d0e1f",
       message: "Correction typo paragraphe 3",
       author: "Sophie Chen",
       authorInitials: "SC",
       date: "il y a 2j",
       dateIso: "2025-01-13T10:00:00Z",
-      branch: "fix/article-9-typos",
+      versionTravail: "fix/article-9-typos",
       additions: 2,
       deletions: 2,
       filesChanged: 1,
     },
     {
-      hash: "j7e1f2a",
+      ref: "j7e1f2a",
       message: "Fix ponctuation et majuscules",
       author: "Sophie Chen",
       authorInitials: "SC",
       date: "il y a 3j",
       dateIso: "2025-01-12T08:00:00Z",
-      branch: "fix/article-9-typos",
+      versionTravail: "fix/article-9-typos",
       additions: 4,
       deletions: 4,
       filesChanged: 1,
@@ -385,38 +385,38 @@ export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
   ],
   "br-delegation": [
     {
-      hash: "k8f2a3b",
+      ref: "k8f2a3b",
       message: "Implémentation délégation transitive",
       description: "Permet de déléguer son vote à un délégué qui peut lui-même déléguer.",
       author: "Sophie Chen",
       authorInitials: "SC",
       date: "il y a 5h",
       dateIso: "2025-01-15T08:00:00Z",
-      branch: "feature/delegation-progressive",
+      versionTravail: "feature/delegation-progressive",
       additions: 87,
       deletions: 12,
       filesChanged: 4,
     },
     {
-      hash: "l9a3b4c",
+      ref: "l9a3b4c",
       message: "Ajout limite de profondeur de délégation",
       author: "Sophie Chen",
       authorInitials: "SC",
       date: "il y a 1j",
       dateIso: "2025-01-14T10:00:00Z",
-      branch: "feature/delegation-progressive",
+      versionTravail: "feature/delegation-progressive",
       additions: 23,
       deletions: 5,
       filesChanged: 2,
     },
     {
-      hash: "m0b4c5d",
+      ref: "m0b4c5d",
       message: "Tests unitaires délégation",
       author: "Alex Rivera",
       authorInitials: "AR",
       date: "il y a 2j",
       dateIso: "2025-01-13T14:00:00Z",
-      branch: "feature/delegation-progressive",
+      versionTravail: "feature/delegation-progressive",
       additions: 145,
       deletions: 0,
       filesChanged: 3,
@@ -424,25 +424,25 @@ export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
   ],
   "br-quorum": [
     {
-      hash: "n1c5d6e",
+      ref: "n1c5d6e",
       message: "Calcul dynamique du quorum basé sur la participation",
       author: "Fatima Benali",
       authorInitials: "FB",
       date: "il y a 2j",
       dateIso: "2025-01-13T16:00:00Z",
-      branch: "feature/dynamic-quorum",
+      versionTravail: "feature/dynamic-quorum",
       additions: 64,
       deletions: 18,
       filesChanged: 3,
     },
     {
-      hash: "o2d6e7f",
+      ref: "o2d6e7f",
       message: "Seuil minimum de quorum configurable",
       author: "Fatima Benali",
       authorInitials: "FB",
       date: "il y a 3j",
       dateIso: "2025-01-12T11:00:00Z",
-      branch: "feature/dynamic-quorum",
+      versionTravail: "feature/dynamic-quorum",
       additions: 31,
       deletions: 8,
       filesChanged: 2,
@@ -451,10 +451,10 @@ export const FORGE_COMMITS: Record<string, ForgeCommit[]> = {
 };
 
 // ============================================================
-// DIFF FILES (for MRs)
+// FICHIERS DE COMPARAISON (pour les DI)
 // ============================================================
 
-export const FORGE_DIFFS: Record<string, ForgeDiffFile[]> = {
+export const FORGE_COMPARAISONS: Record<string, ForgeComparaisonFile[]> = {
   "mr-1": [
     {
       filePath: "articles/article-47-ia-ethique.md",
@@ -623,17 +623,17 @@ export const FORGE_DIFFS: Record<string, ForgeDiffFile[]> = {
 };
 
 // ============================================================
-// MERGE REQUESTS
+// DEMANDES D'INTÉGRATION
 // ============================================================
 
-export const FORGE_MERGE_REQUESTS: ForgeMergeRequest[] = [
+export const FORGE_DEMANDES_INTEGRATION: ForgeDemandeIntegration[] = [
   {
     id: "mr-1",
     number: 42,
     title: "Ajout article 47 sur l'IA éthique",
     description: `## Résumé
 
-Cette merge request ajoute un nouvel article à la constitution VITA traitant de l'éthique de l'intelligence artificielle.
+Cette demande d'intégration ajoute un nouvel article à la constitution VITA traitant de l'éthique de l'intelligence artificielle.
 
 ## Changements proposés
 
@@ -648,8 +648,8 @@ L'essor de l'IA dans les processus décisionnels nécessite un cadre constitutio
     projectId: "constitution-v3",
     author: "Marie Dupont",
     authorInitials: "MD",
-    sourceBranch: "feature/ai-ethics",
-    targetBranch: "main",
+    sourceVersion: "feature/ai-ethics",
+    targetVersion: "version officielle",
     status: "voting",
     votes: { approve: 12, reject: 2, abstain: 3 },
     totalVotes: 17,
@@ -679,7 +679,7 @@ L'essor de l'IA dans les processus décisionnels nécessite un cadre constitutio
         id: "c3",
         author: "Marie Dupont",
         authorInitials: "MD",
-        content: "Bons points tous les deux. Je prépare un commit pour clarifier ces aspects. Pour la question de Sophie : je propose de définir qu'une « décision automatisée » est toute action sans intervention humaine ayant un impact juridique ou économique sur un citoyen.",
+        content: "Bons points tous les deux. Je prépare une révision pour clarifier ces aspects. Pour la question de Sophie : je propose de définir qu'une « décision automatisée » est toute action sans intervention humaine ayant un impact juridique ou économique sur un citoyen.",
         date: "il y a 45min",
         replyTo: "c2",
       },
@@ -719,8 +719,8 @@ Ces changements renforcent les protections des citoyens et alignent la constitut
     projectId: "constitution-v3",
     author: "Jean Martin",
     authorInitials: "JM",
-    sourceBranch: "feature/digital-rights",
-    targetBranch: "main",
+    sourceVersion: "feature/digital-rights",
+    targetVersion: "version officielle",
     status: "open",
     votes: { approve: 8, reject: 1, abstain: 0 },
     totalVotes: 9,
@@ -769,8 +769,8 @@ Implémentation de la délégation transitive : un délégué peut à son tour d
     projectId: "voting-system",
     author: "Sophie Chen",
     authorInitials: "SC",
-    sourceBranch: "feature/delegation-progressive",
-    targetBranch: "main",
+    sourceVersion: "feature/delegation-progressive",
+    targetVersion: "version officielle",
     status: "approved",
     votes: { approve: 15, reject: 1, abstain: 2 },
     totalVotes: 18,
@@ -827,32 +827,32 @@ export function getProject(id: string): ForgeProject | undefined {
   return FORGE_PROJECTS.find((p) => p.id === id);
 }
 
-export function getBranches(projectId: string): ForgeBranch[] {
-  return FORGE_BRANCHES[projectId] ?? [];
+export function getVersionsTravail(projectId: string): ForgeVersionTravail[] {
+  return FORGE_VERSIONS_TRAVAIL[projectId] ?? [];
 }
 
-export function getBranch(branchId: string): ForgeBranch | undefined {
-  for (const branches of Object.values(FORGE_BRANCHES)) {
-    const found = branches.find((b) => b.id === branchId);
+export function getVersionTravail(versionId: string): ForgeVersionTravail | undefined {
+  for (const versions of Object.values(FORGE_VERSIONS_TRAVAIL)) {
+    const found = versions.find((b) => b.id === versionId);
     if (found) return found;
   }
   return undefined;
 }
 
-export function getCommits(branchId: string): ForgeCommit[] {
-  return FORGE_COMMITS[branchId] ?? [];
+export function getRevisions(versionTravailId: string): ForgeRevision[] {
+  return FORGE_REVISIONS[versionTravailId] ?? [];
 }
 
-export function getMergeRequestsForProject(projectId: string): ForgeMergeRequest[] {
-  return FORGE_MERGE_REQUESTS.filter((mr) => mr.projectId === projectId);
+export function getDemandesIntegrationForProject(projectId: string): ForgeDemandeIntegration[] {
+  return FORGE_DEMANDES_INTEGRATION.filter((di) => di.projectId === projectId);
 }
 
-export function getMergeRequest(mrId: string): ForgeMergeRequest | undefined {
-  return FORGE_MERGE_REQUESTS.find((mr) => mr.id === mrId);
+export function getDemandeIntegration(diId: string): ForgeDemandeIntegration | undefined {
+  return FORGE_DEMANDES_INTEGRATION.find((di) => di.id === diId);
 }
 
-export function getDiffs(mrId: string): ForgeDiffFile[] {
-  return FORGE_DIFFS[mrId] ?? [];
+export function getComparaisons(diId: string): ForgeComparaisonFile[] {
+  return FORGE_COMPARAISONS[diId] ?? [];
 }
 
 export function getFileTree(projectId: string) {
@@ -868,10 +868,10 @@ export const LANGUAGE_COLORS: Record<string, string> = {
 };
 
 // ============================================================
-// ADDITIONAL MERGE REQUESTS (for MR listing page)
+// DEMANDES D'INTÉGRATION SUPPLÉMENTAIRES
 // ============================================================
 
-export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
+export const MORE_DEMANDES_INTEGRATION: ForgeDemandeIntegration[] = [
   {
     id: "mr-4",
     number: 37,
@@ -881,9 +881,9 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "constitution-v3",
     author: "Sophie Chen",
     authorInitials: "SC",
-    sourceBranch: "fix/article-9-typos",
-    targetBranch: "main",
-    status: "merged",
+    sourceVersion: "fix/article-9-typos",
+    targetVersion: "main",
+    status: "integrated",
     votes: { approve: 20, reject: 0, abstain: 1 },
     totalVotes: 21,
     quorum: 15,
@@ -906,8 +906,8 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "voting-system",
     author: "Fatima Benali",
     authorInitials: "FB",
-    sourceBranch: "feature/dynamic-quorum",
-    targetBranch: "main",
+    sourceVersion: "feature/dynamic-quorum",
+    targetVersion: "main",
     status: "open",
     votes: { approve: 5, reject: 3, abstain: 1 },
     totalVotes: 9,
@@ -922,7 +922,7 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
         id: "c8",
         author: "Alex Rivera",
         authorInitials: "AR",
-        content: "Il y a un conflit avec la branche delegation-progressive, il faudra rebase avant de merger.",
+        content: "Il y a un conflit avec la version delegation-progressive, il faudra synchroniser avant d'intégrer.",
         date: "il y a 1j",
       },
     ],
@@ -939,9 +939,9 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "voting-system",
     author: "Alex Rivera",
     authorInitials: "AR",
-    sourceBranch: "refactor/redistribution",
-    targetBranch: "main",
-    status: "merged",
+    sourceVersion: "refactor/redistribution",
+    targetVersion: "main",
+    status: "integrated",
     votes: { approve: 18, reject: 0, abstain: 2 },
     totalVotes: 20,
     quorum: 15,
@@ -972,8 +972,8 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "constitution-v3",
     author: "Luca Moretti",
     authorInitials: "LM",
-    sourceBranch: "feature/green-digital",
-    targetBranch: "main",
+    sourceVersion: "feature/green-digital",
+    targetVersion: "main",
     status: "rejected",
     votes: { approve: 4, reject: 12, abstain: 5 },
     totalVotes: 21,
@@ -1005,9 +1005,9 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "voting-system",
     author: "Jean Martin",
     authorInitials: "JM",
-    sourceBranch: "fix/service-coefficient",
-    targetBranch: "main",
-    status: "merged",
+    sourceVersion: "fix/service-coefficient",
+    targetVersion: "main",
+    status: "integrated",
     votes: { approve: 22, reject: 0, abstain: 0 },
     totalVotes: 22,
     quorum: 15,
@@ -1030,8 +1030,8 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     projectId: "voting-system",
     author: "Marie Dupont",
     authorInitials: "MD",
-    sourceBranch: "feature/proposal-tags",
-    targetBranch: "main",
+    sourceVersion: "feature/proposal-tags",
+    targetVersion: "main",
     status: "closed",
     votes: { approve: 2, reject: 0, abstain: 0 },
     totalVotes: 2,
@@ -1046,7 +1046,7 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
         id: "c11",
         author: "Marie Dupont",
         authorInitials: "MD",
-        content: "Je ferme cette MR, elle sera reprise dans un scope plus large avec le système de catégories.",
+        content: "Je ferme cette DI, elle sera reprise dans un scope plus large avec le système de catégories.",
         date: "il y a 18j",
       },
     ],
@@ -1058,14 +1058,14 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
     id: "mr-10",
     number: 31,
     title: "Documentation : Guide du contributeur",
-    description: "Mise à jour complète du guide CONTRIBUTING.md avec les nouvelles procédures de revue et de vote.",
+    description: "Mise à jour complète du guide CONTRIBUTING.md avec les nouvelles procédures de relecture et de vote.",
     project: "Constitution v3.0",
     projectId: "constitution-v3",
     author: "Fatima Benali",
     authorInitials: "FB",
-    sourceBranch: "docs/contributing-guide",
-    targetBranch: "main",
-    status: "merged",
+    sourceVersion: "docs/contributing-guide",
+    targetVersion: "main",
+    status: "integrated",
     votes: { approve: 16, reject: 0, abstain: 3 },
     totalVotes: 19,
     quorum: 15,
@@ -1081,256 +1081,256 @@ export const MORE_MERGE_REQUESTS: ForgeMergeRequest[] = [
   },
 ];
 
-export const ALL_MERGE_REQUESTS = [...FORGE_MERGE_REQUESTS, ...MORE_MERGE_REQUESTS];
+export const ALL_DEMANDES_INTEGRATION = [...FORGE_DEMANDES_INTEGRATION, ...MORE_DEMANDES_INTEGRATION];
 
 // ============================================================
-// ALL COMMITS (flat list for commits page)
+// TOUTES LES RÉVISIONS (liste plate pour la page révisions)
 // ============================================================
 
-export const ALL_COMMITS: ForgeCommit[] = [
+export const ALL_REVISIONS: ForgeRevision[] = [
   // Aujourd'hui
   {
-    hash: "a3f2b1c",
+    ref: "a3f2b1c",
     message: "Ajout article 47 : Éthique de l'IA et gouvernance",
     description: "Nouvel article définissant les principes fondamentaux de l'utilisation de l'IA dans le cadre VITA.",
     author: "Marie Dupont",
     authorInitials: "MD",
     date: "il y a 2h",
     dateIso: "2025-01-15T12:00:00Z",
-    branch: "feature/ai-ethics",
+    versionTravail: "feature/ai-ethics",
     additions: 42,
     deletions: 3,
     filesChanged: 2,
   },
   {
-    hash: "b5c8d2e",
+    ref: "b5c8d2e",
     message: "Ajout section sur la transparence algorithmique",
     author: "Marie Dupont",
     authorInitials: "MD",
     date: "il y a 5h",
     dateIso: "2025-01-15T09:00:00Z",
-    branch: "feature/ai-ethics",
+    versionTravail: "feature/ai-ethics",
     additions: 28,
     deletions: 0,
     filesChanged: 1,
   },
   {
-    hash: "k8f2a3b",
+    ref: "k8f2a3b",
     message: "Implémentation délégation transitive",
     description: "Permet de déléguer son vote à un délégué qui peut lui-même déléguer.",
     author: "Sophie Chen",
     authorInitials: "SC",
     date: "il y a 6h",
     dateIso: "2025-01-15T08:00:00Z",
-    branch: "feature/delegation-progressive",
+    versionTravail: "feature/delegation-progressive",
     additions: 87,
     deletions: 12,
     filesChanged: 4,
   },
   {
-    hash: "x1a2b3c",
+    ref: "x1a2b3c",
     message: "Mise à jour des tests d'intégration",
     author: "Alex Rivera",
     authorInitials: "AR",
     date: "il y a 8h",
     dateIso: "2025-01-15T06:00:00Z",
-    branch: "main",
+    versionTravail: "main",
     additions: 34,
     deletions: 12,
     filesChanged: 3,
   },
   // Hier
   {
-    hash: "f3a7b8c",
+    ref: "f3a7b8c",
     message: "Mise à jour article 12 : Droits numériques",
     author: "Jean Martin",
     authorInitials: "JM",
     date: "il y a 1j",
     dateIso: "2025-01-14T15:00:00Z",
-    branch: "feature/digital-rights",
+    versionTravail: "feature/digital-rights",
     additions: 56,
     deletions: 12,
     filesChanged: 3,
   },
   {
-    hash: "l9a3b4c",
+    ref: "l9a3b4c",
     message: "Ajout limite de profondeur de délégation",
     author: "Sophie Chen",
     authorInitials: "SC",
     date: "il y a 1j",
     dateIso: "2025-01-14T10:00:00Z",
-    branch: "feature/delegation-progressive",
+    versionTravail: "feature/delegation-progressive",
     additions: 23,
     deletions: 5,
     filesChanged: 2,
   },
   {
-    hash: "y2b3c4d",
+    ref: "y2b3c4d",
     message: "Fix: correction du calcul de majorité qualifiée",
     author: "Fatima Benali",
     authorInitials: "FB",
     date: "il y a 1j",
     dateIso: "2025-01-14T09:00:00Z",
-    branch: "main",
+    versionTravail: "main",
     additions: 8,
     deletions: 4,
     filesChanged: 1,
   },
   {
-    hash: "z3c4d5e",
+    ref: "z3c4d5e",
     message: "Ajout de la documentation API v2",
     author: "Luca Moretti",
     authorInitials: "LM",
     date: "il y a 1j",
     dateIso: "2025-01-14T08:00:00Z",
-    branch: "docs/api-v2",
+    versionTravail: "docs/api-v2",
     additions: 120,
     deletions: 0,
     filesChanged: 5,
   },
   // Il y a 2 jours
   {
-    hash: "c9d3e4f",
+    ref: "c9d3e4f",
     message: "Définition des droits face aux décisions automatisées",
     author: "Jean Martin",
     authorInitials: "JM",
     date: "il y a 2j",
     dateIso: "2025-01-13T16:00:00Z",
-    branch: "feature/ai-ethics",
+    versionTravail: "feature/ai-ethics",
     additions: 35,
     deletions: 2,
     filesChanged: 1,
   },
   {
-    hash: "n1c5d6e",
+    ref: "n1c5d6e",
     message: "Calcul dynamique du quorum basé sur la participation",
     author: "Fatima Benali",
     authorInitials: "FB",
     date: "il y a 2j",
     dateIso: "2025-01-13T14:00:00Z",
-    branch: "feature/dynamic-quorum",
+    versionTravail: "feature/dynamic-quorum",
     additions: 64,
     deletions: 18,
     filesChanged: 3,
   },
   {
-    hash: "m0b4c5d",
+    ref: "m0b4c5d",
     message: "Tests unitaires délégation",
     author: "Alex Rivera",
     authorInitials: "AR",
     date: "il y a 2j",
     dateIso: "2025-01-13T12:00:00Z",
-    branch: "feature/delegation-progressive",
+    versionTravail: "feature/delegation-progressive",
     additions: 145,
     deletions: 0,
     filesChanged: 3,
   },
   {
-    hash: "i6d0e1f",
+    ref: "i6d0e1f",
     message: "Correction typo paragraphe 3",
     author: "Sophie Chen",
     authorInitials: "SC",
     date: "il y a 2j",
     dateIso: "2025-01-13T10:00:00Z",
-    branch: "fix/article-9-typos",
+    versionTravail: "fix/article-9-typos",
     additions: 2,
     deletions: 2,
     filesChanged: 1,
   },
   // Il y a 3 jours
   {
-    hash: "g4b8c9d",
+    ref: "g4b8c9d",
     message: "Ajout droit à la portabilité des données",
     author: "Jean Martin",
     authorInitials: "JM",
     date: "il y a 3j",
     dateIso: "2025-01-12T15:00:00Z",
-    branch: "feature/digital-rights",
+    versionTravail: "feature/digital-rights",
     additions: 24,
     deletions: 0,
     filesChanged: 1,
   },
   {
-    hash: "h5c9d0e",
+    ref: "h5c9d0e",
     message: "Clarification du droit à l'oubli numérique",
     author: "Fatima Benali",
     authorInitials: "FB",
     date: "il y a 3j",
     dateIso: "2025-01-12T13:00:00Z",
-    branch: "feature/digital-rights",
+    versionTravail: "feature/digital-rights",
     additions: 19,
     deletions: 7,
     filesChanged: 1,
   },
   {
-    hash: "o2d6e7f",
+    ref: "o2d6e7f",
     message: "Seuil minimum de quorum configurable",
     author: "Fatima Benali",
     authorInitials: "FB",
     date: "il y a 3j",
     dateIso: "2025-01-12T11:00:00Z",
-    branch: "feature/dynamic-quorum",
+    versionTravail: "feature/dynamic-quorum",
     additions: 31,
     deletions: 8,
     filesChanged: 2,
   },
   {
-    hash: "j7e1f2a",
+    ref: "j7e1f2a",
     message: "Fix ponctuation et majuscules",
     author: "Sophie Chen",
     authorInitials: "SC",
     date: "il y a 3j",
     dateIso: "2025-01-12T08:00:00Z",
-    branch: "fix/article-9-typos",
+    versionTravail: "fix/article-9-typos",
     additions: 4,
     deletions: 4,
     filesChanged: 1,
   },
   // Il y a 4-5 jours
   {
-    hash: "d1e5f6a",
+    ref: "d1e5f6a",
     message: "Ajout préambule sur le droit à l'explication",
     author: "Sophie Chen",
     authorInitials: "SC",
     date: "il y a 4j",
     dateIso: "2025-01-11T16:00:00Z",
-    branch: "feature/ai-ethics",
+    versionTravail: "feature/ai-ethics",
     additions: 18,
     deletions: 0,
     filesChanged: 1,
   },
   {
-    hash: "p3e7f8a",
+    ref: "p3e7f8a",
     message: "Refactor: extraction du module de validation",
     author: "Alex Rivera",
     authorInitials: "AR",
     date: "il y a 4j",
     dateIso: "2025-01-11T10:00:00Z",
-    branch: "refactor/redistribution",
+    versionTravail: "refactor/redistribution",
     additions: 78,
     deletions: 145,
     filesChanged: 6,
   },
   {
-    hash: "e2f6a7b",
+    ref: "e2f6a7b",
     message: "Création de la branche et structure initiale",
     author: "Marie Dupont",
     authorInitials: "MD",
     date: "il y a 5j",
     dateIso: "2025-01-10T09:00:00Z",
-    branch: "feature/ai-ethics",
+    versionTravail: "feature/ai-ethics",
     additions: 12,
     deletions: 0,
     filesChanged: 3,
   },
   {
-    hash: "q4f8a9b",
+    ref: "q4f8a9b",
     message: "Mise à jour du README principal",
     author: "Luca Moretti",
     authorInitials: "LM",
     date: "il y a 5j",
     dateIso: "2025-01-10T08:00:00Z",
-    branch: "main",
+    versionTravail: "main",
     additions: 15,
     deletions: 8,
     filesChanged: 1,
@@ -1347,15 +1347,15 @@ export interface ForgeContributor {
   username: string;
   initials: string;
   color: "primary" | "cyan" | "green" | "orange";
-  commits: number;
-  mergeRequests: number;
+  revisions: number;
+  demandesIntegration: number;
   commentaires: number;
   lignesAjoutees: number;
   lignesSupprimees: number;
   projets: string[];
   derniereActivite: string;
   dateInscription: string;
-  // 7 derniers jours d'activité (commits par jour)
+  // 7 derniers jours d'activité (révisions par jour)
   activiteRecente: number[];
 }
 
@@ -1366,8 +1366,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "mdupont",
     initials: "MD",
     color: "primary",
-    commits: 247,
-    mergeRequests: 18,
+    revisions: 247,
+    demandesIntegration: 18,
     commentaires: 89,
     lignesAjoutees: 4_230,
     lignesSupprimees: 1_120,
@@ -1382,8 +1382,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "jmartin",
     initials: "JM",
     color: "cyan",
-    commits: 189,
-    mergeRequests: 14,
+    revisions: 189,
+    demandesIntegration: 14,
     commentaires: 67,
     lignesAjoutees: 3_450,
     lignesSupprimees: 890,
@@ -1398,8 +1398,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "schen",
     initials: "SC",
     color: "green",
-    commits: 156,
-    mergeRequests: 11,
+    revisions: 156,
+    demandesIntegration: 11,
     commentaires: 54,
     lignesAjoutees: 2_890,
     lignesSupprimees: 670,
@@ -1414,8 +1414,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "arivera",
     initials: "AR",
     color: "orange",
-    commits: 98,
-    mergeRequests: 7,
+    revisions: 98,
+    demandesIntegration: 7,
     commentaires: 42,
     lignesAjoutees: 1_780,
     lignesSupprimees: 1_450,
@@ -1430,8 +1430,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "fbenali",
     initials: "FB",
     color: "primary",
-    commits: 72,
-    mergeRequests: 5,
+    revisions: 72,
+    demandesIntegration: 5,
     commentaires: 38,
     lignesAjoutees: 1_320,
     lignesSupprimees: 480,
@@ -1446,8 +1446,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "lmoretti",
     initials: "LM",
     color: "cyan",
-    commits: 63,
-    mergeRequests: 4,
+    revisions: 63,
+    demandesIntegration: 4,
     commentaires: 21,
     lignesAjoutees: 980,
     lignesSupprimees: 210,
@@ -1462,8 +1462,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "anakamura",
     initials: "AN",
     color: "green",
-    commits: 54,
-    mergeRequests: 3,
+    revisions: 54,
+    demandesIntegration: 3,
     commentaires: 29,
     lignesAjoutees: 870,
     lignesSupprimees: 320,
@@ -1478,8 +1478,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "tblanc",
     initials: "TB",
     color: "orange",
-    commits: 41,
-    mergeRequests: 2,
+    revisions: 41,
+    demandesIntegration: 2,
     commentaires: 18,
     lignesAjoutees: 650,
     lignesSupprimees: 180,
@@ -1494,8 +1494,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "epopov",
     initials: "EP",
     color: "primary",
-    commits: 38,
-    mergeRequests: 2,
+    revisions: 38,
+    demandesIntegration: 2,
     commentaires: 15,
     lignesAjoutees: 540,
     lignesSupprimees: 120,
@@ -1510,8 +1510,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "kdiallo",
     initials: "KD",
     color: "cyan",
-    commits: 29,
-    mergeRequests: 1,
+    revisions: 29,
+    demandesIntegration: 1,
     commentaires: 12,
     lignesAjoutees: 410,
     lignesSupprimees: 90,
@@ -1526,8 +1526,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "ytanaka",
     initials: "YT",
     color: "green",
-    commits: 22,
-    mergeRequests: 1,
+    revisions: 22,
+    demandesIntegration: 1,
     commentaires: 8,
     lignesAjoutees: 320,
     lignesSupprimees: 65,
@@ -1542,8 +1542,8 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
     username: "cmuller",
     initials: "CM",
     color: "orange",
-    commits: 17,
-    mergeRequests: 1,
+    revisions: 17,
+    demandesIntegration: 1,
     commentaires: 6,
     lignesAjoutees: 230,
     lignesSupprimees: 45,
@@ -1559,7 +1559,7 @@ export const FORGE_CONTRIBUTORS: ForgeContributor[] = [
 // ============================================================
 
 export const ACTIVITY_HEATMAP: number[][] = [
-  // Each sub-array = 1 week (Mon-Sun), values = number of commits
+  // Each sub-array = 1 week (Mon-Sun), values = number of revisions
   [2, 0, 3, 1, 4, 0, 0],
   [1, 3, 2, 0, 1, 0, 0],
   [0, 2, 4, 3, 2, 1, 0],
@@ -1578,23 +1578,23 @@ export const ACTIVITY_HEATMAP: number[][] = [
 // ADDITIONAL HELPERS
 // ============================================================
 
-export function getAllMergeRequests(): ForgeMergeRequest[] {
-  return ALL_MERGE_REQUESTS;
+export function getAllDemandesIntegration(): ForgeDemandeIntegration[] {
+  return ALL_DEMANDES_INTEGRATION;
 }
 
-export function getAllCommits(): ForgeCommit[] {
-  return ALL_COMMITS;
+export function getAllRevisions(): ForgeRevision[] {
+  return ALL_REVISIONS;
 }
 
 export function getContributors(): ForgeContributor[] {
   return FORGE_CONTRIBUTORS;
 }
 
-/** Group commits by day label */
-export function groupCommitsByDay(commits: ForgeCommit[]): { day: string; dateIso: string; commits: ForgeCommit[] }[] {
-  const groups: Record<string, { day: string; dateIso: string; commits: ForgeCommit[] }> = {};
+/** Group revisions by day label */
+export function groupRevisionsByDay(revisions: ForgeRevision[]): { day: string; dateIso: string; revisions: ForgeRevision[] }[] {
+  const groups: Record<string, { day: string; dateIso: string; revisions: ForgeRevision[] }> = {};
 
-  for (const c of commits) {
+  for (const c of revisions) {
     const d = new Date(c.dateIso);
     const key = d.toISOString().slice(0, 10);
     const now = new Date();
@@ -1606,9 +1606,9 @@ export function groupCommitsByDay(commits: ForgeCommit[]): { day: string; dateIs
     else day = `Il y a ${diffDays} jours`;
 
     if (!groups[key]) {
-      groups[key] = { day, dateIso: key, commits: [] };
+      groups[key] = { day, dateIso: key, revisions: [] };
     }
-    groups[key].commits.push(c);
+    groups[key].revisions.push(c);
   }
 
   return Object.values(groups).sort((a, b) => b.dateIso.localeCompare(a.dateIso));

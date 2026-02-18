@@ -628,6 +628,593 @@ export const MOCK_ARCHIVES: ArchivedProposal[] = [
 ];
 
 // ============================================================
+// DÉBATS
+// ============================================================
+
+export type CategorieDebat =
+  | "argument_pour"
+  | "argument_contre"
+  | "question"
+  | "proposition_amendement"
+  | "technique"
+  | "general";
+
+export interface Message {
+  id: string;
+  auteur: { id: string; username: string; prenom: string; nom: string };
+  contenu: string;
+  date: string;
+  modifie: boolean;
+  reactions: {
+    approuve: number;
+    pertinent: number;
+    desaccord: number;
+  };
+  reponseA?: string;
+}
+
+export interface FilDiscussion {
+  id: string;
+  sujet: string;
+  auteur: { id: string; username: string; prenom: string; nom: string };
+  dateCreation: string;
+  messages: Message[];
+  epingle: boolean;
+  resolu: boolean;
+  categorie: CategorieDebat;
+}
+
+export interface Debat {
+  propositionId: string;
+  fils: FilDiscussion[];
+  synthese: {
+    argumentsPour: string[];
+    argumentsContre: string[];
+    questionsEnSuspens: string[];
+  };
+  statistiques: {
+    totalMessages: number;
+    participants: number;
+    dernierMessage: string;
+  };
+}
+
+const DEBATS: Record<string, Debat> = {
+  // Proposition prop-agora-115: "Modification : Durée de vote 14j → 21j"
+  "prop-agora-115": {
+    propositionId: "prop-agora-115",
+    fils: [
+      {
+        id: "fil-1",
+        sujet: "Résumé des arguments principaux",
+        auteur: { id: "mod-1", username: "moderateur_agora", prenom: "Équipe", nom: "Modération" },
+        dateCreation: "2025-12-06",
+        epingle: true,
+        resolu: false,
+        categorie: "general",
+        messages: [
+          {
+            id: "msg-1-1",
+            auteur: { id: "mod-1", username: "moderateur_agora", prenom: "Équipe", nom: "Modération" },
+            contenu: "Ce fil résume les arguments clés de chaque côté du débat sur l'extension de la durée de vote de 14 à 21 jours. Merci de consulter les fils dédiés pour les détails.\n\n**Pour** : meilleure inclusivité internationale, plus de temps de réflexion, participation accrue des zones à faible connectivité.\n**Contre** : ralentissement du processus démocratique, risque de fatigue des votants, coût opérationnel.\n\nCe résumé est mis à jour régulièrement.",
+            date: "il y a 9j",
+            modifie: true,
+            reactions: { approuve: 45, pertinent: 32, desaccord: 2 },
+          },
+          {
+            id: "msg-1-2",
+            auteur: { id: "u-sophie", username: "sophie.chen", prenom: "Sophie", nom: "Chen" },
+            contenu: "Merci pour ce résumé clair. Je suggère d'ajouter aussi les données de participation par fuseau horaire que Carlos a partagées dans le fil dédié.",
+            date: "il y a 7j",
+            modifie: false,
+            reactions: { approuve: 12, pertinent: 8, desaccord: 0 },
+            reponseA: "msg-1-1",
+          },
+        ],
+      },
+      {
+        id: "fil-2",
+        sujet: "Pourquoi 21 jours est mieux que 14",
+        auteur: { id: "u-carlos", username: "carlos.sp", prenom: "Carlos", nom: "Santos" },
+        dateCreation: "2025-12-06",
+        epingle: false,
+        resolu: false,
+        categorie: "argument_pour",
+        messages: [
+          {
+            id: "msg-2-1",
+            auteur: { id: "u-carlos", username: "carlos.sp", prenom: "Carlos", nom: "Santos" },
+            contenu: "J'ai analysé les données de participation des 10 derniers votes. Les citoyens en Asie du Sud-Est et en Afrique subsaharienne votent principalement entre le jour 8 et le jour 13. Avec 14 jours, ils ont à peine le temps de prendre connaissance du vote et de se décider.\n\nAvec 21 jours, on aurait une semaine supplémentaire qui permettrait d'atteindre les zones à faible connectivité où les gens ne se connectent qu'une fois par semaine au centre communautaire.",
+            date: "il y a 9j",
+            modifie: false,
+            reactions: { approuve: 34, pertinent: 28, desaccord: 5 },
+          },
+          {
+            id: "msg-2-2",
+            auteur: { id: "u-amina", username: "amina.kante", prenom: "Amina", nom: "Kanté" },
+            contenu: "Je confirme ! Au Sénégal, dans ma communauté, les gens accèdent à internet principalement le week-end au marché. 14 jours = seulement 2 week-ends possibles. 21 jours = 3 week-ends, ça change tout pour l'inclusion.",
+            date: "il y a 8j",
+            modifie: false,
+            reactions: { approuve: 56, pertinent: 41, desaccord: 1 },
+            reponseA: "msg-2-1",
+          },
+          {
+            id: "msg-2-3",
+            auteur: { id: "u-lena", username: "lena.zk", prenom: "Lena", nom: "Müller" },
+            contenu: "D'un point de vue technique, l'extension à 21 jours n'a quasiment aucun coût additionnel sur le système. Les votes sont stockés de manière incrémentale et le comptage final ne se fait qu'à la clôture.",
+            date: "il y a 7j",
+            modifie: false,
+            reactions: { approuve: 18, pertinent: 22, desaccord: 3 },
+          },
+          {
+            id: "msg-2-4",
+            auteur: { id: "u-jean", username: "jean.mart", prenom: "Jean", nom: "Martin" },
+            contenu: "L'argument de l'inclusion est fort. Mais ne pourrait-on pas plutôt investir dans l'infrastructure de connectivité plutôt que d'allonger les délais ? Ce serait traiter la cause plutôt que le symptôme.",
+            date: "il y a 5j",
+            modifie: false,
+            reactions: { approuve: 15, pertinent: 19, desaccord: 8 },
+          },
+          {
+            id: "msg-2-5",
+            auteur: { id: "u-carlos", username: "carlos.sp", prenom: "Carlos", nom: "Santos" },
+            contenu: "Jean, l'amélioration de l'infrastructure est un projet à long terme (et nécessaire !), mais 21 jours est une mesure qu'on peut appliquer immédiatement et qui bénéficie à des millions de personnes dès maintenant. Les deux approches ne sont pas exclusives.",
+            date: "il y a 4j",
+            modifie: false,
+            reactions: { approuve: 29, pertinent: 15, desaccord: 2 },
+            reponseA: "msg-2-4",
+          },
+        ],
+      },
+      {
+        id: "fil-3",
+        sujet: "Risque de ralentir le processus démocratique",
+        auteur: { id: "u-hans", username: "hans.b", prenom: "Hans", nom: "Braun" },
+        dateCreation: "2025-12-07",
+        epingle: false,
+        resolu: false,
+        categorie: "argument_contre",
+        messages: [
+          {
+            id: "msg-3-1",
+            auteur: { id: "u-hans", username: "hans.b", prenom: "Hans", nom: "Braun" },
+            contenu: "21 jours, c'est 3 semaines. Avec le temps de délibération (minimum 48h) et la collecte de cosignatures, une proposition peut prendre plus de 5 semaines avant d'être adoptée. Dans un monde qui bouge vite, c'est un luxe qu'on ne peut pas toujours se permettre.\n\nJe pense qu'on devrait plutôt garder 14 jours par défaut et avoir un mécanisme de prolongation optionnel pour les votes complexes.",
+            date: "il y a 8j",
+            modifie: false,
+            reactions: { approuve: 23, pertinent: 17, desaccord: 12 },
+          },
+          {
+            id: "msg-3-2",
+            auteur: { id: "u-priya", username: "priya_dev", prenom: "Priya", nom: "Sharma" },
+            contenu: "Hans soulève un point important. Mais en pratique, la majorité des votes atteignent déjà le quorum au jour 10. L'extension à 21 jours ne rallonge que les votes qui en ont besoin — les autres seraient clôturés plus tôt si on ajoutait un mécanisme de clôture anticipée quand le quorum est largement dépassé.",
+            date: "il y a 6j",
+            modifie: false,
+            reactions: { approuve: 31, pertinent: 26, desaccord: 4 },
+            reponseA: "msg-3-1",
+          },
+          {
+            id: "msg-3-3",
+            auteur: { id: "u-marcus", username: "marcus.gov", prenom: "Marcus", nom: "Johnson" },
+            contenu: "Je suis d'accord avec Hans sur le principe, mais pas sur la conclusion. Les décisions qui affectent 10 millions de personnes méritent 3 semaines de réflexion. La rapidité ne devrait pas primer sur la qualité de la démocratie.",
+            date: "il y a 5j",
+            modifie: false,
+            reactions: { approuve: 27, pertinent: 14, desaccord: 9 },
+          },
+          {
+            id: "msg-3-4",
+            auteur: { id: "u-hans", username: "hans.b", prenom: "Hans", nom: "Braun" },
+            contenu: "L'idée de Priya d'une clôture anticipée est intéressante. Si on combinait les deux : 21 jours max, mais clôture possible au jour 14 si le quorum est atteint à 150% ? Ça résoudrait les deux problèmes.",
+            date: "il y a 3j",
+            modifie: false,
+            reactions: { approuve: 38, pertinent: 29, desaccord: 3 },
+            reponseA: "msg-3-2",
+          },
+        ],
+      },
+      {
+        id: "fil-4",
+        sujet: "Peut-on avoir des statistiques de participation au jour 7 vs jour 14 ?",
+        auteur: { id: "u-yuki", username: "yuki.node", prenom: "Yuki", nom: "Tanaka" },
+        dateCreation: "2025-12-08",
+        epingle: false,
+        resolu: true,
+        categorie: "question",
+        messages: [
+          {
+            id: "msg-4-1",
+            auteur: { id: "u-yuki", username: "yuki.node", prenom: "Yuki", nom: "Tanaka" },
+            contenu: "Quelqu'un aurait-il accès aux statistiques détaillées de participation par jour pour les votes récents ? Je voudrais voir la courbe d'accumulation des votes pour mieux comprendre l'impact potentiel de l'extension.",
+            date: "il y a 7j",
+            modifie: false,
+            reactions: { approuve: 14, pertinent: 21, desaccord: 0 },
+          },
+          {
+            id: "msg-4-2",
+            auteur: { id: "u-carlos", username: "carlos.sp", prenom: "Carlos", nom: "Santos" },
+            contenu: "Voici les chiffres des 5 derniers votes (moyenne) :\n- Jour 1-3 : 15% de la participation finale\n- Jour 4-7 : 35%\n- Jour 8-10 : 25%\n- Jour 11-14 : 25%\n\nDonc 50% des votes arrivent dans la deuxième semaine. On peut raisonnablement estimer que 10-15% supplémentaires arriveraient dans une 3ème semaine.",
+            date: "il y a 6j",
+            modifie: false,
+            reactions: { approuve: 42, pertinent: 38, desaccord: 1 },
+            reponseA: "msg-4-1",
+          },
+          {
+            id: "msg-4-3",
+            auteur: { id: "u-yuki", username: "yuki.node", prenom: "Yuki", nom: "Tanaka" },
+            contenu: "Merci Carlos, c'est exactement ce dont j'avais besoin. Ces chiffres confirment que l'extension aurait un impact significatif sur l'inclusion. Je marque ce fil comme résolu.",
+            date: "il y a 5j",
+            modifie: false,
+            reactions: { approuve: 8, pertinent: 5, desaccord: 0 },
+            reponseA: "msg-4-2",
+          },
+        ],
+      },
+    ],
+    synthese: {
+      argumentsPour: [
+        "Meilleure inclusion des citoyens en zones à faible connectivité (accès hebdomadaire uniquement)",
+        "Les données montrent que 50% des votes arrivent dans la 2ème semaine — une 3ème semaine ajouterait 10-15% de participation",
+        "Coût technique quasi nul pour le système",
+        "Permet 3 week-ends d'accès au lieu de 2 pour les communautés rurales",
+      ],
+      argumentsContre: [
+        "Rallonge le cycle complet d'une proposition à plus de 5 semaines",
+        "Risque de fatigue des votants sur les longues périodes",
+        "La rapidité est parfois nécessaire pour les décisions urgentes",
+      ],
+      questionsEnSuspens: [
+        "Possibilité d'un mécanisme de clôture anticipée si le quorum est largement dépassé (150%) ?",
+        "Faut-il différencier la durée selon le type de proposition (standard vs constitutionnelle) ?",
+      ],
+    },
+    statistiques: {
+      totalMessages: 14,
+      participants: 8,
+      dernierMessage: "il y a 3j",
+    },
+  },
+
+  // Proposition 1: "Révision du coefficient PPA"
+  "1": {
+    propositionId: "1",
+    fils: [
+      {
+        id: "fil-5",
+        sujet: "Impact sur les zones à fort coût de vie",
+        auteur: { id: "u-sophie", username: "sophie.chen", prenom: "Sophie", nom: "Chen" },
+        dateCreation: "2025-12-02",
+        epingle: false,
+        resolu: false,
+        categorie: "argument_pour",
+        messages: [
+          {
+            id: "msg-5-1",
+            auteur: { id: "u-sophie", username: "sophie.chen", prenom: "Sophie", nom: "Chen" },
+            contenu: "La révision du coefficient PPA est cruciale pour les citoyens vivant dans des zones à fort coût de vie. À Tokyo, 1 Ѵ permet d'acheter un café, alors qu'à Dakar on peut acheter un repas complet. Sans ajustement, le système perpétue les inégalités géographiques.",
+            date: "il y a 12j",
+            modifie: false,
+            reactions: { approuve: 67, pertinent: 45, desaccord: 8 },
+          },
+          {
+            id: "msg-5-2",
+            auteur: { id: "u-fatou", username: "fatou.sn", prenom: "Fatou", nom: "Ndiaye" },
+            contenu: "Je comprends l'argument, mais attention : un coefficient PPA trop généreux pour les zones chères risque de créer un afflux de « migration numérique » où les gens prétendent vivre dans des zones chères pour bénéficier du coefficient.",
+            date: "il y a 11j",
+            modifie: false,
+            reactions: { approuve: 34, pertinent: 52, desaccord: 6 },
+            reponseA: "msg-5-1",
+          },
+          {
+            id: "msg-5-3",
+            auteur: { id: "u-lena", username: "lena.zk", prenom: "Lena", nom: "Müller" },
+            contenu: "Fatou soulève un point important. La vérification ZK-proof pourrait inclure une preuve de localisation anonymisée — on peut prouver qu'on est dans une zone géographique sans révéler son adresse exacte.",
+            date: "il y a 10j",
+            modifie: false,
+            reactions: { approuve: 43, pertinent: 38, desaccord: 2 },
+            reponseA: "msg-5-2",
+          },
+        ],
+      },
+      {
+        id: "fil-6",
+        sujet: "Proposition d'amendement : coefficient trimestriel plutôt qu'annuel",
+        auteur: { id: "u-marcus", username: "marcus.gov", prenom: "Marcus", nom: "Johnson" },
+        dateCreation: "2025-12-03",
+        epingle: false,
+        resolu: false,
+        categorie: "proposition_amendement",
+        messages: [
+          {
+            id: "msg-6-1",
+            auteur: { id: "u-marcus", username: "marcus.gov", prenom: "Marcus", nom: "Johnson" },
+            contenu: "Je propose un amendement : plutôt qu'un coefficient PPA révisé annuellement (comme dans la proposition actuelle), on devrait le réviser trimestriellement. Les prix fluctuent rapidement dans certaines régions, et un coefficient annuel est trop lent à s'adapter.\n\nConcrètement : utiliser les données de l'ONU et de la Banque Mondiale mises à jour chaque trimestre pour recalculer automatiquement les coefficients.",
+            date: "il y a 11j",
+            modifie: false,
+            reactions: { approuve: 28, pertinent: 35, desaccord: 12 },
+          },
+          {
+            id: "msg-6-2",
+            auteur: { id: "u-priya", username: "priya_dev", prenom: "Priya", nom: "Sharma" },
+            contenu: "Techniquement faisable. Les APIs de la Banque Mondiale sont gratuites et fournissent des données trimestrielles. On pourrait automatiser le calcul avec un smart contract qui met à jour le coefficient en fonction des données entrantes.",
+            date: "il y a 10j",
+            modifie: false,
+            reactions: { approuve: 22, pertinent: 30, desaccord: 4 },
+            reponseA: "msg-6-1",
+          },
+          {
+            id: "msg-6-3",
+            auteur: { id: "u-hans", username: "hans.b", prenom: "Hans", nom: "Braun" },
+            contenu: "Attention au risque de volatilité excessive. Un changement trimestriel signifie que le pouvoir d'achat d'un citoyen peut varier significativement d'un trimestre à l'autre, ce qui nuit à la prévisibilité.",
+            date: "il y a 9j",
+            modifie: false,
+            reactions: { approuve: 19, pertinent: 25, desaccord: 7 },
+          },
+          {
+            id: "msg-6-4",
+            auteur: { id: "u-marcus", username: "marcus.gov", prenom: "Marcus", nom: "Johnson" },
+            contenu: "Hans, on pourrait limiter la variation max à ±5% par trimestre pour éviter les chocs. C'est un bon compromis entre réactivité et stabilité.",
+            date: "il y a 8j",
+            modifie: true,
+            reactions: { approuve: 36, pertinent: 20, desaccord: 3 },
+            reponseA: "msg-6-3",
+          },
+        ],
+      },
+      {
+        id: "fil-7",
+        sujet: "Quelle source de données pour le calcul PPA ?",
+        auteur: { id: "u-lena", username: "lena.zk", prenom: "Lena", nom: "Müller" },
+        dateCreation: "2025-12-04",
+        epingle: false,
+        resolu: false,
+        categorie: "technique",
+        messages: [
+          {
+            id: "msg-7-1",
+            auteur: { id: "u-lena", username: "lena.zk", prenom: "Lena", nom: "Müller" },
+            contenu: "Question technique : quelle source de données utilise-t-on exactement pour le calcul PPA ? Les données de la Banque Mondiale (ICP) sont les plus complètes mais elles ont 1-2 ans de retard. Le FMI publie des estimations plus récentes mais moins granulaires.",
+            date: "il y a 10j",
+            modifie: false,
+            reactions: { approuve: 15, pertinent: 28, desaccord: 0 },
+          },
+          {
+            id: "msg-7-2",
+            auteur: { id: "u-carlos", username: "carlos.sp", prenom: "Carlos", nom: "Santos" },
+            contenu: "On pourrait combiner les deux : données ICP de la Banque Mondiale comme base, ajustées par les estimations trimestrielles du FMI. C'est ce que font la plupart des organisations internationales.",
+            date: "il y a 9j",
+            modifie: false,
+            reactions: { approuve: 20, pertinent: 18, desaccord: 1 },
+            reponseA: "msg-7-1",
+          },
+        ],
+      },
+    ],
+    synthese: {
+      argumentsPour: [
+        "Corrige les inégalités de pouvoir d'achat entre zones géographiques",
+        "Données techniques disponibles via APIs de la Banque Mondiale et du FMI",
+        "La vérification ZK-proof peut inclure une preuve de localisation anonymisée",
+      ],
+      argumentsContre: [
+        "Risque de « migration numérique » pour bénéficier de coefficients avantageux",
+        "Un coefficient trimestriel pourrait créer de la volatilité dans le pouvoir d'achat",
+      ],
+      questionsEnSuspens: [
+        "Quelle fréquence de révision du coefficient : annuelle ou trimestrielle (avec plafond ±5%) ?",
+      ],
+    },
+    statistiques: {
+      totalMessages: 9,
+      participants: 6,
+      dernierMessage: "il y a 8j",
+    },
+  },
+};
+
+// ============================================================
+// HISTORIQUE DES PROPOSITIONS
+// ============================================================
+
+export type TypeEvenement =
+  | "creation"
+  | "modification"
+  | "commentaire_clos"
+  | "passage_discussion"
+  | "passage_vote"
+  | "vote_cloture"
+  | "resultat"
+  | "application"
+  | "appel"
+  | "modification_texte"
+  | "ajout_document"
+  | "changement_categorie"
+  | "soutien_seuil"
+  | "assignation_relecteur";
+
+export interface EvenementHistorique {
+  id: string;
+  type: TypeEvenement;
+  date: string;
+  acteur?: { id: string; username: string; prenom: string; nom: string };
+  titre: string;
+  description: string;
+  details?: {
+    avant?: string;
+    apres?: string;
+    pour?: number;
+    contre?: number;
+    abstention?: number;
+    participation?: number;
+    quorumRequis?: number;
+    seuilRequis?: number;
+    adopte?: boolean;
+    soutiens?: number;
+    seuilAtteint?: boolean;
+    ancienneCategorie?: string;
+    nouvelleCategorie?: string;
+  };
+}
+
+export interface PropositionHistorique {
+  propositionId: string;
+  etapeActuelle: "creation" | "discussion" | "vote" | "resultat" | "application";
+  evenements: EvenementHistorique[];
+}
+
+const HISTORIQUES: Record<string, PropositionHistorique> = {
+  // Proposition prop-agora-115: "Modification : Durée de vote 14j → 21j" (en cours de vote)
+  "prop-agora-115": {
+    propositionId: "prop-agora-115",
+    etapeActuelle: "vote",
+    evenements: [
+      {
+        id: "evt-115-1",
+        type: "creation",
+        date: "5 déc. 2025, 09:15",
+        acteur: { id: "u-sophie-c", username: "sophie.c", prenom: "Sophie", nom: "C." },
+        titre: "Proposition créée",
+        description: "Proposition créée suite à l'analyse des taux de participation par fuseau horaire sur les 10 derniers votes.",
+      },
+      {
+        id: "evt-115-2",
+        type: "passage_discussion",
+        date: "5 déc. 2025, 09:15",
+        titre: "Période de discussion ouverte",
+        description: "Période de discussion ouverte pour 48 heures minimum. Les citoyens peuvent commenter et proposer des amendements.",
+      },
+      {
+        id: "evt-115-3",
+        type: "ajout_document",
+        date: "6 déc. 2025, 14:30",
+        acteur: { id: "u-sophie-c", username: "sophie.c", prenom: "Sophie", nom: "C." },
+        titre: "Document ajouté",
+        description: "Ajout de l'analyse statistique des taux de participation par jour et par zone géographique.",
+      },
+      {
+        id: "evt-115-4",
+        type: "assignation_relecteur",
+        date: "6 déc. 2025, 16:00",
+        acteur: { id: "mod-1", username: "moderateur_agora", prenom: "Équipe", nom: "Modération" },
+        titre: "Relecteurs assignés",
+        description: "2 relecteurs assignés : @carlos.sp et @amina.kante pour examiner la proposition et ses impacts.",
+      },
+      {
+        id: "evt-115-5",
+        type: "modification_texte",
+        date: "7 déc. 2025, 11:20",
+        acteur: { id: "u-sophie-c", username: "sophie.c", prenom: "Sophie", nom: "C." },
+        titre: "Texte modifié",
+        description: "Précision ajoutée sur l'impact pour les votes urgents : les votes de type « urgence » conserveraient une durée de 7 jours.",
+        details: {
+          avant: "Extension de la durée de vote standard de 14 à 21 jours pour tous les types de propositions.",
+          apres: "Extension de la durée de vote standard de 14 à 21 jours. Les votes de type « urgence » conservent une durée de 7 jours, et les votes constitutionnels passent à 30 jours.",
+        },
+      },
+      {
+        id: "evt-115-6",
+        type: "soutien_seuil",
+        date: "8 déc. 2025, 08:45",
+        titre: "Seuil de soutiens atteint",
+        description: "Le seuil de 100 cosignatures a été atteint. La proposition est éligible au passage en vote.",
+        details: {
+          soutiens: 156,
+          seuilAtteint: true,
+        },
+      },
+      {
+        id: "evt-115-7",
+        type: "passage_vote",
+        date: "9 déc. 2025, 00:00",
+        titre: "Vote ouvert",
+        description: "Période de discussion terminée. Vote ouvert pour 14 jours (jusqu'au 23 décembre 2025). Quorum requis : 25%, seuil d'adoption : 60%.",
+      },
+    ],
+  },
+
+  // Proposition 1: "Révision du coefficient PPA" (en cours de vote aussi)
+  "1": {
+    propositionId: "1",
+    etapeActuelle: "vote",
+    evenements: [
+      {
+        id: "evt-1-1",
+        type: "creation",
+        date: "1 déc. 2025, 10:00",
+        acteur: { id: "u-marie", username: "marie.d", prenom: "Marie", nom: "D." },
+        titre: "Proposition créée",
+        description: "Proposition soumise pour adapter le coefficient PPA selon les variations régionales du coût de la vie.",
+      },
+      {
+        id: "evt-1-2",
+        type: "passage_discussion",
+        date: "1 déc. 2025, 10:00",
+        titre: "Période de discussion ouverte",
+        description: "Période de discussion ouverte pour un minimum de 48 heures.",
+      },
+      {
+        id: "evt-1-3",
+        type: "modification_texte",
+        date: "3 déc. 2025, 09:30",
+        acteur: { id: "u-marie", username: "marie.d", prenom: "Marie", nom: "D." },
+        titre: "Texte modifié",
+        description: "Ajout de précisions sur la méthode de calcul des coefficients et les sources de données utilisées.",
+        details: {
+          avant: "Adapter le coefficient PPA en utilisant les données publiques disponibles.",
+          apres: "Adapter le coefficient PPA en utilisant les données ICP de la Banque Mondiale, ajustées trimestriellement par les estimations du FMI. Variation maximale de ±5% par trimestre.",
+        },
+      },
+      {
+        id: "evt-1-4",
+        type: "modification_texte",
+        date: "5 déc. 2025, 15:45",
+        acteur: { id: "u-marie", username: "marie.d", prenom: "Marie", nom: "D." },
+        titre: "Texte modifié",
+        description: "Intégration de la suggestion de vérification ZK-proof pour la localisation.",
+        details: {
+          avant: "La localisation du citoyen sera déclarée sur l'honneur.",
+          apres: "La localisation du citoyen sera vérifiée par une preuve ZK anonymisée confirmant la zone géographique sans révéler l'adresse exacte.",
+        },
+      },
+      {
+        id: "evt-1-5",
+        type: "passage_vote",
+        date: "7 déc. 2025, 00:00",
+        titre: "Vote ouvert",
+        description: "Période de discussion terminée. Vote ouvert pour 14 jours. Quorum requis : 20%, seuil d'adoption : 50%.",
+      },
+      {
+        id: "evt-1-6",
+        type: "vote_cloture",
+        date: "21 déc. 2025, 00:00",
+        titre: "Vote clôturé",
+        description: "Période de vote terminée. Dépouillement en cours.",
+      },
+      {
+        id: "evt-1-7",
+        type: "resultat",
+        date: "21 déc. 2025, 00:05",
+        titre: "Résultat proclamé : Adoptée",
+        description: "La proposition a été adoptée avec 64.9% des votes favorables et un taux de participation de 50.0%.",
+        details: {
+          pour: 3247,
+          contre: 1523,
+          abstention: 234,
+          participation: 50.0,
+          quorumRequis: 20,
+          seuilRequis: 50,
+          adopte: true,
+        },
+      },
+      {
+        id: "evt-1-8",
+        type: "application",
+        date: "22 déc. 2025, 08:00",
+        titre: "Modification appliquée",
+        description: "Le nouveau coefficient PPA est entré en vigueur. Les soldes seront ajustés progressivement sur 7 jours.",
+      },
+    ],
+  },
+};
+
+// ============================================================
 // HELPERS
 // ============================================================
 
@@ -651,4 +1238,12 @@ export function getProposalsInDiscussion(): AgoraProposal[] {
 
 export function getProposalsVoting(): AgoraProposal[] {
   return ALL_PROPOSALS.filter((p) => p.status === "voting");
+}
+
+export function getDebatsForProposal(propositionId: string): Debat | undefined {
+  return DEBATS[propositionId];
+}
+
+export function getHistoriqueForProposal(propositionId: string): PropositionHistorique | undefined {
+  return HISTORIQUES[propositionId];
 }

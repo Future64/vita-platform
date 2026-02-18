@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import type { ForgeDiffFile, ForgeDiffLine } from "@/lib/mockForge";
+import type { ForgeComparaisonFile, ForgeComparaisonLine } from "@/lib/mockForge";
 import { FileText, Plus, Minus, Columns2, Rows3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type ViewMode = "unified" | "split";
 
-interface DiffViewerProps {
-  files: ForgeDiffFile[];
+interface ComparaisonViewerProps {
+  files: ForgeComparaisonFile[];
   className?: string;
 }
 
-export function DiffViewer({ files, className }: DiffViewerProps) {
+export function ComparaisonViewer({ files, className }: ComparaisonViewerProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(
     new Set(files.map((f) => f.filePath))
@@ -135,7 +135,7 @@ export function DiffViewer({ files, className }: DiffViewerProps) {
 }
 
 // Unified diff view
-function UnifiedDiff({ lines }: { lines: ForgeDiffLine[] }) {
+function UnifiedDiff({ lines }: { lines: ForgeComparaisonLine[] }) {
   return (
     <table className="w-full border-collapse font-mono text-xs">
       <tbody>
@@ -180,9 +180,9 @@ function UnifiedDiff({ lines }: { lines: ForgeDiffLine[] }) {
 }
 
 // Split (side-by-side) diff view
-function SplitDiff({ lines }: { lines: ForgeDiffLine[] }) {
+function SplitDiff({ lines }: { lines: ForgeComparaisonLine[] }) {
   // Build paired rows: left (old) and right (new)
-  const pairs: { left: ForgeDiffLine | null; right: ForgeDiffLine | null }[] = [];
+  const pairs: { left: ForgeComparaisonLine | null; right: ForgeComparaisonLine | null }[] = [];
   let i = 0;
 
   while (i < lines.length) {

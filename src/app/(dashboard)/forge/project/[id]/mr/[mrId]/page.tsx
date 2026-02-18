@@ -26,20 +26,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { SubTabs, SubTabsList, SubTabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { DiffViewer } from "@/components/modules/forge/DiffViewer";
+import { ComparaisonViewer } from "@/components/modules/forge/ComparaisonViewer";
 import Link from "next/link";
 import {
   getProject,
-  getMergeRequest,
-  getDiffs,
-  FORGE_COMMITS,
-  FORGE_BRANCHES,
+  getDemandeIntegration,
+  getComparaisons,
+  FORGE_REVISIONS,
+  FORGE_VERSIONS_TRAVAIL,
 } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
@@ -50,7 +50,7 @@ const statusConfig: Record<
   open: { label: "Ouvert", variant: "violet", icon: GitPullRequest },
   voting: { label: "En vote", variant: "orange", icon: ThumbsUp },
   approved: { label: "Approuvé", variant: "cyan", icon: CheckCircle2 },
-  merged: { label: "Merged", variant: "green", icon: GitMerge },
+  integrated: { label: "Intégré", variant: "green", icon: GitMerge },
   rejected: { label: "Rejeté", variant: "red", icon: XCircle },
   closed: { label: "Fermé", variant: "red", icon: XCircle },
 };
@@ -62,23 +62,23 @@ export default function MergeRequestPage() {
   const [commentText, setCommentText] = useState("");
 
   const project = getProject(projectId);
-  const mr = getMergeRequest(mrId);
-  const diffs = getDiffs(mrId);
+  const di = getDemandeIntegration(mrId);
+  const comparaisons = getComparaisons(mrId);
 
-  // Find commits for the source branch
-  const sourceBranch = mr
-    ? Object.values(FORGE_BRANCHES)
+  // Find revisions for the source version
+  const sourceVersion = di
+    ? Object.values(FORGE_VERSIONS_TRAVAIL)
         .flat()
-        .find((b) => b.name === mr.sourceBranch && b.projectId === projectId)
+        .find((b) => b.name === di.sourceVersion && b.projectId === projectId)
     : undefined;
-  const branchCommits = sourceBranch ? FORGE_COMMITS[sourceBranch.id] ?? [] : [];
+  const branchCommits = sourceVersion ? FORGE_REVISIONS[sourceVersion.id] ?? [] : [];
 
-  if (!project || !mr) {
+  if (!project || !di) {
     return (
       <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
         <div className="flex flex-col items-center justify-center py-20">
           <p className="text-lg font-semibold text-[var(--text-primary)]">
-            Merge Request introuvable
+            Demande d&apos;intégration introuvable
           </p>
           <Link href={`/forge/project/${projectId}`}>
             <Button variant="ghost" className="mt-4">
@@ -91,13 +91,13 @@ export default function MergeRequestPage() {
     );
   }
 
-  const status = statusConfig[mr.status] ?? statusConfig.open;
+  const status = statusConfig[di.status] ?? statusConfig.open;
   const StatusIcon = status.icon;
   const approvalPercent =
-    mr.totalVotes > 0
-      ? Math.round((mr.votes.approve / mr.totalVotes) * 100)
+    di.totalVotes > 0
+      ? Math.round((di.votes.approve / di.totalVotes) * 100)
       : 0;
-  const quorumPercent = Math.round((mr.totalVotes / mr.quorum) * 100);
+  const quorumPercent = Math.round((di.totalVotes / di.quorum) * 100);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
@@ -115,27 +115,27 @@ export default function MergeRequestPage() {
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <StatusIcon className={`h-5 w-5 text-${status.variant}-500`} />
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                #{mr.number} {mr.title}
+                #{di.number} {di.title}
               </h1>
               <Badge variant={status.variant}>{status.label}</Badge>
             </div>
             <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-semibold">
-                  {mr.authorInitials}
+                  {di.authorInitials}
                 </div>
-                <span>{mr.author}</span>
+                <span>{di.author}</span>
               </div>
               <span>•</span>
-              <span>Ouvert {mr.created}</span>
+              <span>Ouvert {di.created}</span>
               <span>•</span>
               <div className="flex items-center gap-1">
                 <Badge variant="violet" className="text-xs">
-                  {mr.sourceBranch}
+                  {di.sourceVersion}
                 </Badge>
                 <span>→</span>
                 <Badge variant="orange" className="text-xs">
-                  {mr.targetBranch}
+                  {di.targetVersion}
                 </Badge>
               </div>
             </div>
@@ -143,7 +143,7 @@ export default function MergeRequestPage() {
 
           {/* Action buttons */}
           <div className="flex gap-2 flex-wrap">
-            <PermissionGate permission="approve_merge_request">
+            <PermissionGate permission="approve_demande_integration">
               <Button variant="voteFor" size="sm">
                 <ThumbsUp className="h-4 w-4" />
                 Approuver
@@ -153,11 +153,11 @@ export default function MergeRequestPage() {
                 Rejeter
               </Button>
             </PermissionGate>
-            {mr.status === "approved" && (
-              <PermissionGate permission="merge_branch">
+            {di.status === "approved" && (
+              <PermissionGate permission="integrer_version">
                 <Button variant="success" size="sm">
                   <GitMerge className="h-4 w-4" />
-                  Merger
+                  Intégrer
                 </Button>
               </PermissionGate>
             )}
@@ -172,7 +172,7 @@ export default function MergeRequestPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-[var(--text-muted)]">Votes</span>
               <span className="text-xs font-semibold text-[var(--text-primary)]">
-                {mr.totalVotes} / {mr.quorum} (quorum)
+                {di.totalVotes} / {di.quorum} (quorum)
               </span>
             </div>
             <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
@@ -195,7 +195,7 @@ export default function MergeRequestPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-[var(--text-muted)]">Approbation</span>
               <span className="text-xs font-semibold text-[var(--text-primary)]">
-                {approvalPercent}% (requis: {mr.requiredMajority}%)
+                {approvalPercent}% (requis: {di.requiredMajority}%)
               </span>
             </div>
             <div className="flex h-2 rounded-full overflow-hidden bg-[var(--bg-elevated)]">
@@ -203,8 +203,8 @@ export default function MergeRequestPage() {
                 className="h-full bg-green-500 transition-all"
                 style={{
                   width: `${
-                    mr.totalVotes > 0
-                      ? (mr.votes.approve / mr.totalVotes) * 100
+                    di.totalVotes > 0
+                      ? (di.votes.approve / di.totalVotes) * 100
                       : 0
                   }%`,
                 }}
@@ -213,8 +213,8 @@ export default function MergeRequestPage() {
                 className="h-full bg-pink-500 transition-all"
                 style={{
                   width: `${
-                    mr.totalVotes > 0
-                      ? (mr.votes.reject / mr.totalVotes) * 100
+                    di.totalVotes > 0
+                      ? (di.votes.reject / di.totalVotes) * 100
                       : 0
                   }%`,
                 }}
@@ -223,17 +223,17 @@ export default function MergeRequestPage() {
                 className="h-full bg-gray-500/30 transition-all"
                 style={{
                   width: `${
-                    mr.totalVotes > 0
-                      ? (mr.votes.abstain / mr.totalVotes) * 100
+                    di.totalVotes > 0
+                      ? (di.votes.abstain / di.totalVotes) * 100
                       : 0
                   }%`,
                 }}
               />
             </div>
             <div className="mt-1.5 flex items-center gap-3 text-xs">
-              <span className="text-green-500">✓ {mr.votes.approve}</span>
-              <span className="text-pink-500">✗ {mr.votes.reject}</span>
-              <span className="text-[var(--text-muted)]">◯ {mr.votes.abstain}</span>
+              <span className="text-green-500">✓ {di.votes.approve}</span>
+              <span className="text-pink-500">✗ {di.votes.reject}</span>
+              <span className="text-[var(--text-muted)]">◯ {di.votes.abstain}</span>
             </div>
           </CardContent>
         </Card>
@@ -243,26 +243,26 @@ export default function MergeRequestPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-[var(--text-muted)]">Changements</span>
               <span className="text-xs font-semibold text-[var(--text-primary)]">
-                {mr.filesChanged} fichiers
+                {di.filesChanged} fichiers
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm">
               <span className="flex items-center gap-1 text-green-500 font-semibold">
                 <Plus className="h-4 w-4" />
-                {mr.additions}
+                {di.additions}
               </span>
               <span className="flex items-center gap-1 text-pink-500 font-semibold">
                 <Minus className="h-4 w-4" />
-                {mr.deletions}
+                {di.deletions}
               </span>
             </div>
-            {mr.hasConflicts && (
+            {di.hasConflicts && (
               <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
                 <AlertTriangle className="h-3 w-3" />
                 Conflits détectés
               </p>
             )}
-            {!mr.hasConflicts && (
+            {!di.hasConflicts && (
               <p className="mt-1.5 flex items-center gap-1 text-xs text-green-500">
                 <CheckCircle2 className="h-3 w-3" />
                 Pas de conflits
@@ -281,18 +281,18 @@ export default function MergeRequestPage() {
           </SubTabsTrigger>
           <SubTabsTrigger value="discussion">
             <MessageSquare className="h-4 w-4 mr-1.5" />
-            Discussion ({mr.comments.length})
+            Discussion ({di.comments.length})
           </SubTabsTrigger>
           <SubTabsTrigger value="commits">
             <GitCommit className="h-4 w-4 mr-1.5" />
-            Commits ({branchCommits.length})
+            Révisions ({branchCommits.length})
           </SubTabsTrigger>
         </SubTabsList>
 
         {/* Changes Tab */}
         <TabsContent value="changes" className="mt-5">
-          {diffs.length > 0 ? (
-            <DiffViewer files={diffs} />
+          {comparaisons.length > 0 ? (
+            <ComparaisonViewer files={comparaisons} />
           ) : (
             <Card>
               <CardContent>
@@ -312,19 +312,19 @@ export default function MergeRequestPage() {
               <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
-                    {mr.authorInitials}
+                    {di.authorInitials}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm font-semibold text-[var(--text-primary)]">
-                        {mr.author}
+                        {di.author}
                       </span>
                       <span className="text-xs text-[var(--text-muted)]">
-                        {mr.created}
+                        {di.created}
                       </span>
                     </div>
                     <div className="prose prose-sm max-w-none text-[var(--text-secondary)] whitespace-pre-line">
-                      {mr.description}
+                      {di.description}
                     </div>
                   </div>
                 </div>
@@ -332,7 +332,7 @@ export default function MergeRequestPage() {
             </Card>
 
             {/* Comments */}
-            {mr.comments.map((comment) => (
+            {di.comments.map((comment) => (
               <Card key={comment.id}>
                 <CardContent>
                   <div className="flex items-start gap-3">
@@ -398,19 +398,19 @@ export default function MergeRequestPage() {
           </div>
         </TabsContent>
 
-        {/* Commits Tab */}
+        {/* Revisions Tab */}
         <TabsContent value="commits" className="mt-5">
           <Card>
             <CardContent>
               {branchCommits.length === 0 ? (
                 <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-                  Aucun commit trouvé
+                  Aucune révision trouvée
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {branchCommits.map((commit) => (
+                  {branchCommits.map((revision) => (
                     <div
-                      key={commit.hash}
+                      key={revision.ref}
                       className="flex items-start gap-3 rounded-lg border border-[var(--border)] p-3 hover:bg-[var(--bg-elevated)] transition-colors"
                     >
                       <div className="h-8 w-8 shrink-0 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center">
@@ -418,19 +418,19 @@ export default function MergeRequestPage() {
                       </div>
                       <div className="flex-1">
                         <div className="font-semibold text-sm text-[var(--text-primary)]">
-                          {commit.message}
+                          {revision.message}
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-muted)]">
-                          <span>{commit.author}</span>
+                          <span>{revision.author}</span>
                           <span>•</span>
-                          <span className="font-mono">{commit.hash}</span>
+                          <span className="font-mono">{revision.ref}</span>
                           <span>•</span>
-                          <span>{commit.date}</span>
+                          <span>{revision.date}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs shrink-0">
-                        <span className="text-green-500">+{commit.additions}</span>
-                        <span className="text-pink-500">-{commit.deletions}</span>
+                        <span className="text-green-500">+{revision.additions}</span>
+                        <span className="text-pink-500">-{revision.deletions}</span>
                       </div>
                     </div>
                   ))}

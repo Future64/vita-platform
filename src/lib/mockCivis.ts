@@ -14,9 +14,9 @@ export type ActivityType =
   | "delegation"
   | "modification_profil"
   | "soutien_doleance"
-  | "commit"
-  | "merge_request"
-  | "review";
+  | "revision"
+  | "demande_integration"
+  | "relecture";
 
 export interface UserActivity {
   id: string;
@@ -42,9 +42,9 @@ export const ACTIVITY_TYPE_CONFIG: Record<
   delegation: { label: "Délégation", color: "text-cyan-500", iconName: "Users" },
   modification_profil: { label: "Profil", color: "text-[var(--text-muted)]", iconName: "Edit" },
   soutien_doleance: { label: "Soutien", color: "text-pink-500", iconName: "Heart" },
-  commit: { label: "Commit", color: "text-pink-500", iconName: "GitCommit" },
-  merge_request: { label: "Merge Request", color: "text-violet-500", iconName: "GitPullRequest" },
-  review: { label: "Review", color: "text-green-500", iconName: "CheckCircle" },
+  revision: { label: "Révision", color: "text-pink-500", iconName: "GitCommit" },
+  demande_integration: { label: "Demande d'intégration", color: "text-violet-500", iconName: "GitPullRequest" },
+  relecture: { label: "Relecture", color: "text-green-500", iconName: "CheckCircle" },
 };
 
 export const MOCK_ACTIVITIES: UserActivity[] = [
@@ -75,8 +75,8 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-04",
-    type: "commit",
-    titre: "A créé un commit sur Constitution VITA v3",
+    type: "revision",
+    titre: "A créé une révision sur Constitution VITA v3",
     description: "Ajout article 47 : Éthique de l'IA et gouvernance",
     date: "il y a 10h",
     dateIso: "2025-01-15T04:00:00Z",
@@ -109,8 +109,8 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-08",
-    type: "review",
-    titre: "A approuvé la MR « Article 12 — Portabilité des données »",
+    type: "relecture",
+    titre: "A approuvé la DI « Article 12 — Portabilité des données »",
     date: "il y a 1j",
     dateIso: "2025-01-14T10:00:00Z",
     lien: "/forge/project/constitution-v3/mr/mr-2",
@@ -168,8 +168,8 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-15",
-    type: "merge_request",
-    titre: "A créé la MR « Ajout article 47 — IA éthique »",
+    type: "demande_integration",
+    titre: "A créé la DI « Ajout article 47 — IA éthique »",
     date: "il y a 3j",
     dateIso: "2025-01-12T14:00:00Z",
     lien: "/forge/project/constitution-v3/mr/mr-1",
@@ -215,8 +215,8 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-21",
-    type: "commit",
-    titre: "A créé un commit sur Système de Vote v2",
+    type: "revision",
+    titre: "A créé une révision sur Système de Vote v2",
     description: "Tests unitaires pour le module de délégation",
     date: "il y a 5j",
     dateIso: "2025-01-10T15:00:00Z",
@@ -282,8 +282,8 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-29",
-    type: "review",
-    titre: "A rejeté la MR « Refactor redistribution »",
+    type: "relecture",
+    titre: "A rejeté la DI « Refactor redistribution »",
     description: "Demande de clarification sur le module de validation.",
     date: "il y a 10j",
     dateIso: "2025-01-05T16:00:00Z",
@@ -309,9 +309,9 @@ export const MOCK_ACTIVITIES: UserActivity[] = [
   },
   {
     id: "act-32",
-    type: "commit",
-    titre: "A créé un commit sur Constitution VITA v3",
-    description: "Création de la branche feature/ai-ethics",
+    type: "revision",
+    titre: "A créé une révision sur Constitution VITA v3",
+    description: "Création de la version de travail feature/ai-ethics",
     date: "il y a 14j",
     dateIso: "2025-01-01T10:00:00Z",
     lien: "/forge/project/constitution-v3",
@@ -594,7 +594,7 @@ export const MOCK_RECOMPENSES: Recompense[] = [
   {
     id: "rw-19",
     nom: "Architecte",
-    description: "Premier commit dans la Forge",
+    description: "Première révision dans la Forge",
     icone: "\u{1F3D7}\u{FE0F}",
     dateObtention: "2025-01-06",
     categorie: "forge",
@@ -603,21 +603,21 @@ export const MOCK_RECOMPENSES: Recompense[] = [
   {
     id: "rw-20",
     nom: "Bâtisseur",
-    description: "10 commits dans la Forge",
+    description: "10 révisions dans la Forge",
     icone: "\u{1F9F1}",
     dateObtention: null,
     categorie: "forge",
-    progression: { actuel: 7, objectif: 10, unite: "commits" },
+    progression: { actuel: 7, objectif: 10, unite: "révisions" },
     rare: false,
   },
   {
     id: "rw-21",
     nom: "Gardien du code",
-    description: "5 reviews de merge requests",
+    description: "5 relectures de demandes d'intégration",
     icone: "\u{1F6E1}\u{FE0F}",
     dateObtention: null,
     categorie: "forge",
-    progression: { actuel: 2, objectif: 5, unite: "reviews" },
+    progression: { actuel: 2, objectif: 5, unite: "relectures" },
     rare: false,
   },
   // --- Spécial ---

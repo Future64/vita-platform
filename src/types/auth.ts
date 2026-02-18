@@ -85,11 +85,11 @@ export type Permission =
   | 'propose_amendment'
   | 'validate_amendment'
   // Forge — versioning legislatif
-  | 'create_branch'
-  | 'create_commit'
-  | 'create_merge_request'
-  | 'approve_merge_request'
-  | 'merge_branch'
+  | 'create_version_travail'
+  | 'create_revision'
+  | 'create_demande_integration'
+  | 'approve_demande_integration'
+  | 'integrer_version'
   // Bourse — transactions
   | 'send_vita'
   | 'receive_vita'

@@ -23,12 +23,12 @@ import { getContributors, type ForgeContributor } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
-type SortOption = "commits" | "mrs" | "lignes" | "recent";
+type SortOption = "revisions" | "dis" | "lignes" | "recent";
 
 function getMedalEmoji(rank: number): string | null {
   if (rank === 0) return "\u{1F947}";
@@ -70,7 +70,7 @@ function MiniSparkline({ data, className }: { data: number[]; className?: string
 
 export default function ContributorsPage() {
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortOption>("commits");
+  const [sort, setSort] = useState<SortOption>("revisions");
 
   const contributors = useMemo(() => getContributors(), []);
 
@@ -87,8 +87,8 @@ export default function ContributorsPage() {
     }
 
     switch (sort) {
-      case "mrs":
-        result.sort((a, b) => b.mergeRequests - a.mergeRequests);
+      case "dis":
+        result.sort((a, b) => b.demandesIntegration - a.demandesIntegration);
         break;
       case "lignes":
         result.sort((a, b) => (b.lignesAjoutees + b.lignesSupprimees) - (a.lignesAjoutees + a.lignesSupprimees));
@@ -97,7 +97,7 @@ export default function ContributorsPage() {
         // Keep original order as a proxy (already sorted by activity)
         break;
       default:
-        result.sort((a, b) => b.commits - a.commits);
+        result.sort((a, b) => b.revisions - a.revisions);
         break;
     }
 
@@ -105,8 +105,8 @@ export default function ContributorsPage() {
   }, [contributors, search, sort]);
 
   // Global stats
-  const totalCommits = contributors.reduce((acc, c) => acc + c.commits, 0);
-  const totalMRs = contributors.reduce((acc, c) => acc + c.mergeRequests, 0);
+  const totalRevisions = contributors.reduce((acc, c) => acc + c.revisions, 0);
+  const totalDIs = contributors.reduce((acc, c) => acc + c.demandesIntegration, 0);
   const totalLignes = contributors.reduce((acc, c) => acc + c.lignesAjoutees + c.lignesSupprimees, 0);
   const totalComments = contributors.reduce((acc, c) => acc + c.commentaires, 0);
 
@@ -124,8 +124,8 @@ export default function ContributorsPage() {
 
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard variant="violet" label="Total commits" value={formatNumber(totalCommits)} />
-        <StatCard variant="cyan" label="Merge Requests" value={String(totalMRs)} />
+        <StatCard variant="violet" label="Total révisions" value={formatNumber(totalRevisions)} />
+        <StatCard variant="cyan" label="Demandes d'intégration" value={String(totalDIs)} />
         <StatCard variant="green" label="Lignes modifiées" value={formatNumber(totalLignes)} />
         <StatCard variant="orange" label="Commentaires" value={formatNumber(totalComments)} />
       </div>
@@ -143,8 +143,8 @@ export default function ContributorsPage() {
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
         >
-          <option value="commits">Par commits</option>
-          <option value="mrs">Par merge requests</option>
+          <option value="revisions">Par révisions</option>
+          <option value="dis">Par demandes d&apos;intégration</option>
           <option value="lignes">Par lignes modifiées</option>
           <option value="recent">Activité récente</option>
         </select>
@@ -188,11 +188,11 @@ export default function ContributorsPage() {
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
                     <span className="flex items-center gap-1">
                       <GitCommit className="h-3 w-3" />
-                      {contributor.commits} commits
+                      {contributor.revisions} révisions
                     </span>
                     <span className="flex items-center gap-1">
                       <GitPullRequest className="h-3 w-3" />
-                      {contributor.mergeRequests} MR
+                      {contributor.demandesIntegration} DI
                     </span>
                     <span className="flex items-center gap-1">
                       <MessageCircle className="h-3 w-3" />

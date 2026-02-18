@@ -60,7 +60,7 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   vita_recu: "VITA recus",
   emission_quotidienne: "Emissions",
   proposition_commentee: "Commentaires",
-  mr_approuvee: "Merge requests",
+  di_approuvee: "Demandes d'intégration",
   role_change: "Changements de role",
   parametre_modifie: "Parametres",
   systeme: "Systeme",

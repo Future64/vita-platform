@@ -79,7 +79,7 @@ function filterByType(type: TypeFilter, activity: UserActivity): boolean {
     case "transactions":
       return activity.type === "transaction_envoi" || activity.type === "transaction_reception" || activity.type === "emission";
     case "forge":
-      return activity.type === "commit" || activity.type === "merge_request" || activity.type === "review";
+      return activity.type === "revision" || activity.type === "demande_integration" || activity.type === "relecture";
     case "autres":
       return activity.type === "delegation" || activity.type === "modification_profil";
     default:

@@ -115,15 +115,15 @@ export interface Document {
   updatedAt: Date;
 }
 
-// Système Git-like (Forge)
+// Système de versioning législatif (Forge)
 export interface Project {
   id: string;
   name: string;
   description: string;
   type: 'constitution' | 'law' | 'decree';
   status: ProjectStatus;
-  mainBranch: Branch;
-  branches: Branch[];
+  mainBranch: VersionTravail;
+  branches: VersionTravail[];
   author: User;
   createdAt: Date;
   updatedAt: Date;
@@ -131,22 +131,22 @@ export interface Project {
   targetArticle?: Article;
 }
 
-export type ProjectStatus = 
-  | 'draft' 
-  | 'review' 
-  | 'collaborative' 
-  | 'voting' 
-  | 'adopted' 
+export type ProjectStatus =
+  | 'draft'
+  | 'relecture'
+  | 'collaborative'
+  | 'voting'
+  | 'adopted'
   | 'rejected';
 
-export interface Branch {
+export interface VersionTravail {
   id: string;
   name: string;
   projectId: string;
   isMain: boolean;
   isProtected: boolean;
   author: User;
-  commits: Commit[];
+  revisions: Revision[];
   aheadCount: number;
   behindCount: number;
   approvalRate?: number;
@@ -154,43 +154,43 @@ export interface Branch {
   updatedAt: Date;
 }
 
-export interface Commit {
+export interface Revision {
   id: string;
-  hash: string;
+  ref: string;
   message: string;
   description?: string;
   author: User;
-  branchId: string;
-  changes: Change[];
+  versionTravailId: string;
+  changes: Modification[];
   votesFor: number;
   votesAgainst: number;
   createdAt: Date;
 }
 
-export interface Change {
+export interface Modification {
   id: string;
   filePath: string;
   type: 'add' | 'modify' | 'delete';
   additions: number;
   deletions: number;
-  diff: DiffLine[];
+  comparaison: LigneComparaison[];
 }
 
-export interface DiffLine {
+export interface LigneComparaison {
   lineNumber: number;
   type: 'context' | 'add' | 'remove';
   content: string;
 }
 
-export interface MergeRequest {
+export interface DemandeIntegration {
   id: string;
   number: number;
   title: string;
   description: string;
-  sourceBranch: Branch;
-  targetBranch: Branch;
+  sourceVersion: VersionTravail;
+  targetVersion: VersionTravail;
   projectId: string;
-  status: MergeRequestStatus;
+  status: DemandeIntegrationStatus;
   author: User;
   hasConflicts: boolean;
   votesFor: number;
@@ -200,23 +200,23 @@ export interface MergeRequest {
   quorum: number;
   requiredMajority: number;
   minDuration: number; // jours
-  documents: MRDocument[];
+  documents: DIDocument[];
   comments: Comment[];
   deadline: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type MergeRequestStatus = 
-  | 'draft' 
-  | 'open' 
-  | 'voting' 
-  | 'approved' 
-  | 'merged' 
-  | 'rejected' 
+export type DemandeIntegrationStatus =
+  | 'draft'
+  | 'open'
+  | 'voting'
+  | 'approved'
+  | 'integrated'
+  | 'rejected'
   | 'closed';
 
-export interface MRDocument {
+export interface DIDocument {
   id: string;
   name: string;
   type: string;
@@ -238,7 +238,7 @@ export interface Comment {
 export interface Vote {
   id: string;
   userId: string;
-  targetType: 'proposal' | 'commit' | 'mergeRequest';
+  targetType: 'proposal' | 'revision' | 'demandeIntegration';
   targetId: string;
   value: 'for' | 'against' | 'abstain';
   delegated: boolean;

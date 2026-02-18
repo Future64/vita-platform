@@ -101,7 +101,7 @@ const transactions = [
     id: "tx-7",
     type: "income",
     amount: 25,
-    description: "Code review - Projet Eco Tracker",
+    description: "Relecture de code - Projet Eco Tracker",
     category: "contribution",
     date: "2024-01-23 16:50",
   },

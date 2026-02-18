@@ -26,18 +26,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import {
   getProject,
-  getBranches,
+  getVersionsTravail,
   getFileTree,
-  getMergeRequestsForProject,
-  FORGE_COMMITS,
+  getDemandesIntegrationForProject,
+  FORGE_REVISIONS,
   FORGE_USERS,
   LANGUAGE_COLORS,
 } from "@/lib/mockForge";
 
 const sidebarItems: SidebarItem[] = [
   { icon: GitBranch, label: "Projets", href: "/forge" },
-  { icon: GitPullRequest, label: "Merge Requests", href: "/forge/merge-requests" },
-  { icon: GitCommit, label: "Commits récents", href: "/forge/commits" },
+  { icon: GitPullRequest, label: "Demandes d'intégration", href: "/forge/merge-requests" },
+  { icon: GitCommit, label: "Révisions récentes", href: "/forge/commits" },
   { icon: Users, label: "Contributeurs", href: "/forge/contributors" },
 ];
 
@@ -45,13 +45,13 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const project = getProject(projectId);
-  const branches = getBranches(projectId);
+  const versionsTravail = getVersionsTravail(projectId);
   const files = getFileTree(projectId);
-  const mrs = getMergeRequestsForProject(projectId);
+  const dis = getDemandesIntegrationForProject(projectId);
 
-  // Collect all commits from project branches
-  const allCommits = branches
-    .flatMap((b) => FORGE_COMMITS[b.id] ?? [])
+  // Collect all revisions from project versions
+  const allRevisions = versionsTravail
+    .flatMap((b) => FORGE_REVISIONS[b.id] ?? [])
     .sort((a, b) => new Date(b.dateIso).getTime() - new Date(a.dateIso).getTime())
     .slice(0, 10);
 
@@ -103,7 +103,7 @@ export default function ProjectDetailPage() {
               </span>
               <span className="flex items-center gap-1">
                 <GitFork className="h-4 w-4" />
-                {project.forks} forks
+                {project.derivations} dérivations
               </span>
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -136,9 +136,9 @@ export default function ProjectDetailPage() {
       <Tabs defaultValue="code" className="mb-6">
         <TabsList>
           <TabsTrigger value="code">Code</TabsTrigger>
-          <TabsTrigger value="commits">Commits</TabsTrigger>
-          <TabsTrigger value="branches">Branches</TabsTrigger>
-          <TabsTrigger value="mrs">Merge Requests</TabsTrigger>
+          <TabsTrigger value="commits">Révisions</TabsTrigger>
+          <TabsTrigger value="branches">Versions de travail</TabsTrigger>
+          <TabsTrigger value="mrs">Demandes d&apos;intégration</TabsTrigger>
         </TabsList>
 
         {/* Code Tab */}
@@ -151,7 +151,7 @@ export default function ProjectDetailPage() {
                     <div className="flex items-center gap-2">
                       <GitBranch className="h-4 w-4" />
                       <select className="bg-transparent border border-[var(--border)] rounded px-2 py-1 text-sm text-[var(--text-primary)]">
-                        {branches.map((b) => (
+                        {versionsTravail.map((b) => (
                           <option key={b.id} value={b.name}>
                             {b.name}
                           </option>
@@ -159,7 +159,7 @@ export default function ProjectDetailPage() {
                       </select>
                     </div>
                     <div className="text-sm text-[var(--text-muted)]">
-                      {branches.find((b) => b.protected)?.commits ?? 0} commits
+                      {versionsTravail.find((b) => b.protected)?.revisions ?? 0} révisions
                     </div>
                   </div>
                 </CardHeader>
@@ -207,9 +207,9 @@ export default function ProjectDetailPage() {
                       Comment contribuer
                     </h3>
                     <ol className="list-decimal ml-4 space-y-1">
-                      <li>Forker le projet</li>
-                      <li>Créer une branche pour votre contribution</li>
-                      <li>Soumettre une Merge Request</li>
+                      <li>Dériver le projet</li>
+                      <li>Créer une version de travail pour votre contribution</li>
+                      <li>Soumettre une demande d&apos;intégration</li>
                       <li>Participer aux discussions</li>
                     </ol>
                   </div>
@@ -278,7 +278,7 @@ export default function ProjectDetailPage() {
                           </span>
                         </div>
                         <span className="text-xs text-[var(--text-muted)]">
-                          {user.commits} commits
+                          {user.revisions} révisions
                         </span>
                       </div>
                     ))}
@@ -292,42 +292,42 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
-        {/* Commits Tab */}
+        {/* Revisions Tab */}
         <TabsContent value="commits" className="mt-5">
           <Card>
             <CardHeader>
-              <CardTitle>Commits récents</CardTitle>
+              <CardTitle>Révisions récentes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {allCommits.map((commit) => (
+                {allRevisions.map((revision) => (
                   <div
-                    key={commit.hash}
+                    key={revision.ref}
                     className="p-3 rounded-lg border border-[var(--border)] hover:bg-[var(--bg-elevated)] transition-colors"
                   >
                     <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-[var(--text-primary)] mb-1">
-                          {commit.message}
+                          {revision.message}
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
-                          <span>{commit.author}</span>
+                          <span>{revision.author}</span>
                           <span className="hidden sm:inline">•</span>
-                          <span className="font-mono">{commit.hash}</span>
+                          <span className="font-mono">{revision.ref}</span>
                           <span>•</span>
                           <Badge variant="violet" className="text-xs">
-                            {commit.branch}
+                            {revision.versionTravail}
                           </Badge>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
                         <span className="flex items-center gap-1 text-green-500">
-                          <ArrowUpRight className="h-3 w-3" />+{commit.additions}
+                          <ArrowUpRight className="h-3 w-3" />+{revision.additions}
                         </span>
                         <span className="flex items-center gap-1 text-pink-500">
-                          <ArrowDownLeft className="h-3 w-3" />-{commit.deletions}
+                          <ArrowDownLeft className="h-3 w-3" />-{revision.deletions}
                         </span>
-                        <span>{commit.date}</span>
+                        <span>{revision.date}</span>
                       </div>
                     </div>
                   </div>
@@ -337,33 +337,33 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Branches Tab */}
+        {/* Versions de travail Tab */}
         <TabsContent value="branches" className="mt-5">
           <Card>
             <CardHeader>
-              <CardTitle>Branches ({branches.length})</CardTitle>
-              <PermissionGate permission="create_branch">
+              <CardTitle>Versions de travail ({versionsTravail.length})</CardTitle>
+              <PermissionGate permission="create_version_travail">
                 <Button variant="primary" size="sm">
                   <GitBranch className="h-4 w-4" />
-                  Nouvelle branche
+                  Nouvelle version
                 </Button>
               </PermissionGate>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {branches.map((branch) => (
+                {versionsTravail.map((version) => (
                   <Link
-                    key={branch.id}
-                    href={`/forge/project/${projectId}/${branch.id}`}
+                    key={version.id}
+                    href={`/forge/project/${projectId}/${version.id}`}
                   >
                     <div className="p-3 rounded-lg border border-[var(--border)] hover:border-violet-500/50 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <GitBranch className="h-4 w-4 text-violet-500" />
                           <span className="font-semibold text-sm text-[var(--text-primary)]">
-                            {branch.name}
+                            {version.name}
                           </span>
-                          {branch.protected && (
+                          {version.protected && (
                             <Badge variant="orange" className="text-xs">
                               <Shield className="h-3 w-3" />
                               Protégée
@@ -371,21 +371,21 @@ export default function ProjectDetailPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-                          {!branch.protected && (
+                          {!version.protected && (
                             <>
                               <span className="text-green-500">
-                                +{branch.aheadMain} ahead
+                                +{version.aheadOfficielle} en avance
                               </span>
-                              {branch.behindMain > 0 && (
+                              {version.behindOfficielle > 0 && (
                                 <span className="text-pink-500">
-                                  -{branch.behindMain} behind
+                                  -{version.behindOfficielle} en retard
                                 </span>
                               )}
                             </>
                           )}
-                          <span>{branch.commits} commits</span>
+                          <span>{version.revisions} révisions</span>
                           <span>•</span>
-                          <span>{branch.lastUpdate}</span>
+                          <span>{version.lastUpdate}</span>
                         </div>
                       </div>
                     </div>
@@ -396,31 +396,31 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Merge Requests Tab */}
+        {/* Demandes d'intégration Tab */}
         <TabsContent value="mrs" className="mt-5">
           <Card>
             <CardHeader>
               <CardTitle>
-                Merge Requests ({mrs.length})
+                Demandes d&apos;intégration ({dis.length})
               </CardTitle>
-              <PermissionGate permission="create_merge_request">
+              <PermissionGate permission="create_demande_integration">
                 <Button variant="primary" size="sm">
                   <GitPullRequest className="h-4 w-4" />
-                  Nouvelle MR
+                  Nouvelle DI
                 </Button>
               </PermissionGate>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mrs.length === 0 ? (
+                {dis.length === 0 ? (
                   <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-                    Aucune merge request pour ce projet
+                    Aucune demande d&apos;intégration pour ce projet
                   </div>
                 ) : (
-                  mrs.map((mr) => (
+                  dis.map((di) => (
                     <Link
-                      key={mr.id}
-                      href={`/forge/project/${projectId}/mr/${mr.id}`}
+                      key={di.id}
+                      href={`/forge/project/${projectId}/mr/${di.id}`}
                     >
                       <div className="p-4 rounded-lg border border-[var(--border)] hover:border-violet-500/50 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
                         <div className="flex items-start justify-between mb-2">
@@ -428,50 +428,50 @@ export default function ProjectDetailPage() {
                             <div className="flex items-center gap-2 mb-2">
                               <GitPullRequest className="h-4 w-4 text-violet-500" />
                               <span className="font-semibold text-[var(--text-primary)]">
-                                #{mr.number} {mr.title}
+                                #{di.number} {di.title}
                               </span>
                               <Badge
                                 variant={
-                                  mr.status === "voting"
+                                  di.status === "voting"
                                     ? "orange"
-                                    : mr.status === "approved"
+                                    : di.status === "approved"
                                     ? "cyan"
-                                    : mr.status === "merged"
+                                    : di.status === "integrated"
                                     ? "green"
                                     : "violet"
                                 }
                               >
-                                {mr.status === "voting"
+                                {di.status === "voting"
                                   ? "En vote"
-                                  : mr.status === "approved"
+                                  : di.status === "approved"
                                   ? "Approuvé"
-                                  : mr.status === "merged"
-                                  ? "Merged"
-                                  : mr.status === "open"
+                                  : di.status === "integrated"
+                                  ? "Intégré"
+                                  : di.status === "open"
                                   ? "Ouvert"
-                                  : mr.status}
+                                  : di.status}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                              <span>par {mr.author}</span>
+                              <span>par {di.author}</span>
                               <span>•</span>
-                              <span>{mr.created}</span>
+                              <span>{di.created}</span>
                               <span>•</span>
                               <Badge variant="violet" className="text-xs">
-                                {mr.sourceBranch}
+                                {di.sourceVersion}
                               </Badge>
                               <span>→</span>
                               <Badge variant="orange" className="text-xs">
-                                {mr.targetBranch}
+                                {di.targetVersion}
                               </Badge>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 text-sm">
                             <span className="text-green-500">
-                              ✓ {mr.votes.approve}
+                              ✓ {di.votes.approve}
                             </span>
                             <span className="text-pink-500">
-                              ✗ {mr.votes.reject}
+                              ✗ {di.votes.reject}
                             </span>
                           </div>
                         </div>
