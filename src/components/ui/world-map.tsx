@@ -19,11 +19,11 @@ function getUsersForGeo(geo: { properties: { ISO_A3?: string; ISO_A2?: string; n
 }
 
 function getCountryColor(users: number): string {
-  if (users === 0) return "var(--bg-elevated, #1e293b)";
+  if (users === 0) return "var(--border)";
   // Log scale for better visibility
   const intensity = Math.log(users + 1) / Math.log(MAX_COUNTRY_USERS + 1);
   // From dark violet to bright violet
-  const alpha = 0.15 + intensity * 0.65;
+  const alpha = 0.2 + intensity * 0.6;
   return `rgba(139, 92, 246, ${alpha})`;
 }
 
@@ -88,7 +88,7 @@ const WorldMapInner = memo(function WorldMapInner() {
                     key={geo.rsmKey}
                     geography={geo}
                     fill={getCountryColor(users)}
-                    stroke="rgba(139, 92, 246, 0.15)"
+                    stroke="rgba(139, 92, 246, 0.3)"
                     strokeWidth={0.4}
                     style={{
                       default: { outline: "none" },
@@ -164,7 +164,7 @@ const WorldMapInner = memo(function WorldMapInner() {
           style={{
             left: tooltip.x + 12,
             top: tooltip.y - 40,
-            backgroundColor: "var(--bg-card, #111827)",
+            backgroundColor: "var(--bg-card)",
             borderColor: "rgba(139, 92, 246, 0.3)",
             color: "var(--text-primary, #fff)",
           }}
@@ -183,7 +183,7 @@ const WorldMapInner = memo(function WorldMapInner() {
         className="absolute bottom-3 left-3 rounded-lg border p-2.5"
         style={{
           borderColor: "var(--border-light)",
-          backgroundColor: "rgba(17, 24, 39, 0.85)",
+          backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
           backdropFilter: "blur(8px)",
         }}
       >
@@ -210,7 +210,7 @@ const WorldMapInner = memo(function WorldMapInner() {
           className="rounded-lg border px-3 py-2 text-right"
           style={{
             borderColor: "var(--border-light)",
-            backgroundColor: "rgba(17, 24, 39, 0.85)",
+            backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -250,7 +250,7 @@ const WorldMapInner = memo(function WorldMapInner() {
           className="rounded border px-2 py-1 text-xs font-bold transition-colors hover:bg-violet-500/20"
           style={{
             borderColor: "var(--border-light)",
-            backgroundColor: "rgba(17, 24, 39, 0.85)",
+            backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
             color: "var(--text-primary)",
             backdropFilter: "blur(8px)",
           }}
@@ -262,7 +262,7 @@ const WorldMapInner = memo(function WorldMapInner() {
           className="rounded border px-2 py-1 text-xs font-bold transition-colors hover:bg-violet-500/20"
           style={{
             borderColor: "var(--border-light)",
-            backgroundColor: "rgba(17, 24, 39, 0.85)",
+            backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
             color: "var(--text-primary)",
             backdropFilter: "blur(8px)",
           }}
@@ -274,7 +274,7 @@ const WorldMapInner = memo(function WorldMapInner() {
           className="rounded border px-1.5 py-1 text-[0.6rem] transition-colors hover:bg-violet-500/20"
           style={{
             borderColor: "var(--border-light)",
-            backgroundColor: "rgba(17, 24, 39, 0.85)",
+            backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
             color: "var(--text-muted)",
             backdropFilter: "blur(8px)",
           }}

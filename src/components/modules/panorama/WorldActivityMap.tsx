@@ -32,9 +32,9 @@ function getUsersForGeo(geo: { properties: { ISO_A3?: string } }): number {
 }
 
 function getCountryColor(users: number): string {
-  if (users === 0) return "rgba(255, 255, 255, 0.06)";
+  if (users === 0) return "var(--map-country-empty)";
   const intensity = Math.log(users + 1) / Math.log(MAX_COUNTRY_USERS + 1);
-  const alpha = 0.2 + intensity * 0.5;
+  const alpha = 0.25 + intensity * 0.5;
   return `rgba(139, 92, 246, ${alpha.toFixed(2)})`;
 }
 
@@ -89,7 +89,7 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
                     key={geo.rsmKey}
                     geography={geo}
                     fill={getCountryColor(users)}
-                    stroke="rgba(255, 255, 255, 0.1)"
+                    stroke="var(--map-stroke)"
                     strokeWidth={0.4}
                     style={{
                       default: { outline: "none" },
@@ -140,7 +140,7 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
                   className="city-dot"
                   r={r}
                   fill="url(#cityGradient)"
-                  stroke="rgba(255, 255, 255, 0.4)"
+                  stroke="var(--map-stroke)"
                   strokeWidth={0.4}
                 />
                 {/* Label — hidden by default, shown on hover */}
@@ -171,8 +171,8 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
                     const dot = group.querySelector(".city-dot") as SVGElement;
                     const label = group.querySelector(".city-label") as SVGElement;
                     if (glow) glow.setAttribute("fill", "rgba(139, 92, 246, 0.15)");
-                    if (dot) { dot.setAttribute("stroke", "rgba(255, 255, 255, 0.8)"); dot.setAttribute("stroke-width", "0.8"); }
-                    if (label) label.style.fill = "rgba(255, 255, 255, 0.9)";
+                    if (dot) { dot.setAttribute("stroke", "#8b5cf6"); dot.setAttribute("stroke-width", "0.8"); }
+                    if (label) label.style.fill = "#8b5cf6";
                     setTooltip({
                       name: `${city.ville}, ${city.pays}`,
                       users: city.utilisateurs,
@@ -192,8 +192,8 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
                     const dot = group.querySelector(".city-dot") as SVGElement;
                     const label = group.querySelector(".city-label") as SVGElement;
                     if (glow) glow.setAttribute("fill", "rgba(139, 92, 246, 0)");
-                    if (dot) { dot.setAttribute("stroke", "rgba(255, 255, 255, 0.4)"); dot.setAttribute("stroke-width", "0.4"); }
-                    if (label) label.style.fill = "rgba(255, 255, 255, 0)";
+                    if (dot) { dot.setAttribute("stroke", "var(--map-stroke)"); dot.setAttribute("stroke-width", "0.4"); }
+                    if (label) label.style.fill = "rgba(139, 92, 246, 0)";
                     setTooltip(null);
                   }}
                 />
@@ -238,7 +238,7 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
           className="rounded-lg border px-3 py-2 text-right"
           style={{
             borderColor: "rgba(139, 92, 246, 0.2)",
-            backgroundColor: "rgba(17, 24, 39, 0.8)",
+            backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -263,7 +263,7 @@ const WorldActivityMapInner = memo(function WorldActivityMapInner() {
             className="rounded border px-2 py-1 text-xs font-bold transition-colors hover:bg-violet-500/20"
             style={{
               borderColor: "rgba(139, 92, 246, 0.2)",
-              backgroundColor: "rgba(17, 24, 39, 0.8)",
+              backgroundColor: "color-mix(in srgb, var(--bg-card) 90%, transparent)",
               color: "var(--text-primary)",
               backdropFilter: "blur(8px)",
             }}
