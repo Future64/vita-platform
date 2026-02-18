@@ -1,10 +1,10 @@
-import type { StoredUser } from "@/types/auth";
+import type { StoredUser, IdentiteVerifiee, IdentitePublique, IdentiteProfessionnelle, UserPreferences } from "@/types/auth";
+import { buildUserFromIdentity } from "@/types/auth";
 
 // Mot de passe par defaut pour tous les mocks : "vita2025"
-// Hash simplifie (localStorage only, pas de vrai hashing cote client)
 const DEFAULT_PASSWORD_HASH = "vita2025";
 
-function defaultPreferences() {
+function defaultPreferences(): UserPreferences {
   return {
     theme: 'dark' as const,
     langue: 'fr',
@@ -30,118 +30,339 @@ function defaultPreferences() {
   };
 }
 
+// --- Identites verifiees ---
+
+const identiteMaxim: IdentiteVerifiee = {
+  nomLegal: 'Dassonneville',
+  prenomLegal: 'Maxim',
+  dateNaissance: '1995-03-15',
+  nationalite: 'Francaise',
+  paysResidence: 'France',
+  statut: 'verifie',
+  dateVerification: '2025-01-01T00:00:00Z',
+  dateExpiration: '2026-01-01T00:00:00Z',
+  methodeVerification: 'zkp',
+  niveauConfiance: 100,
+  historiqueVerifications: [
+    { date: '2025-01-01', methode: 'Zero-Knowledge Proof (fondateur)', statut: 'accepte' },
+  ],
+};
+
+const identiteAmina: IdentiteVerifiee = {
+  nomLegal: 'Benali',
+  prenomLegal: 'Amina',
+  dateNaissance: '1990-07-22',
+  nationalite: 'Marocaine',
+  paysResidence: 'Maroc',
+  statut: 'verifie',
+  dateVerification: '2025-12-15T10:30:00Z',
+  dateExpiration: '2026-12-15T10:30:00Z',
+  methodeVerification: 'parrainage',
+  parrains: [
+    { username: 'maxim', dateAttestation: '2025-12-14' },
+    { username: 'lucas.d', dateAttestation: '2025-12-15' },
+    { username: 'jp.moreau', dateAttestation: '2025-12-15' },
+  ],
+  niveauConfiance: 85,
+  historiqueVerifications: [
+    { date: '2025-12-15', methode: 'Parrainage (3/3)', statut: 'accepte' },
+  ],
+};
+
+const identiteLucas: IdentiteVerifiee = {
+  nomLegal: 'Durand',
+  prenomLegal: 'Lucas',
+  dateNaissance: '1988-11-03',
+  nationalite: 'Belge',
+  paysResidence: 'Belgique',
+  statut: 'verifie',
+  dateVerification: '2025-02-20T14:00:00Z',
+  dateExpiration: '2026-02-20T14:00:00Z',
+  methodeVerification: 'parrainage',
+  parrains: [
+    { username: 'maxim', dateAttestation: '2025-02-19' },
+    { username: 'amina.b', dateAttestation: '2025-02-20' },
+    { username: 'jp.moreau', dateAttestation: '2025-02-20' },
+  ],
+  niveauConfiance: 90,
+  historiqueVerifications: [
+    { date: '2025-02-20', methode: 'Parrainage (3/3)', statut: 'accepte' },
+  ],
+};
+
+const identiteSakura: IdentiteVerifiee = {
+  nomLegal: 'Tanaka',
+  prenomLegal: 'Sakura',
+  dateNaissance: '2000-04-18',
+  nationalite: 'Japonaise',
+  paysResidence: 'Japon',
+  statut: 'en_cours',
+  methodeVerification: 'parrainage',
+  parrains: [
+    { username: 'amina.b', dateAttestation: '2025-12-02' },
+  ],
+  niveauConfiance: 20,
+  historiqueVerifications: [],
+};
+
+const identiteJP: IdentiteVerifiee = {
+  nomLegal: 'Moreau',
+  prenomLegal: 'Jean-Pierre',
+  dateNaissance: '1975-09-12',
+  nationalite: 'Suisse',
+  paysResidence: 'Suisse',
+  statut: 'verifie',
+  dateVerification: '2025-03-10T09:00:00Z',
+  dateExpiration: '2026-03-10T09:00:00Z',
+  methodeVerification: 'document',
+  niveauConfiance: 92,
+  historiqueVerifications: [
+    { date: '2025-03-10', methode: 'Document officiel', statut: 'accepte' },
+  ],
+};
+
+// --- Identites publiques ---
+
+const pubMaxim: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Maxim',
+  nom: 'Dassonneville',
+  bio: 'Fondateur de VITA. Architecte du systeme de gouvernance mondiale.',
+  paysAffiche: 'France',
+  langues: ['Francais', 'Anglais'],
+  centresInteret: ['Gouvernance', 'Economie', 'Technologie', 'Philosophie'],
+  dateInscriptionVisible: true,
+  reseauxSociaux: { github: 'maximd' },
+};
+
+const pubAmina: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Amina',
+  nom: 'Benali',
+  bio: 'Passionnee par la democratie participative et les systemes economiques alternatifs.',
+  paysAffiche: 'Maroc',
+  langues: ['Francais', 'Arabe', 'Anglais'],
+  centresInteret: ['Education', 'Social', 'Culture', 'Economie'],
+  dateInscriptionVisible: true,
+  reseauxSociaux: {},
+};
+
+const pubLucas: IdentitePublique = {
+  modeVisibilite: 'pseudonyme',
+  pseudonyme: 'PhoenixBleu',
+  bio: 'Moderateur communautaire. Gardien du debat constructif.',
+  centresInteret: ['Droit', 'Gouvernance', 'Ethique'],
+  dateInscriptionVisible: false,
+};
+
+const pubSakura: IdentitePublique = {
+  modeVisibilite: 'anonyme',
+  dateInscriptionVisible: false,
+};
+
+const pubJP: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Jean-Pierre',
+  nom: 'Moreau',
+  bio: 'Expert-comptable. Auditeur independant du systeme VITA.',
+  paysAffiche: 'Suisse',
+  langues: ['Francais', 'Allemand', 'Anglais'],
+  centresInteret: ['Finance', 'Audit', 'Transparence'],
+  dateInscriptionVisible: true,
+  reseauxSociaux: { linkedin: 'jpmoreau' },
+};
+
+// --- Identites professionnelles ---
+
+const proMaxim: IdentiteProfessionnelle = {
+  active: true,
+  titre: 'Developpeur web full-stack',
+  description: 'Conception et developpement d\'applications web modernes. Specialise en React, TypeScript et Rust.',
+  secteur: 'Technologie',
+  experience: 'Senior (5-10 ans)',
+  competences: [
+    { nom: 'React / Next.js', niveau: 'expert' },
+    { nom: 'TypeScript', niveau: 'avance' },
+    { nom: 'Rust', niveau: 'intermediaire' },
+    { nom: 'PostgreSQL', niveau: 'avance' },
+    { nom: 'UI/UX Design', niveau: 'intermediaire' },
+  ],
+  certifications: [
+    { nom: 'AWS Certified Developer', organisme: 'Amazon Web Services', date: '2024-06', verifie: false },
+  ],
+  tarifHoraire: 1.8,
+  coefficients: { formation: 0.4, penibilite: 0, responsabilite: 0.2, rarete: 0.2 },
+  disponibilite: 'disponible',
+  zonesIntervention: ['Paris', 'Ile-de-France', 'En ligne'],
+  avis: [
+    { id: 'a1', auteur: { username: 'amina.b', modeVisibilite: 'complet' }, note: 5, commentaire: 'Excellent travail, tres professionnel et reactif.', date: '2026-02-10', service: 'Developpement site web' },
+    { id: 'a2', auteur: { username: 'PhoenixBleu', modeVisibilite: 'pseudonyme' }, note: 4, commentaire: 'Bon travail, quelques retards mais resultat de qualite.', date: '2026-01-28', service: 'Application mobile' },
+    { id: 'a3', auteur: { username: 'jp.moreau', modeVisibilite: 'complet' }, note: 5, commentaire: 'Parfait, je recommande vivement.', date: '2026-01-15', service: 'Cours de programmation' },
+  ],
+  noteMoyenne: 4.7,
+  nombreAvis: 3,
+  realisations: [
+    { titre: 'Plateforme de covoiturage local', description: 'Application web connectant les habitants d\'un quartier pour le covoiturage quotidien.', date: '2025-09' },
+    { titre: 'Outil de gestion associative', description: 'Solution complete de gestion pour associations : adherents, comptabilite, evenements.', date: '2025-04' },
+  ],
+};
+
+const proAmina: IdentiteProfessionnelle = {
+  active: true,
+  titre: 'Enseignante de francais',
+  description: 'Professeure de francais langue etrangere. Cours particuliers et en groupe.',
+  secteur: 'Education',
+  experience: 'Confirme (3-5 ans)',
+  competences: [
+    { nom: 'Francais langue etrangere', niveau: 'expert' },
+    { nom: 'Pedagogie', niveau: 'avance' },
+    { nom: 'Redaction', niveau: 'avance' },
+  ],
+  tarifHoraire: 1.2,
+  coefficients: { formation: 0.2, penibilite: 0, responsabilite: 0, rarete: 0 },
+  disponibilite: 'disponible',
+  zonesIntervention: ['En ligne', 'Casablanca'],
+  avis: [
+    { id: 'a4', auteur: { username: 'maxim', modeVisibilite: 'complet' }, note: 5, commentaire: 'Excellente pedagogie, tres patiente.', date: '2026-01-20', service: 'Cours de francais' },
+  ],
+  noteMoyenne: 5,
+  nombreAvis: 1,
+  realisations: [],
+};
+
+const proLucas: IdentiteProfessionnelle = {
+  active: false,
+  disponibilite: 'indisponible',
+};
+
+const proSakura: IdentiteProfessionnelle = {
+  active: false,
+  disponibilite: 'indisponible',
+};
+
+const proJP: IdentiteProfessionnelle = {
+  active: true,
+  titre: 'Expert-comptable',
+  description: 'Audit financier et conseil en comptabilite. Specialise dans les organisations a but non lucratif.',
+  secteur: 'Conseil',
+  experience: 'Expert (10+ ans)',
+  competences: [
+    { nom: 'Audit financier', niveau: 'expert' },
+    { nom: 'Comptabilite', niveau: 'expert' },
+    { nom: 'Droit fiscal', niveau: 'avance' },
+    { nom: 'Analyse de donnees', niveau: 'intermediaire' },
+  ],
+  certifications: [
+    { nom: 'Expert-comptable diplome', organisme: 'Ordre des experts-comptables', date: '2005-06', verifie: true },
+  ],
+  tarifHoraire: 2.0,
+  coefficients: { formation: 0.5, penibilite: 0, responsabilite: 0.3, rarete: 0.2 },
+  disponibilite: 'occupe',
+  zonesIntervention: ['Geneve', 'Lausanne', 'En ligne'],
+  avis: [],
+  noteMoyenne: undefined,
+  nombreAvis: 0,
+  realisations: [
+    { titre: 'Audit du systeme VITA', description: 'Premier audit independant du systeme monetaire VITA.', date: '2025-06' },
+  ],
+};
+
+// --- Construction des utilisateurs ---
+
+function buildStoredUser(
+  params: Parameters<typeof buildUserFromIdentity>[0] & { passwordHash: string }
+): StoredUser {
+  const { passwordHash, ...userParams } = params;
+  const user = buildUserFromIdentity(userParams);
+  return { ...user, passwordHash };
+}
+
 export const MOCK_USERS: StoredUser[] = [
-  {
-    id: "usr-001-dieu",
-    prenom: "Maxim",
-    nom: "Dassonneville",
-    username: "maxim",
-    email: "maxim@vita.world",
+  buildStoredUser({
+    id: 'usr-001-dieu',
+    username: 'maxim',
+    email: 'maxim@vita.world',
     passwordHash: DEFAULT_PASSWORD_HASH,
-    dateNaissance: "1995-03-15",
-    pays: "France",
-    role: "dieu",
-    bio: "Fondateur de VITA. Architecte du systeme de gouvernance mondiale.",
-    dateInscription: "2025-01-01",
-    profession: "Architecte systeme",
-    centresInteret: ["gouvernance", "economie", "technologie", "philosophie"],
-    langues: ["fr", "en"],
-    reseauxSociaux: { github: "maximd" },
+    role: 'dieu',
+    dateInscription: '2025-01-01',
+    identiteVerifiee: identiteMaxim,
+    identitePublique: pubMaxim,
+    identiteProfessionnelle: proMaxim,
     preferences: defaultPreferences(),
     soldeVita: 420,
     joursActifs: 420,
     propositionsCreees: 12,
     votesEffectues: 48,
     scoreReputation: 98,
-  },
-  {
-    id: "usr-002-citoyen",
-    prenom: "Amina",
-    nom: "Benali",
-    username: "amina.b",
-    email: "amina@vita.world",
+  }),
+  buildStoredUser({
+    id: 'usr-002-citoyen',
+    username: 'amina.b',
+    email: 'amina@vita.world',
     passwordHash: DEFAULT_PASSWORD_HASH,
-    dateNaissance: "1990-07-22",
-    pays: "Maroc",
-    role: "citoyen",
-    bio: "Enseignante et citoyenne engagee. Convaincue par la democratie directe.",
-    dateInscription: "2025-02-10",
-    profession: "Enseignante",
-    centresInteret: ["education", "social", "culture"],
-    langues: ["fr", "ar", "en"],
+    role: 'citoyen',
+    dateInscription: '2025-02-10',
+    identiteVerifiee: identiteAmina,
+    identitePublique: pubAmina,
+    identiteProfessionnelle: proAmina,
     preferences: defaultPreferences(),
     soldeVita: 310,
     joursActifs: 310,
     propositionsCreees: 5,
     votesEffectues: 32,
     scoreReputation: 85,
-  },
-  {
-    id: "usr-003-moderateur",
-    prenom: "Lucas",
-    nom: "Durand",
-    username: "lucas.d",
-    email: "lucas@vita.world",
+  }),
+  buildStoredUser({
+    id: 'usr-003-moderateur',
+    username: 'lucas.d',
+    email: 'lucas@vita.world',
     passwordHash: DEFAULT_PASSWORD_HASH,
-    dateNaissance: "1988-11-03",
-    pays: "Belgique",
-    role: "moderateur",
-    bio: "Moderateur communautaire. Gardien du debat constructif.",
-    dateInscription: "2025-01-20",
-    profession: "Juriste",
-    centresInteret: ["droit", "gouvernance", "ethique"],
-    langues: ["fr", "nl", "en"],
+    role: 'moderateur',
+    dateInscription: '2025-01-20',
+    identiteVerifiee: identiteLucas,
+    identitePublique: pubLucas,
+    identiteProfessionnelle: proLucas,
     preferences: defaultPreferences(),
     soldeVita: 380,
     joursActifs: 380,
     propositionsCreees: 8,
     votesEffectues: 41,
     scoreReputation: 92,
-  },
-  {
-    id: "usr-004-nouveau",
-    prenom: "Sakura",
-    nom: "Tanaka",
-    username: "sakura.t",
-    email: "sakura@vita.world",
+  }),
+  buildStoredUser({
+    id: 'usr-004-nouveau',
+    username: 'sakura.t',
+    email: 'sakura@vita.world',
     passwordHash: DEFAULT_PASSWORD_HASH,
-    dateNaissance: "2000-04-18",
-    pays: "Japon",
-    role: "nouveau",
-    bio: "Etudiante en sciences politiques. Decouvre VITA.",
-    dateInscription: "2025-12-01",
-    profession: "Etudiante",
-    centresInteret: ["politique", "technologie", "environnement"],
-    langues: ["ja", "en", "fr"],
+    role: 'nouveau',
+    dateInscription: '2025-12-01',
+    identiteVerifiee: identiteSakura,
+    identitePublique: pubSakura,
+    identiteProfessionnelle: proSakura,
     preferences: defaultPreferences(),
     soldeVita: 15,
     joursActifs: 15,
     propositionsCreees: 0,
     votesEffectues: 0,
     scoreReputation: 10,
-  },
-  {
-    id: "usr-005-auditeur",
-    prenom: "Jean-Pierre",
-    nom: "Moreau",
-    username: "jp.moreau",
-    email: "jpmoreau@vita.world",
+  }),
+  buildStoredUser({
+    id: 'usr-005-auditeur',
+    username: 'jp.moreau',
+    email: 'jpmoreau@vita.world',
     passwordHash: DEFAULT_PASSWORD_HASH,
-    dateNaissance: "1975-09-12",
-    pays: "Suisse",
-    role: "auditeur",
-    bio: "Expert-comptable. Auditeur independant du systeme VITA.",
-    dateInscription: "2025-03-05",
-    profession: "Expert-comptable",
-    centresInteret: ["finance", "audit", "transparence"],
-    langues: ["fr", "de", "en"],
+    role: 'auditeur',
+    dateInscription: '2025-03-05',
+    identiteVerifiee: identiteJP,
+    identitePublique: pubJP,
+    identiteProfessionnelle: proJP,
     preferences: defaultPreferences(),
     soldeVita: 290,
     joursActifs: 290,
     propositionsCreees: 2,
     votesEffectues: 18,
     scoreReputation: 88,
-  },
+  }),
 ];
 
 // Seed localStorage si vide
@@ -151,4 +372,10 @@ export function seedMockUsers(): void {
   if (!existing) {
     localStorage.setItem("vita_users", JSON.stringify(MOCK_USERS));
   }
+}
+
+// Force re-seed (utile apres migration de schema)
+export function forceSeedMockUsers(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("vita_users", JSON.stringify(MOCK_USERS));
 }

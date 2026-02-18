@@ -50,9 +50,26 @@ export function TopNav() {
 
   const currentModule = modules.find((m) => pathname.startsWith(m.path))?.id;
 
-  const initials = user
-    ? `${user.prenom.charAt(0)}${user.nom.charAt(0)}`.toUpperCase()
-    : "??";
+  const mode = user?.identitePublique?.modeVisibilite;
+  let initials = "??";
+  let displayName = "";
+  if (user) {
+    switch (mode) {
+      case "pseudonyme":
+        displayName = user.identitePublique?.pseudonyme || user.username;
+        initials = displayName.slice(0, 2).toUpperCase();
+        break;
+      case "anonyme":
+        displayName = `Citoyen #${user.id.slice(-6)}`;
+        initials = "??";
+        break;
+      default:
+        // "complet" or missing identitePublique (legacy data)
+        initials = `${(user.prenom || "?").charAt(0)}${(user.nom || "?").charAt(0)}`.toUpperCase();
+        displayName = `${user.prenom || ""} ${user.nom || ""}`.trim() || user.username;
+        break;
+    }
+  }
 
   const roleMeta = ROLE_METADATA[activeRole];
 
@@ -190,7 +207,7 @@ export function TopNav() {
                   {/* User info */}
                   <div className="border-b p-4" style={{ borderColor: "var(--border)" }}>
                     <div className="text-sm font-semibold text-[var(--text-primary)]">
-                      {user?.prenom} {user?.nom}
+                      {displayName}
                     </div>
                     <div className="text-xs text-[var(--text-muted)]">
                       @{user?.username}

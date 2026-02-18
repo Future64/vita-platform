@@ -116,7 +116,11 @@ export function Sidebar({ items, title = "Menu" }: SidebarProps) {
         {user && (
           <div className="border-b p-4" style={{ borderColor: "var(--border)" }}>
             <div className="text-sm font-semibold text-[var(--text-primary)]">
-              {user.prenom} {user.nom}
+              {user.identitePublique?.modeVisibilite === "pseudonyme"
+                ? user.identitePublique.pseudonyme || user.username
+                : user.identitePublique?.modeVisibilite === "anonyme"
+                ? `Citoyen #${user.id.slice(-6)}`
+                : `${user.prenom || ""} ${user.nom || ""}`.trim() || user.username}
             </div>
             <div className="text-xs text-[var(--text-muted)]">@{user.username}</div>
             <div className="mt-2 flex items-center gap-1.5">

@@ -3,11 +3,12 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Check, X } from "lucide-react";
+import { Eye, EyeOff, Check, X, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/Toast";
+import type { ModeVisibilite } from "@/types/auth";
 
 // --- Countries list ---
 
@@ -155,6 +156,8 @@ export default function InscriptionPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [dateNaissance, setDateNaissance] = useState("");
   const [pays, setPays] = useState("");
+  const [modeVisibilite, setModeVisibilite] = useState<ModeVisibilite>("complet");
+  const [pseudonyme, setPseudonyme] = useState("");
   const [acceptCGU, setAcceptCGU] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -212,6 +215,8 @@ export default function InscriptionPage() {
       password,
       dateNaissance,
       pays,
+      modeVisibilite,
+      pseudonyme: modeVisibilite === "pseudonyme" ? pseudonyme : undefined,
     });
 
     if (success) {
@@ -393,6 +398,51 @@ export default function InscriptionPage() {
             ))}
           </select>
           {touched.pays && <FieldError error={errors.pays} />}
+        </div>
+
+        {/* Mode de visibilite */}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
+            Mode de visibilite
+          </label>
+          <p className="mb-3 text-xs text-[var(--text-muted)]">
+            Choisissez comment les autres vous verront. Modifiable a tout moment.
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {([
+              { value: "complet" as const, label: "Identite complete", desc: "Prenom et nom visibles" },
+              { value: "pseudonyme" as const, label: "Pseudonyme", desc: "Seul un pseudo est visible" },
+              { value: "anonyme" as const, label: "Anonyme", desc: "Citoyen #ID uniquement" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setModeVisibilite(opt.value)}
+                className="relative rounded-lg border p-3 text-left transition-all"
+                style={{
+                  borderColor: modeVisibilite === opt.value ? "#8b5cf6" : "var(--border)",
+                  backgroundColor: modeVisibilite === opt.value ? "rgba(139,92,246,0.08)" : "transparent",
+                }}
+              >
+                <p className="text-sm font-medium" style={{ color: modeVisibilite === opt.value ? "#8b5cf6" : "var(--text-primary)" }}>
+                  {opt.label}
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+          {modeVisibilite === "pseudonyme" && (
+            <div className="mt-3">
+              <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
+                Pseudonyme
+              </label>
+              <Input
+                placeholder="Votre pseudonyme public"
+                value={pseudonyme}
+                onChange={(e) => setPseudonyme(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Checkboxes */}

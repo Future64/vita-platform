@@ -16,9 +16,13 @@ import type {
   RegisterData,
   StoredUser,
   AuthSession,
+  IdentitePublique,
+  IdentiteProfessionnelle,
+  ModeVisibilite,
 } from "@/types/auth";
+import { buildUserFromIdentity } from "@/types/auth";
 import { hasPermission as checkPermission } from "@/lib/permissions";
-import { seedMockUsers } from "@/lib/mockUsers";
+import { seedMockUsers, forceSeedMockUsers } from "@/lib/mockUsers";
 
 // --- Context type ---
 
@@ -33,6 +37,9 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   updatePreferences: (prefs: Partial<UserPreferences>) => void;
+  updateIdentitePublique: (data: Partial<IdentitePublique>) => void;
+  updateIdentiteProfessionnelle: (data: Partial<IdentiteProfessionnelle>) => void;
+  setModeVisibilite: (mode: ModeVisibilite) => void;
   setSimulatedRole: (role: UserRole | null) => void;
   hasPermission: (permission: Permission) => boolean;
 }
@@ -81,6 +88,30 @@ function storedToUser(stored: StoredUser): User {
   return user;
 }
 
+// Rebuild legacy fields from identity layers
+function rebuildLegacyFields(user: StoredUser): StoredUser {
+  if (!user.identiteVerifiee || !user.identitePublique || !user.identiteProfessionnelle) {
+    return user;
+  }
+  const rebuilt = buildUserFromIdentity({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    dateInscription: user.dateInscription,
+    identiteVerifiee: user.identiteVerifiee,
+    identitePublique: user.identitePublique,
+    identiteProfessionnelle: user.identiteProfessionnelle,
+    preferences: user.preferences,
+    soldeVita: user.soldeVita,
+    joursActifs: user.joursActifs,
+    propositionsCreees: user.propositionsCreees,
+    votesEffectues: user.votesEffectues,
+    scoreReputation: user.scoreReputation,
+  });
+  return { ...rebuilt, passwordHash: user.passwordHash };
+}
+
 // --- Default preferences ---
 
 function defaultPreferences(): UserPreferences {
@@ -109,6 +140,40 @@ function defaultPreferences(): UserPreferences {
   };
 }
 
+// --- Default identity structures ---
+
+function defaultIdentiteVerifiee(data: RegisterData) {
+  return {
+    nomLegal: data.nom,
+    prenomLegal: data.prenom,
+    dateNaissance: data.dateNaissance,
+    nationalite: '',
+    paysResidence: data.pays,
+    statut: 'non_verifie' as const,
+    niveauConfiance: 0,
+    historiqueVerifications: [],
+  };
+}
+
+function defaultIdentitePublique(data: RegisterData) {
+  const mode = data.modeVisibilite ?? 'complet';
+  return {
+    modeVisibilite: mode,
+    prenom: mode === 'complet' ? data.prenom : undefined,
+    nom: mode === 'complet' ? data.nom : undefined,
+    pseudonyme: mode === 'pseudonyme' ? data.pseudonyme : undefined,
+    paysAffiche: mode === 'complet' ? data.pays : undefined,
+    dateInscriptionVisible: mode === 'complet',
+  };
+}
+
+function defaultIdentiteProfessionnelle() {
+  return {
+    active: false,
+    disponibilite: 'indisponible' as const,
+  };
+}
+
 // --- Provider ---
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -121,7 +186,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session on mount
   useEffect(() => {
-    seedMockUsers();
+    // Migrate: if stored users lack identity structures, force reseed
+    const existingUsers = getStoredUsers();
+    if (existingUsers.length > 0 && !existingUsers[0].identitePublique) {
+      forceSeedMockUsers();
+      // Clear stale session since user data has changed
+      saveSession(null);
+    } else {
+      seedMockUsers();
+    }
 
     const session = getSession();
     if (session) {
@@ -163,23 +236,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const newUser: StoredUser = {
+    const identiteVerifiee = defaultIdentiteVerifiee(data);
+    const identitePublique = defaultIdentitePublique(data);
+    const identiteProfessionnelle = defaultIdentiteProfessionnelle();
+
+    const newUserBase = buildUserFromIdentity({
       id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      prenom: data.prenom,
-      nom: data.nom,
       username: data.username,
       email: data.email,
-      passwordHash: data.password,
-      dateNaissance: data.dateNaissance,
-      pays: data.pays,
       role: "dieu", // Default: dieu (mode dev)
       dateInscription: new Date().toISOString().split("T")[0],
+      identiteVerifiee,
+      identitePublique,
+      identiteProfessionnelle,
       preferences: defaultPreferences(),
       soldeVita: 0,
       joursActifs: 0,
       propositionsCreees: 0,
       votesEffectues: 0,
       scoreReputation: 0,
+    });
+
+    const newUser: StoredUser = {
+      ...newUserBase,
+      passwordHash: data.password,
     };
 
     users.push(newUser);
@@ -198,7 +278,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(null);
     setUser(null);
     setSimulatedRole(null);
-    // Redirect happens in the component layer, not here
   }, []);
 
   const updateProfile = useCallback(
@@ -230,6 +309,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  const updateIdentitePublique = useCallback(
+    (data: Partial<IdentitePublique>) => {
+      if (!user) return;
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) return;
+
+      users[idx].identitePublique = { ...users[idx].identitePublique, ...data };
+      // Rebuild legacy fields
+      users[idx] = rebuildLegacyFields(users[idx]);
+      saveStoredUsers(users);
+      setUser(storedToUser(users[idx]));
+    },
+    [user]
+  );
+
+  const updateIdentiteProfessionnelle = useCallback(
+    (data: Partial<IdentiteProfessionnelle>) => {
+      if (!user) return;
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) return;
+
+      users[idx].identiteProfessionnelle = { ...users[idx].identiteProfessionnelle, ...data };
+      // Rebuild legacy fields
+      users[idx] = rebuildLegacyFields(users[idx]);
+      saveStoredUsers(users);
+      setUser(storedToUser(users[idx]));
+    },
+    [user]
+  );
+
+  const setModeVisibiliteFn = useCallback(
+    (mode: ModeVisibilite) => {
+      if (!user) return;
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) return;
+
+      users[idx].identitePublique = { ...users[idx].identitePublique, modeVisibilite: mode };
+      // Rebuild legacy fields
+      users[idx] = rebuildLegacyFields(users[idx]);
+      saveStoredUsers(users);
+      setUser(storedToUser(users[idx]));
+    },
+    [user]
+  );
+
   const hasPermissionFn = useCallback(
     (permission: Permission): boolean => {
       return checkPermission(activeRole, permission);
@@ -250,6 +377,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateProfile,
         updatePreferences,
+        updateIdentitePublique,
+        updateIdentiteProfessionnelle,
+        setModeVisibilite: setModeVisibiliteFn,
         setSimulatedRole,
         hasPermission: hasPermissionFn,
       }}
