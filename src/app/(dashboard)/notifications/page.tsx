@@ -116,7 +116,7 @@ function NotificationCard({
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-4 rounded-xl border p-4 transition-all",
+        "group relative flex items-start gap-3 md:gap-4 rounded-xl border p-3 md:p-4 transition-all",
         !notif.lue
           ? "border-violet-500/20 bg-violet-500/[0.03]"
           : "border-[var(--border)]",
@@ -242,14 +242,14 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Notifications
             </h1>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
+            <p className="mt-1 text-xs md:text-sm text-[var(--text-muted)]">
               {unreadCount > 0
                 ? `${unreadCount} non lue${unreadCount > 1 ? "s" : ""}`
                 : "Toutes les notifications sont lues"}
@@ -258,7 +258,7 @@ export default function NotificationsPage() {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)]"
+              className="flex items-center gap-1.5 md:gap-2 rounded-lg border px-2.5 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)]"
               style={{
                 borderColor: "var(--border)",
                 color: "var(--text-secondary)",
@@ -369,7 +369,7 @@ export default function NotificationsPage() {
 
         {/* Notification groups */}
         {grouped.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border py-16" style={{ borderColor: "var(--border)" }}>
+          <div className="flex flex-col items-center justify-center rounded-xl border py-10 md:py-16" style={{ borderColor: "var(--border)" }}>
             <Bell className="mb-3 h-10 w-10 text-[var(--text-muted)]" />
             <p className="text-sm text-[var(--text-muted)]">
               {filter === "unread"
@@ -378,10 +378,10 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {grouped.map((group) => (
               <div key={group.label}>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                <h2 className="mb-2 md:mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   {group.label}
                 </h2>
                 <div className="space-y-2">

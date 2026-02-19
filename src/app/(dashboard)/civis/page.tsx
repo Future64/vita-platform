@@ -501,13 +501,13 @@ export default function CivisProfilePage() {
       {showUnsavedModal && <UnsavedChangesModal onDiscard={handleUnsavedDiscard} onStay={handleUnsavedStay} />}
 
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
             <div className="shrink-0">{renderAvatar(120, mode === "complet")}</div>
             <div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-1">{displayName}</h1>
-              {mode === "complet" && <p className="text-sm text-[var(--text-muted)] mb-2">@{user.username}</p>}
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-1">{displayName}</h1>
+              {mode === "complet" && <p className="text-xs md:text-sm text-[var(--text-muted)] mb-2">@{user.username}</p>}
               <div className="mb-2 flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: `${roleMeta.color}20`, color: roleMeta.color }}>
                   <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: roleMeta.color }} />
@@ -536,7 +536,7 @@ export default function CivisProfilePage() {
       </div>
 
       {/* Solde VITA + Stats */}
-      <Card className="mb-6">
+      <Card className="mb-4 md:mb-6">
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -552,7 +552,7 @@ export default function CivisProfilePage() {
         </CardContent>
       </Card>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard variant="violet" label="Jours actifs" value={user.joursActifs.toString()} />
         <StatCard variant="cyan" label="Propositions" value={user.propositionsCreees.toString()} />
         <StatCard variant="green" label="Votes" value={user.votesEffectues.toString()} />
@@ -570,7 +570,7 @@ export default function CivisProfilePage() {
 
         {/* ═══════ TAB: PROFIL PUBLIC ═══════ */}
         <TabsContent value="profil">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-5">
 
               {/* ─── Mode de visibilite ─── */}
@@ -921,7 +921,7 @@ export default function CivisProfilePage() {
 
         {/* ═══════ TAB: IDENTITE VERIFIEE ═══════ */}
         <TabsContent value="identite">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-5">
               {/* Statut de verification */}
               <Card>
@@ -953,7 +953,7 @@ export default function CivisProfilePage() {
                   </span>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2">
                     <div>
                       <p className="text-xs text-[var(--text-muted)] mb-0.5">Nom legal</p>
                       <p className="text-sm font-medium text-[var(--text-primary)]">{verif.nomLegal}</p>
@@ -1080,7 +1080,7 @@ export default function CivisProfilePage() {
         {/* ═══════ TAB: PROFIL PROFESSIONNEL ═══════ */}
         <TabsContent value="pro">
           {pro.active ? (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-5">
 
                 {/* ─── Informations generales ─── */}
@@ -1098,7 +1098,7 @@ export default function CivisProfilePage() {
                         <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">Titre professionnel</label>
                         <Input value={editProTitre} onChange={(e) => setEditProTitre(e.target.value)} placeholder="Ex: Developpeur Full-Stack" />
                       </div>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2">
                         <div>
                           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">Secteur</label>
                           <select
@@ -1650,7 +1650,7 @@ export default function CivisProfilePage() {
 
         {/* ═══════ TAB: ACTIVITE ═══════ */}
         <TabsContent value="activite">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-5">
               <Card>
                 <CardHeader>

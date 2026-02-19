@@ -45,6 +45,10 @@
    Base Styles
    ======================================== */
 
+html, body {
+  overflow-x: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -250,4 +254,66 @@ a:focus-visible,
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ========================================
+   Scrollbar Hide (for tabs, horizontal scroll)
+   ======================================== */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========================================
+   Sidebar Animations
+   ======================================== */
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sidebar-slide-in {
+  animation: slideInLeft 200ms ease-out;
+}
+
+.backdrop-fade-in {
+  animation: fadeIn 200ms ease-out;
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+  nav, .sidebar, .topnav, button, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .card, [class*="rounded-xl"] {
+    border: 1px solid #ddd !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
 }

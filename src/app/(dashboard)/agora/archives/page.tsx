@@ -131,20 +131,20 @@ export default function ArchivesPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Archives
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           {totalArchives} propositions votées ces 30 derniers jours — {tauxAdoption}% adoptées
         </p>
       </div>
 
       {/* Filters */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-4 md:mb-5 flex flex-col xs:flex-row flex-wrap gap-3">
         <SearchInput
           placeholder="Rechercher..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />

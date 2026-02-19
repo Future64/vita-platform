@@ -40,10 +40,10 @@ export default function AdministrationPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4 md:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Shield className="h-6 w-6 text-violet-500" />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Administration
           </h1>
           <Badge
@@ -56,18 +56,18 @@ export default function AdministrationPage() {
             {roleMeta.label}
           </Badge>
         </div>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           Panneau de gestion de la plateforme VITA
         </p>
       </div>
 
       {/* Navigation cards grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4 md:mb-8">
         {/* Utilisateurs */}
         <PermissionGate permission="manage_users" hide>
           <Link href="/administration/utilisateurs" className="group">
             <Card className="h-full transition-all hover:border-violet-500/30">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-xl"
@@ -96,7 +96,7 @@ export default function AdministrationPage() {
         <PermissionGate permission="manage_system_params" hide>
           <Link href="/administration/parametres-systeme" className="group">
             <Card className="h-full transition-all hover:border-violet-500/30">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-xl"
@@ -123,7 +123,7 @@ export default function AdministrationPage() {
         <PermissionGate permission="moderate_proposal" hide>
           <Link href="/administration/moderation" className="group">
             <Card className="h-full transition-all hover:border-violet-500/30">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div
@@ -158,7 +158,7 @@ export default function AdministrationPage() {
         <PermissionGate permission="view_audit_logs" hide>
           <Link href="/administration/audit" className="group">
             <Card className="h-full transition-all hover:border-violet-500/30">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-xl"
@@ -186,7 +186,7 @@ export default function AdministrationPage() {
         <PermissionGate permission="view_system_stats" hide>
           <Link href="/administration/systeme" className="group">
             <Card className="h-full transition-all hover:border-violet-500/30">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div
                     className="flex h-10 w-10 items-center justify-center rounded-xl"

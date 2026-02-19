@@ -299,16 +299,16 @@ export default function CalculateurPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="flex items-center gap-3 mb-1">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600">
             <Calculator className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Calculateur de valorisation
             </h1>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-xs md:text-sm text-[var(--text-muted)]">
               V = T &times; (1 + F + P + R + L) + M
             </p>
           </div>

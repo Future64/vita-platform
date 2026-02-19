@@ -56,19 +56,19 @@ export default function ConnexionPage() {
       <h1 className="mb-1 text-xl font-bold text-[var(--text-primary)]">
         Se connecter
       </h1>
-      <p className="mb-6 text-sm text-[var(--text-muted)]">
+      <p className="mb-4 md:mb-6 text-xs md:text-sm text-[var(--text-muted)]">
         Accedez a votre espace VITA
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="mb-3 md:mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 md:p-3 text-xs md:text-sm text-red-400">
           {error}
         </div>
       )}
 
       <form
         onSubmit={handleSubmit}
-        className={`space-y-4 ${shake ? "animate-shake" : ""}`}
+        className={`space-y-3 md:space-y-4 ${shake ? "animate-shake" : ""}`}
         style={shake ? {
           animation: "shake 0.5s ease-in-out",
         } : undefined}
@@ -123,14 +123,14 @@ export default function ConnexionPage() {
               className="h-4 w-4 rounded border accent-violet-500"
               style={{ borderColor: "var(--border)" }}
             />
-            <span className="text-sm text-[var(--text-secondary)]">
+            <span className="text-xs md:text-sm text-[var(--text-secondary)]">
               Se souvenir de moi
             </span>
           </label>
           <button
             type="button"
             onClick={handleForgotPassword}
-            className="text-sm font-medium text-violet-500 hover:underline"
+            className="text-xs md:text-sm font-medium text-violet-500 hover:underline"
           >
             Mot de passe oublie ?
           </button>
@@ -149,16 +149,16 @@ export default function ConnexionPage() {
       </form>
 
       {/* Divider */}
-      <div className="my-6 flex items-center gap-3">
+      <div className="my-4 md:my-6 flex items-center gap-3">
         <div className="h-px flex-1" style={{ backgroundColor: "var(--border)" }} />
         <span className="text-xs text-[var(--text-muted)]">OU</span>
         <div className="h-px flex-1" style={{ backgroundColor: "var(--border)" }} />
       </div>
 
       {/* Demo accounts */}
-      <div className="space-y-2">
+      <div className="space-y-1.5 md:space-y-2">
         <p className="text-xs font-medium text-[var(--text-muted)]">Comptes de demonstration :</p>
-        <div className="grid grid-cols-1 gap-1.5 text-xs text-[var(--text-secondary)]">
+        <div className="grid grid-cols-1 gap-1 md:gap-1.5 text-xs text-[var(--text-secondary)]">
           <div className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: "var(--bg-elevated)" }}>
             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: "#fbbf24" }} />
             <span className="font-mono">maxim@vita.world</span>
@@ -181,7 +181,7 @@ export default function ConnexionPage() {
       </div>
 
       {/* Link to register */}
-      <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
+      <p className="mt-4 md:mt-6 text-center text-xs md:text-sm text-[var(--text-muted)]">
         Pas encore de compte ?{" "}
         <Link href="/auth/inscription" className="font-medium text-violet-500 hover:underline">
           S&apos;inscrire

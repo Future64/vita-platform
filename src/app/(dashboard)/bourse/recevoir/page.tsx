@@ -57,27 +57,27 @@ export default function RecevoirPage() {
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
       <div className="mx-auto max-w-lg">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-4 md:mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-600">
             <QrCode className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Recevoir des Ѵ
             </h1>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-xs md:text-sm text-[var(--text-muted)]">
               Partagez votre QR code ou votre identifiant
             </p>
           </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* QR Code */}
           <Card>
             <CardContent>
               <div className="flex flex-col items-center py-4">
                 {/* QR placeholder */}
-                <div className="mb-4 relative flex h-52 w-52 items-center justify-center rounded-2xl border-2 border-dashed border-violet-500/30 bg-[var(--bg-elevated)]">
+                <div className="mb-4 relative flex h-44 w-44 md:h-52 md:w-52 items-center justify-center rounded-2xl border-2 border-dashed border-violet-500/30 bg-[var(--bg-elevated)]">
                   <div className="text-center">
                     {/* Stylized QR placeholder */}
                     <div className="mx-auto mb-3 grid h-28 w-28 grid-cols-7 gap-0.5">

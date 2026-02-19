@@ -28,7 +28,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[var(--bg-base)] px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--bg-base)] px-4 py-6 md:py-8">
       {/* Subtle radial gradient background */}
       <div
         className="pointer-events-none fixed inset-0"
@@ -39,16 +39,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       <div className="relative z-10 w-full max-w-[480px]">
         {/* Logo */}
-        <div className="mb-8 flex flex-col items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-xl font-extrabold text-white">
+        <div className="mb-6 md:mb-8 flex flex-col items-center">
+          <Link href="/" className="flex items-center gap-2.5 md:gap-3">
+            <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-lg md:text-xl font-extrabold text-white">
               Ѵ
             </div>
-            <span className="bg-gradient-to-r from-violet-500 to-pink-500 bg-clip-text text-3xl font-bold text-transparent">
+            <span className="bg-gradient-to-r from-violet-500 to-pink-500 bg-clip-text text-2xl md:text-3xl font-bold text-transparent">
               VITA
             </span>
           </Link>
-          <p className="mt-3 text-sm text-[var(--text-muted)]">
+          <p className="mt-2 md:mt-3 text-xs md:text-sm text-[var(--text-muted)]">
             Plateforme de gouvernance mondiale
           </p>
         </div>

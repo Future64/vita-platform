@@ -13,7 +13,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex items-center gap-1 rounded-lg bg-elevated p-1",
+      "inline-flex items-center gap-1 rounded-lg bg-elevated p-1 overflow-x-auto max-w-full scrollbar-hide",
       className
     )}
     {...props}
@@ -28,7 +28,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-muted transition-all",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-muted transition-all",
       "hover:text-secondary",
       "data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500",
@@ -79,7 +79,7 @@ const SubTabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "whitespace-nowrap px-4 py-3 text-sm font-medium text-muted -mb-px border-b-2 border-transparent transition-all",
+      "whitespace-nowrap px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium text-muted -mb-px border-b-2 border-transparent transition-all",
       "hover:text-secondary",
       "data-[state=active]:text-violet-500 data-[state=active]:border-violet-500",
       "focus-visible:outline-none",

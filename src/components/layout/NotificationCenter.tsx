@@ -179,7 +179,7 @@ export function NotificationCenter() {
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute right-0 top-12 z-50 w-[380px] overflow-hidden rounded-xl border shadow-lg"
+          className="absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] xs:w-[380px] max-w-[380px] overflow-hidden rounded-xl border shadow-lg"
           style={{
             borderColor: "var(--border)",
             backgroundColor: "var(--bg-card)",

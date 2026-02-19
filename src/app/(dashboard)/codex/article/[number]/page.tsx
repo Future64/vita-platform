@@ -110,7 +110,7 @@ export default function ArticleDetailPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/codex">
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -120,7 +120,7 @@ export default function ArticleDetailPage() {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span
                 className="text-sm font-mono font-bold"
                 style={{ color: "#c9a84c" }}
@@ -143,12 +143,12 @@ export default function ArticleDetailPage() {
               </span>
             </div>
             <h1
-              className="text-2xl font-bold text-[var(--text-primary)] mb-2"
+              className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-2"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
               {article.name}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
+            <div className="flex items-center gap-4 text-xs md:text-sm text-[var(--text-muted)]">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 Mis a jour le{" "}
@@ -167,9 +167,9 @@ export default function ArticleDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-4 md:space-y-5">
           {/* Article Content */}
           <Card>
             <CardHeader>
@@ -295,7 +295,7 @@ export default function ArticleDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* Metadata */}
           <Card>
             <CardHeader>
@@ -400,7 +400,7 @@ export default function ArticleDetailPage() {
 
           {article.immutable && (
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3.5 md:p-4">
                 <div className="flex items-start gap-3">
                   <Lock
                     className="h-5 w-5 mt-0.5 flex-shrink-0"

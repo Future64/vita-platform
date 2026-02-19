@@ -240,19 +240,19 @@ export default function InscriptionPage() {
       <h1 className="mb-1 text-xl font-bold text-[var(--text-primary)]">
         Creer un compte
       </h1>
-      <p className="mb-6 text-sm text-[var(--text-muted)]">
+      <p className="mb-4 md:mb-6 text-xs md:text-sm text-[var(--text-muted)]">
         Rejoignez la communaute VITA
       </p>
 
       {globalError && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+        <div className="mb-3 md:mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 md:p-3 text-xs md:text-sm text-red-400">
           {globalError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
         {/* Prenom + Nom */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
               Prenom
@@ -405,10 +405,10 @@ export default function InscriptionPage() {
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
             Mode de visibilite
           </label>
-          <p className="mb-3 text-xs text-[var(--text-muted)]">
+          <p className="mb-2 md:mb-3 text-xs text-[var(--text-muted)]">
             Choisissez comment les autres vous verront. Modifiable a tout moment.
           </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-1.5 md:gap-2 sm:grid-cols-3">
             {([
               { value: "complet" as const, label: "Identite complete", desc: "Prenom et nom visibles" },
               { value: "pseudonyme" as const, label: "Pseudonyme", desc: "Seul un pseudo est visible" },
@@ -418,7 +418,7 @@ export default function InscriptionPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setModeVisibilite(opt.value)}
-                className="relative rounded-lg border p-3 text-left transition-all"
+                className="relative rounded-lg border p-2.5 md:p-3 text-left transition-all"
                 style={{
                   borderColor: modeVisibilite === opt.value ? "#8b5cf6" : "var(--border)",
                   backgroundColor: modeVisibilite === opt.value ? "rgba(139,92,246,0.08)" : "transparent",
@@ -446,7 +446,7 @@ export default function InscriptionPage() {
         </div>
 
         {/* Checkboxes */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 md:space-y-3 pt-2">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -495,7 +495,7 @@ export default function InscriptionPage() {
       </form>
 
       {/* Link to login */}
-      <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
+      <p className="mt-4 md:mt-6 text-center text-xs md:text-sm text-[var(--text-muted)]">
         Deja un compte ?{" "}
         <Link href="/auth/connexion" className="font-medium text-violet-500 hover:underline">
           Se connecter

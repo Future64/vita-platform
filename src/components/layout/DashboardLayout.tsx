@@ -1,6 +1,7 @@
 "use client";
 
-import { Eye, X } from "lucide-react";
+import { useState } from "react";
+import { Eye } from "lucide-react";
 import { TopNav } from "./TopNav";
 import { Sidebar, SidebarItem } from "./Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,21 +19,25 @@ export function DashboardLayout({
   sidebarTitle,
 }: DashboardLayoutProps) {
   const { simulatedRole, setSimulatedRole } = useAuth();
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const hasSidebar = sidebarItems && sidebarItems.length > 0;
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
-      <TopNav />
+      <TopNav onOpenMobileSidebar={() => setSidebarMobileOpen(true)} />
 
       {/* Simulation banner */}
       {simulatedRole && (
         <div
-          className="sticky top-16 z-40 flex items-center justify-center gap-3 px-4 py-2 text-sm"
+          className="sticky top-14 md:top-16 z-40 flex items-center justify-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm"
           style={{
             backgroundColor: "rgba(245, 158, 11, 0.1)",
             borderBottom: "1px solid rgba(245, 158, 11, 0.3)",
           }}
         >
-          <Eye className="h-4 w-4" style={{ color: "rgb(245, 158, 11)" }} />
+          <Eye className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" style={{ color: "rgb(245, 158, 11)" }} />
           <span style={{ color: "rgb(245, 158, 11)" }}>
             Simulation :{" "}
             <span className="font-semibold">
@@ -41,7 +46,7 @@ export function DashboardLayout({
           </span>
           <button
             onClick={() => setSimulatedRole(null)}
-            className="ml-2 rounded-md px-2.5 py-1 text-xs font-medium transition-colors hover:bg-amber-500/20"
+            className="ml-1 md:ml-2 rounded-md px-2 md:px-2.5 py-1 text-xs font-medium transition-colors hover:bg-amber-500/20"
             style={{ color: "rgb(245, 158, 11)", border: "1px solid rgba(245, 158, 11, 0.3)" }}
           >
             Reinitialiser
@@ -49,12 +54,21 @@ export function DashboardLayout({
         </div>
       )}
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
-        {sidebarItems && sidebarItems.length > 0 && (
-          <Sidebar items={sidebarItems} title={sidebarTitle} />
+      <div className="flex min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)]">
+        {hasSidebar && (
+          <Sidebar
+            items={sidebarItems}
+            title={sidebarTitle}
+            mobileOpen={sidebarMobileOpen}
+            onMobileClose={() => setSidebarMobileOpen(false)}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          />
         )}
-        <main className="flex-1 overflow-y-auto p-5 md:p-6 lg:p-8">
-          {children}
+        <main className="flex-1 min-w-0 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

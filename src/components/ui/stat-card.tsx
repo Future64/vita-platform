@@ -46,7 +46,7 @@ export function StatCard({ variant, label, value, trend, className }: StatCardPr
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-5",
+        "relative overflow-hidden rounded-xl border p-4 md:p-5",
         styles.card,
         className
       )}
@@ -64,7 +64,7 @@ export function StatCard({ variant, label, value, trend, className }: StatCardPr
         <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
           {label}
         </p>
-        <p className="text-[1.75rem] font-bold text-[var(--text-primary)]">
+        <p className="text-xl md:text-[1.75rem] font-bold text-[var(--text-primary)]">
           {value}
         </p>
         {trend && (

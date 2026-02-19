@@ -132,12 +132,12 @@ export default function CodexPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             Constitution VITA
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
             {totalArticles} articles &middot; {titles.length} titres &middot; Texte fondateur du systeme monetaire universel
           </p>
         </div>
@@ -150,7 +150,7 @@ export default function CodexPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard
           variant="violet"
           label="Articles"
@@ -175,8 +175,8 @@ export default function CodexPage() {
       </div>
 
       {/* Search Bar */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
+      <Card className="mb-4 md:mb-6">
+        <CardContent className="p-3.5 md:p-4">
           <div className="flex gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
@@ -191,7 +191,7 @@ export default function CodexPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* Left: Title navigation */}
         <div className="space-y-4">
           {/* Title filter */}
@@ -293,7 +293,7 @@ export default function CodexPage() {
                     key={article.id}
                     href={`/codex/article/${article.number}`}
                   >
-                    <div className="group p-4 rounded-lg border border-[var(--border)] hover:border-[#c9a84c]/50 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
+                    <div className="group p-3.5 md:p-4 rounded-lg border border-[var(--border)] hover:border-[#c9a84c]/50 transition-all cursor-pointer hover:bg-[var(--bg-elevated)]">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">

@@ -113,17 +113,17 @@ export default function ContributorsPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Contributeurs
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           {contributors.length} contributeurs actifs sur la Forge
         </p>
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard variant="violet" label="Total révisions" value={formatNumber(totalRevisions)} />
         <StatCard variant="cyan" label="Demandes d'intégration" value={String(totalDIs)} />
         <StatCard variant="green" label="Lignes modifiées" value={formatNumber(totalLignes)} />
@@ -131,15 +131,15 @@ export default function ContributorsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-4 md:mb-5 flex flex-col xs:flex-row flex-wrap gap-3">
         <SearchInput
           placeholder="Rechercher un contributeur..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
         >
@@ -157,7 +157,7 @@ export default function ContributorsPage() {
           const totalLines = contributor.lignesAjoutees + contributor.lignesSupprimees;
 
           return (
-            <Card key={contributor.id} className="p-4 transition-all hover:border-violet-500/30">
+            <Card key={contributor.id} className="p-3 md:p-4 transition-all hover:border-violet-500/30">
               <div className="flex items-center gap-4">
                 {/* Rank */}
                 <div className="w-8 text-center shrink-0">

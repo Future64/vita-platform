@@ -127,20 +127,20 @@ export default function RegistrePage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <h1
-          className="text-2xl font-bold text-[var(--text-primary)]"
+          className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
           Registre des Modifications
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
+        <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
           {REGISTER_ENTRIES.length} entrees &middot; Journal chronologique de toutes les modifications du systeme VITA
         </p>
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard
           variant="pink"
           label="Constitutionnel"
@@ -164,14 +164,14 @@ export default function RegistrePage() {
       </div>
 
       {/* Search + Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
+      <Card className="mb-4 md:mb-6">
+        <CardContent className="p-3.5 md:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
               <Input
                 placeholder="Rechercher dans le registre..."
-                className="pl-10"
+                className="pl-10 w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -208,7 +208,7 @@ export default function RegistrePage() {
               className="cursor-pointer hover:border-[var(--border-light)] transition-all"
               onClick={() => toggleExpand(entry.id)}
             >
-              <div className="p-4">
+              <div className="p-3.5 md:p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Badges row */}

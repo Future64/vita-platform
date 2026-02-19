@@ -95,22 +95,22 @@ export default function RevisionsPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Révisions récentes
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           {allRevisions.length} révisions — {formatNumber(totalAdditions)} ajouts, {formatNumber(totalDeletions)} suppressions
         </p>
       </div>
 
       {/* Activity Heatmap */}
-      <Card className="mb-6">
+      <Card className="mb-4 md:mb-6">
         <CardHeader>
           <CardTitle>Activité (12 dernières semaines)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto">
             {/* Day labels */}
             <div className="flex flex-col gap-1 mr-2 pt-0">
               {DAY_LABELS.map((label, i) => (
@@ -149,15 +149,15 @@ export default function RevisionsPage() {
       </Card>
 
       {/* Filters */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-4 md:mb-5 flex flex-col xs:flex-row flex-wrap gap-3">
         <SearchInput
           placeholder="Rechercher..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={versionFilter}
           onChange={(e) => setVersionFilter(e.target.value)}
         >
@@ -167,7 +167,7 @@ export default function RevisionsPage() {
           ))}
         </select>
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
         >
@@ -209,7 +209,7 @@ export default function RevisionsPage() {
                     }}
                   />
 
-                  <div className="rounded-lg border border-[var(--border)] p-3 bg-[var(--bg-card)] hover:border-violet-500/30 transition-colors">
+                  <div className="rounded-lg border border-[var(--border)] p-2.5 md:p-3 bg-[var(--bg-card)] hover:border-violet-500/30 transition-colors">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         {/* Message */}

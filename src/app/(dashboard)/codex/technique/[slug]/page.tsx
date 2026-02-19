@@ -320,7 +320,7 @@ export default function TechniqueDocPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/codex">
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -342,7 +342,7 @@ export default function TechniqueDocPage() {
               </span>
             </div>
             <h1
-              className="text-2xl font-bold text-[var(--text-primary)]"
+              className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
               {doc.title}
@@ -351,7 +351,7 @@ export default function TechniqueDocPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-4">
         {/* Left: Doc navigation */}
         <div className="space-y-4 lg:col-span-1">
           {/* Table of contents */}
@@ -403,7 +403,7 @@ export default function TechniqueDocPage() {
         </div>
 
         {/* Right: Content */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-4 md:space-y-6">
           {sortedSections.map((section) => (
             <Card key={section.id} id={section.id}>
               <CardHeader>
@@ -436,7 +436,7 @@ export default function TechniqueDocPage() {
                       key={param.id}
                       href={`/codex/parametres-systeme/${param.id}`}
                     >
-                      <div className="group flex items-center justify-between p-3 rounded-lg border border-[var(--border)] hover:border-violet-500/50 transition-all">
+                      <div className="group flex items-center justify-between p-3.5 md:p-3 rounded-lg border border-[var(--border)] hover:border-violet-500/50 transition-all">
                         <div>
                           <div className="text-sm font-semibold text-[var(--text-primary)]">
                             {param.name}

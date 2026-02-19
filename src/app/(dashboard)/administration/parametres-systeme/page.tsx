@@ -123,15 +123,15 @@ export default function ParametresSystemePage() {
   return (
     <>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="flex items-center gap-2 mb-2">
           <Settings className="h-5 w-5 text-orange-500" />
           <Badge className="text-xs bg-orange-500/15 text-orange-500">Admin</Badge>
         </div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Parametres Systeme
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
+        <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
           Proposer des modifications aux parametres modifiables du systeme VITA
         </p>
         <Link
@@ -145,7 +145,7 @@ export default function ParametresSystemePage() {
 
       {/* Propositions en cours */}
       {parameterProposals.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mb-4 md:mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Vote className="h-4 w-4 text-orange-500" />
@@ -193,7 +193,7 @@ export default function ParametresSystemePage() {
       )}
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3">
         <StatCard
           variant="violet"
           label="Gouvernance"
@@ -212,9 +212,9 @@ export default function ParametresSystemePage() {
       </div>
 
       {/* Search */}
-      <Card className="mb-6">
+      <Card className="mb-4 md:mb-6">
         <CardContent className="p-4">
-          <div className="relative">
+          <div className="relative w-full xs:max-w-xs xs:flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <Input
               placeholder="Rechercher un parametre modifiable..."
@@ -233,8 +233,8 @@ export default function ParametresSystemePage() {
         const meta = CATEGORY_METADATA[cat];
 
         return (
-          <div key={cat} className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
+          <div key={cat} className="mb-4 md:mb-8">
+            <div className="flex items-center gap-2 mb-3 md:mb-4">
               <div
                 className="h-1 w-6 rounded-full"
                 style={{ backgroundColor: meta.color }}
@@ -450,7 +450,7 @@ export default function ParametresSystemePage() {
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1 pr-8">
                   Proposer une modification
                 </h3>
-                <p className="text-sm text-[var(--text-muted)] mb-5">
+                <p className="text-xs md:text-sm text-[var(--text-muted)] mb-4 md:mb-5">
                   {selectedParam.name}
                 </p>
 
@@ -536,7 +536,7 @@ export default function ParametresSystemePage() {
                 </div>
 
                 {/* Quorum / Seuil info */}
-                <div className="mb-5 p-3 rounded-lg" style={{ backgroundColor: "var(--bg-elevated)" }}>
+                <div className="mb-4 md:mb-5 p-3 rounded-lg" style={{ backgroundColor: "var(--bg-elevated)" }}>
                   <div className="text-xs font-medium text-[var(--text-muted)] mb-2">Conditions de vote</div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
@@ -555,7 +555,7 @@ export default function ParametresSystemePage() {
                 </div>
 
                 {/* Links */}
-                <div className="mb-5 flex flex-wrap gap-2">
+                <div className="mb-4 md:mb-5 flex flex-wrap gap-2">
                   <Link
                     href={`/codex/parametres-systeme/${selectedParam.id}`}
                     className="text-xs text-violet-500 hover:text-violet-400 flex items-center gap-1 transition-colors"

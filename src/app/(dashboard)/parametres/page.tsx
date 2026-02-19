@@ -104,8 +104,8 @@ function SettingsSection({
   return (
     <Card>
       <CardContent className="p-5 md:p-6">
-        <div className="mb-5">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+        <div className="mb-4 md:mb-5">
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">
             {title}
           </h3>
           {description && (
@@ -364,16 +364,16 @@ export default function ParametresPage() {
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Civis">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Parametres
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           Gerez votre compte et vos preferences
         </p>
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="flex flex-col gap-4 md:gap-6 lg:flex-row">
         {/* Desktop: vertical tabs on the left */}
         <div className="hidden lg:block w-56 shrink-0">
           <Card>
@@ -433,7 +433,7 @@ export default function ParametresPage() {
         </div>
 
         {/* Content area */}
-        <div className="flex-1 space-y-5">
+        <div className="flex-1 space-y-4 md:space-y-5">
           {/* ===== COMPTE ===== */}
           {activeTab === "compte" && (
             <>
@@ -568,7 +568,7 @@ export default function ParametresPage() {
                 title="Theme"
                 description="Choisissez l'apparence de l'application"
               >
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
                   {(
                     [
                       {
@@ -968,11 +968,11 @@ export default function ParametresPage() {
                 title="Sessions actives"
                 description="Gerez vos sessions de connexion"
               >
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {mockSessions.map((session, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between rounded-lg border p-3"
+                      className="flex items-center justify-between rounded-lg border p-2.5 md:p-3"
                       style={{ borderColor: "var(--border)" }}
                     >
                       <div className="flex items-center gap-3">

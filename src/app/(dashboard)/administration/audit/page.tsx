@@ -88,7 +88,7 @@ export default function AuditPage() {
       {/* Integrity indicator */}
       {AUDIT_STATS.integrite && (
         <Card
-          className="mb-6 border-green-500/30"
+          className="mb-4 md:mb-6 border-green-500/30"
           style={{ backgroundColor: "rgba(34, 197, 94, 0.05)" }}
         >
           <CardContent className="p-4">
@@ -105,16 +105,16 @@ export default function AuditPage() {
       )}
 
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <FileSearch className="h-6 w-6 text-blue-500" />
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
                 Journal d&apos;audit
               </h1>
             </div>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-xs md:text-sm text-[var(--text-muted)]">
               {formatNumber(AUDIT_STATS.totalEntrees)} entrees totales &middot;{" "}
               {formatNumber(AUDIT_STATS.totalSemaine)} cette semaine
             </p>
@@ -140,15 +140,15 @@ export default function AuditPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-col xs:flex-row flex-wrap gap-3 mb-4 md:mb-5">
         <SearchInput
           placeholder="Rechercher dans les logs..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500 w-full xs:w-auto"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as "all" | AuditCategory)}
         >
@@ -160,7 +160,7 @@ export default function AuditPage() {
           <option value="systeme">Systeme</option>
         </select>
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500 w-full xs:w-auto"
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value as "all" | AuditSeverity)}
         >

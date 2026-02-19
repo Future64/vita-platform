@@ -127,16 +127,16 @@ export default function PanoramaPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Panorama">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Dashboard Global
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
             Temps réel — {formatNumber(d.utilisateursVerifies)} citoyens vérifiés
           </p>
         </div>
-        <Button variant="secondary">
+        <Button variant="secondary" className="self-start sm:self-auto">
           <Download className="h-4 w-4" />
           Export
         </Button>
@@ -145,7 +145,7 @@ export default function PanoramaPage() {
       {/* ============================================
           SECTION 1 — Indicateurs clés
           ============================================ */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard
           variant="violet"
           label="Population vérifiée"
@@ -175,7 +175,7 @@ export default function PanoramaPage() {
       {/* ============================================
           SECTION 2 — Graphiques
           ============================================ */}
-      <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-2">
         {/* Croissance des utilisateurs */}
         <Card>
           <CardHeader>
@@ -383,7 +383,7 @@ export default function PanoramaPage() {
       {/* ============================================
           SECTION 3 + 4 + 5 — Three columns
           ============================================ */}
-      <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* SECTION 3 — Gouvernance en direct */}
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -552,7 +552,7 @@ export default function PanoramaPage() {
             <Badge variant="green">Opérationnel</Badge>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 md:gap-4 lg:grid-cols-5">
               {/* API Response */}
               <div className="rounded-lg bg-[var(--bg-elevated)] p-4">
                 <div className="flex items-center gap-2 mb-2">

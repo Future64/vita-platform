@@ -58,12 +58,12 @@ export default function ForgePage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Forge Collaborative
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
             Projets ouverts et contributions citoyennes
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function ForgePage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard
           variant="violet"
           label="Projets actifs"
@@ -102,7 +102,7 @@ export default function ForgePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* Main Content - Projects */}
         <div className="lg:col-span-2">
           <Card>
@@ -131,7 +131,7 @@ export default function ForgePage() {
                     const badge = statusBadge[project.status];
                     return (
                       <Link key={project.id} href={`/forge/project/${project.id}`}>
-                        <div className="group rounded-lg border border-[var(--border)] p-4 transition-all hover:border-violet-500/50 hover:bg-[var(--bg-elevated)] hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
+                        <div className="group rounded-lg border border-[var(--border)] p-3 md:p-4 transition-all hover:border-violet-500/50 hover:bg-[var(--bg-elevated)] hover:-translate-y-0.5 hover:shadow-lg cursor-pointer">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
@@ -150,7 +150,7 @@ export default function ForgePage() {
                           </div>
 
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
+                            <div className="flex items-center flex-wrap gap-2 md:gap-4 text-xs text-[var(--text-muted)]">
                               <span
                                 className={`flex items-center gap-1 ${
                                   LANGUAGE_COLORS[project.language] || "text-[var(--text-muted)]"
@@ -191,7 +191,7 @@ export default function ForgePage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* Demandes d'intégration récentes */}
           <Card>
             <CardHeader>

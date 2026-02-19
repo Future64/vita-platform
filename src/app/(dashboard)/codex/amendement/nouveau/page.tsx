@@ -198,7 +198,7 @@ function NewAmendmentContent() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/codex">
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -207,28 +207,28 @@ function NewAmendmentContent() {
         </Link>
 
         <h1
-          className="text-2xl font-bold text-[var(--text-primary)]"
+          className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
           Proposer un amendement
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
+        <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
           Proposez une modification a un article de la Constitution VITA.
           Votre proposition sera soumise a deliberation puis au vote.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3">
+        <div className="mb-4 md:mb-6 p-3.5 md:p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
           {/* Main form */}
-          <div className="lg:col-span-2 space-y-5">
+          <div className="lg:col-span-2 space-y-4 md:space-y-5">
             {/* Article selection */}
             <Card>
               <CardHeader>
@@ -337,7 +337,7 @@ function NewAmendmentContent() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-5">
+          <div className="space-y-4 md:space-y-5">
             {/* Current article content */}
             {selectedArticle && (
               <Card>
@@ -463,7 +463,7 @@ function NewAmendmentContent() {
 
             {/* Warning about immutable articles */}
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3.5 md:p-4">
                 <div className="flex items-start gap-3">
                   <Lock
                     className="h-5 w-5 mt-0.5 flex-shrink-0"

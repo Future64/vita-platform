@@ -64,17 +64,17 @@ export default function AgoraPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Propositions
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
             {MOCK_PROPOSALS.length} propositions actives
           </p>
         </div>
         <PermissionGate permission="create_proposal">
-          <Button>
+          <Button className="self-start sm:self-auto">
             <Plus className="h-4 w-4" />
             Nouvelle
           </Button>
@@ -82,14 +82,14 @@ export default function AgoraPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-4 md:mb-5 flex flex-col xs:flex-row flex-wrap gap-3">
         <SearchInput
           placeholder="Rechercher..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
-        <select className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500">
+        <select className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500 w-full xs:w-auto">
           <option>Tous domaines</option>
           <option>Economie</option>
           <option>Environnement</option>
@@ -115,7 +115,7 @@ export default function AgoraPage() {
       <div className="space-y-0">
         {filteredProposals.map((proposal) => (
           <Link key={proposal.id} href={`/agora/${proposal.id}`}>
-            <Card className="cursor-pointer p-5 transition-all hover:border-[var(--border-light)] mb-4">
+            <Card className="cursor-pointer p-3.5 md:p-5 transition-all hover:border-[var(--border-light)] mb-3 md:mb-4">
               {/* Badges */}
               <div className="mb-3 flex flex-wrap gap-2">
                 <Badge variant={proposal.domainColor}>{proposal.domain}</Badge>
@@ -139,18 +139,18 @@ export default function AgoraPage() {
               {/* Parameter diff */}
               {proposal.type === "modification_parametre" && proposal.parameterProposal && (
                 <div
-                  className="mb-3 p-2.5 rounded-lg flex items-center gap-3 text-sm"
+                  className="mb-3 p-2.5 rounded-lg flex flex-wrap items-center gap-2 md:gap-3 text-sm"
                   style={{ backgroundColor: "var(--bg-elevated)" }}
                 >
-                  <span className="font-mono text-red-400 line-through">
+                  <span className="font-mono text-red-400 line-through text-xs md:text-sm">
                     {String(proposal.parameterProposal.currentValue)}
                   </span>
                   <ArrowRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  <span className="font-mono text-green-400 font-semibold">
+                  <span className="font-mono text-green-400 font-semibold text-xs md:text-sm">
                     {String(proposal.parameterProposal.proposedValue)}
                   </span>
                   {proposal.parameterProposal.requiredQuorum && (
-                    <span className="ml-auto text-xs text-[var(--text-muted)]">
+                    <span className="w-full md:w-auto md:ml-auto text-xs text-[var(--text-muted)]">
                       Quorum {proposal.parameterProposal.requiredQuorum}% &middot; Seuil {proposal.parameterProposal.requiredThreshold}%
                     </span>
                   )}

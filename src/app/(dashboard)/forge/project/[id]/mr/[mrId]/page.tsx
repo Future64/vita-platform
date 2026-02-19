@@ -102,9 +102,9 @@ export default function MergeRequestPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href={`/forge/project/${projectId}`}>
-          <Button variant="ghost" className="mb-4 -ml-2">
+          <Button variant="ghost" className="mb-3 md:mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             {project.name}
           </Button>
@@ -114,12 +114,12 @@ export default function MergeRequestPage() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <StatusIcon className={`h-5 w-5 text-${status.variant}-500`} />
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
                 #{di.number} {di.title}
               </h1>
               <Badge variant={status.variant}>{status.label}</Badge>
             </div>
-            <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] flex-wrap">
+            <div className="flex items-center gap-3 text-xs md:text-sm text-[var(--text-muted)] flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-semibold">
                   {di.authorInitials}
@@ -166,7 +166,7 @@ export default function MergeRequestPage() {
       </div>
 
       {/* Voting progress */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center justify-between mb-2">
@@ -290,7 +290,7 @@ export default function MergeRequestPage() {
         </SubTabsList>
 
         {/* Changes Tab */}
-        <TabsContent value="changes" className="mt-5">
+        <TabsContent value="changes" className="mt-4 md:mt-5">
           {comparaisons.length > 0 ? (
             <ComparaisonViewer files={comparaisons} />
           ) : (
@@ -305,7 +305,7 @@ export default function MergeRequestPage() {
         </TabsContent>
 
         {/* Discussion Tab */}
-        <TabsContent value="discussion" className="mt-5">
+        <TabsContent value="discussion" className="mt-4 md:mt-5">
           <div className="space-y-4">
             {/* Description */}
             <Card>
@@ -399,7 +399,7 @@ export default function MergeRequestPage() {
         </TabsContent>
 
         {/* Revisions Tab */}
-        <TabsContent value="commits" className="mt-5">
+        <TabsContent value="commits" className="mt-4 md:mt-5">
           <Card>
             <CardContent>
               {branchCommits.length === 0 ? (

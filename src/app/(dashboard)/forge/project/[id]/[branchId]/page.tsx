@@ -67,9 +67,9 @@ export default function BranchDetailPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href={`/forge/project/${projectId}`}>
-          <Button variant="ghost" className="mb-4 -ml-2">
+          <Button variant="ghost" className="mb-3 md:mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             {project.name}
           </Button>
@@ -79,7 +79,7 @@ export default function BranchDetailPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <GitBranch className="h-5 w-5 text-violet-500" />
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
                 {version.name}
               </h1>
               {version.protected && (
@@ -126,7 +126,7 @@ export default function BranchDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* Revision Timeline */}
         <div className="lg:col-span-2">
           <Card>
@@ -169,7 +169,7 @@ export default function BranchDetailPage() {
                         </div>
 
                         {/* Revision content */}
-                        <div className="flex-1 rounded-lg border border-[var(--border)] p-4 hover:bg-[var(--bg-elevated)] transition-colors">
+                        <div className="flex-1 rounded-lg border border-[var(--border)] p-3 md:p-4 hover:bg-[var(--bg-elevated)] transition-colors">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
                               <h3 className="font-semibold text-sm text-[var(--text-primary)]">
@@ -228,7 +228,7 @@ export default function BranchDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* Version Info */}
           <Card>
             <CardHeader>

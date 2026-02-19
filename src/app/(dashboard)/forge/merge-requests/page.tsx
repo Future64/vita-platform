@@ -101,12 +101,12 @@ export default function DemandesIntegrationPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Demandes d&apos;intégration
           </h1>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
             {allDIs.length} demandes d&apos;intégration — {openCount} ouvertes
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function DemandesIntegrationPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard variant="green" label="Ouvertes" value={String(openCount)} />
         <StatCard variant="cyan" label="Approuvées" value={String(approvedCount)} />
         <StatCard variant="violet" label="Intégrées" value={String(integratedCount)} />
@@ -127,15 +127,15 @@ export default function DemandesIntegrationPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-4 md:mb-5 flex flex-col xs:flex-row flex-wrap gap-3">
         <SearchInput
           placeholder="Rechercher..."
-          className="max-w-xs flex-1"
+          className="w-full xs:max-w-xs xs:flex-1"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
         >
@@ -148,7 +148,7 @@ export default function DemandesIntegrationPage() {
           <option value="closed">Fermées</option>
         </select>
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={projectFilter}
           onChange={(e) => setProjectFilter(e.target.value)}
         >
@@ -158,7 +158,7 @@ export default function DemandesIntegrationPage() {
           ))}
         </select>
         <select
-          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
+          className="h-10 w-full xs:w-auto rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-4 pr-8 text-sm text-[var(--text-primary)] outline-none focus:border-violet-500"
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
         >
@@ -177,7 +177,7 @@ export default function DemandesIntegrationPage() {
 
           return (
             <Link key={di.id} href={`/forge/project/${di.projectId}/mr/${di.id}`}>
-              <Card className="cursor-pointer p-5 transition-all hover:border-[var(--border-light)] mb-4">
+              <Card className="cursor-pointer p-3.5 md:p-5 transition-all hover:border-[var(--border-light)] mb-4">
                 <div className="flex items-start gap-3">
                   {/* Status icon */}
                   <StatusIcon className={`h-5 w-5 mt-0.5 shrink-0 ${config.color}`} />

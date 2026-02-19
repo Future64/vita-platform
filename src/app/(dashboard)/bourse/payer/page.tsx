@@ -51,7 +51,7 @@ const steps = [
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
-    <div className="mb-8 flex items-center justify-center gap-0">
+    <div className="mb-6 md:mb-8 flex items-center justify-center gap-0">
       {steps.map((step, i) => (
         <div key={step.number} className="flex items-center">
           <div className="flex flex-col items-center">
@@ -143,7 +143,7 @@ function PayerPageContent() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15">
               <CheckCircle2 className="h-10 w-10 text-green-500" />
             </div>
-            <h1 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
+            <h1 className="mb-2 text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Paiement envoyé !
             </h1>
             <p className="mb-1 text-sm text-[var(--text-secondary)]">
@@ -212,15 +212,15 @@ function PayerPageContent() {
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
       <div className="mx-auto max-w-lg">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-4 md:mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600">
             <Send className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
               Envoyer des Ѵ
             </h1>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-xs md:text-sm text-[var(--text-muted)]">
               Payer un service ou transférer à un autre utilisateur
             </p>
           </div>

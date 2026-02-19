@@ -147,14 +147,14 @@ export default function BoursePage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
       {/* Balance Card */}
-      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 p-6 md:p-8">
+      <div className="relative mb-4 md:mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 p-5 md:p-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_70%)]" />
         <div className="relative z-10">
           <p className="mb-1 text-sm font-medium text-white/70">
             Solde actuel
           </p>
           <div className="flex items-baseline gap-3">
-            <h1 className="text-5xl font-extrabold tracking-tight text-white md:text-6xl">
+            <h1 className="text-4xl font-extrabold tracking-tight text-white md:text-6xl">
               {animatedSolde.toFixed(2)}
             </h1>
             <span className="text-3xl font-bold text-white/80">Ѵ</span>
@@ -199,7 +199,7 @@ export default function BoursePage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-4 md:grid-cols-4">
         <StatCard
           variant="green"
           label="Émissions totales"
@@ -225,16 +225,16 @@ export default function BoursePage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <h2 className="mb-3 text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider">
           Actions rapides
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3">
           {quickActions.map((action) => {
             const Icon = action.icon;
             const card = (
               <Link key={action.label} href={action.href}>
-                <div className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 transition-all hover:border-violet-500/50 hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3.5 md:p-5 transition-all hover:border-violet-500/50 hover:-translate-y-0.5 hover:shadow-lg">
                   <div
                     className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient}`}
                   >

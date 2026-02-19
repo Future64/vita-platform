@@ -82,11 +82,11 @@ export default function VotesActifsPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
           Votes en cours
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           {votingProposals.length} votes actifs — Participation moyenne : {avgParticipation}%
         </p>
       </div>
@@ -123,7 +123,7 @@ export default function VotesActifsPage() {
 
           return (
             <Card key={proposal.id} className="overflow-hidden">
-              <div className="p-5">
+              <div className="p-4 md:p-5">
                 {/* Title + badges + countdown */}
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">

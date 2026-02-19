@@ -184,16 +184,16 @@ export default function ProposalDetailPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
       {/* Header with back button */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/agora">
-          <Button variant="ghost" className="mb-4 -ml-2">
+          <Button variant="ghost" className="mb-3 md:mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour aux propositions
           </Button>
         </Link>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Badge variant={proposal.domainColor}>{proposal.domain}</Badge>
               <Badge variant={proposal.statusColor}>{proposal.statusLabel}</Badge>
@@ -204,10 +204,10 @@ export default function ProposalDetailPage() {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-2">
               {proposal.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-[var(--text-muted)]">
               <span>Par {proposal.author.name}</span>
               <span>&middot;</span>
               <span className="flex items-center gap-1">
@@ -240,8 +240,8 @@ export default function ProposalDetailPage() {
 
         {/* ==================== TAB: DÉTAIL ==================== */}
         <TabsContent value="detail">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-5">
+          <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-4 md:space-y-5">
               {/* Parameter Modification Box */}
               {isParameterProposal && proposal.parameterProposal && (
                 <Card style={{ borderColor: "rgba(245, 158, 11, 0.3)" }}>
@@ -329,7 +329,7 @@ export default function ProposalDetailPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-5">
+            <div className="space-y-4 md:space-y-5">
               <SidebarVote proposal={proposal} hasVotes={hasVotes} isParameterProposal={isParameterProposal} toast={toast} />
             </div>
           </div>
@@ -647,8 +647,8 @@ export default function ProposalDetailPage() {
             <div className="space-y-6">
               {/* Lifecycle stepper */}
               <Card>
-                <CardContent className="py-6">
-                  <div className="flex items-center justify-between">
+                <CardContent className="py-4 md:py-6">
+                  <div className="flex items-center justify-between overflow-x-auto scrollbar-hide gap-1 min-w-0">
                     {LIFECYCLE_STEPS.map((step, i) => {
                       const stepIndex = LIFECYCLE_STEPS.indexOf(historique.etapeActuelle);
                       const isCompleted = i < stepIndex;

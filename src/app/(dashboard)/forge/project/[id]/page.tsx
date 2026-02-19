@@ -76,9 +76,9 @@ export default function ProjectDetailPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/forge">
-          <Button variant="ghost" className="mb-4 -ml-2">
+          <Button variant="ghost" className="mb-3 md:mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour aux projets
           </Button>
@@ -88,7 +88,7 @@ export default function ProjectDetailPage() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <Code className="h-5 w-5 text-violet-500" />
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
                 {project.name}
               </h1>
               <Badge variant="green">Public</Badge>

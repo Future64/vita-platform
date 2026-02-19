@@ -99,20 +99,20 @@ export default function ParametresSystemePage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <h1
-          className="text-2xl font-bold text-[var(--text-primary)]"
+          className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
           Parametres Systeme
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
+        <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
           {SYSTEM_PARAMETERS.length} parametres &middot; Configuration complete du systeme VITA
         </p>
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3">
         <StatCard
           variant="pink"
           label="Immuables"
@@ -131,19 +131,19 @@ export default function ParametresSystemePage() {
       </div>
 
       {/* Search + Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
+      <Card className="mb-4 md:mb-6">
+        <CardContent className="p-3.5 md:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
               <Input
                 placeholder="Rechercher un parametre..."
-                className="pl-10"
+                className="pl-10 w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {FILTER_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -169,8 +169,8 @@ export default function ParametresSystemePage() {
         const meta = CATEGORY_METADATA[cat];
 
         return (
-          <div key={cat} className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
+          <div key={cat} className="mb-6 md:mb-8">
+            <div className="flex items-center gap-2 mb-3 md:mb-4">
               <div
                 className="h-1 w-6 rounded-full"
                 style={{ backgroundColor: meta.color }}
@@ -207,7 +207,7 @@ export default function ParametresSystemePage() {
                     }
                   >
                     <div
-                      className={`p-4 ${!isImmutable ? "cursor-pointer" : ""}`}
+                      className={`p-3.5 md:p-4 ${!isImmutable ? "cursor-pointer" : ""}`}
                       onClick={() => !isImmutable && toggleExpand(param.id)}
                     >
                       <div className="flex items-start justify-between gap-3">

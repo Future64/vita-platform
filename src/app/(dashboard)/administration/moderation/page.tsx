@@ -74,7 +74,7 @@ export default function ModerationPage() {
 
     return (
       <Card key={signalement.id} className="transition-all">
-        <CardContent className="p-5">
+        <CardContent className="p-4 md:p-5">
           {/* Top row: badge + title */}
           <div className="flex flex-wrap items-start gap-2 mb-3">
             <Badge variant={TYPE_BADGE_VARIANT[signalement.type] || "violet"}>
@@ -199,14 +199,14 @@ export default function ModerationPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="flex items-center gap-3 mb-2">
           <ShieldAlert className="h-6 w-6 text-orange-500" />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Moderation
           </h1>
         </div>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-xs md:text-sm text-[var(--text-muted)]">
           {MODERATION_STATS.enAttente} signalements en attente &middot;{" "}
           {MODERATION_STATS.traitesSemaine} traites cette semaine &middot;{" "}
           {MODERATION_STATS.traitesMois} ce mois
@@ -214,7 +214,7 @@ export default function ModerationPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
         <button
           onClick={() => setActiveTab("en_attente")}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${

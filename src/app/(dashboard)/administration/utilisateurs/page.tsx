@@ -111,7 +111,7 @@ export default function UtilisateursPage() {
   return (
     <>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 md:mb-6 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Users className="h-5 w-5 text-violet-500" />
@@ -119,10 +119,10 @@ export default function UtilisateursPage() {
               Utilisateurs
             </Badge>
           </div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Gestion des utilisateurs
           </h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
+          <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
             Gerer les comptes, roles et statuts des citoyens VITA
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function UtilisateursPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 md:mb-6 grid grid-cols-1 xs:grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <StatCard
           variant="violet"
           label="Total utilisateurs"
@@ -159,11 +159,11 @@ export default function UtilisateursPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
+      <Card className="mb-4 md:mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search */}
-            <div className="relative flex-1">
+            <div className="relative w-full xs:max-w-xs xs:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
               <Input
                 placeholder="Rechercher par nom, username, email..."
@@ -175,7 +175,7 @@ export default function UtilisateursPage() {
 
             {/* Role filter */}
             <select
-              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500"
+              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500 w-full xs:w-auto"
               style={selectStyle}
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -190,7 +190,7 @@ export default function UtilisateursPage() {
 
             {/* Statut filter */}
             <select
-              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500"
+              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500 w-full xs:w-auto"
               style={selectStyle}
               value={statutFilter}
               onChange={(e) => setStatutFilter(e.target.value)}
@@ -203,7 +203,7 @@ export default function UtilisateursPage() {
 
             {/* Sort */}
             <select
-              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500"
+              className="h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-violet-500 w-full xs:w-auto"
               style={selectStyle}
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -415,7 +415,7 @@ export default function UtilisateursPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-4 md:mt-6 flex flex-col xs:flex-row items-center justify-between gap-3">
           <div className="text-sm text-[var(--text-muted)]">
             {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? "s" : ""}{" "}
             — Page {page + 1} sur {totalPages}

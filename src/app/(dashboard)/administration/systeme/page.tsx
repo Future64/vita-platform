@@ -87,10 +87,10 @@ export default function SystemePage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <Server className="h-6 w-6 text-green-500" />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
             Sante du systeme
           </h1>
           <Badge variant={globalOk ? "green" : "orange"}>
@@ -102,10 +102,10 @@ export default function SystemePage() {
       </div>
 
       {/* Status grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3 mb-4 md:mb-6">
         {/* API Backend */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-violet-500" />
@@ -148,7 +148,7 @@ export default function SystemePage() {
 
         {/* Base de donnees */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Database className="h-4 w-4 text-cyan-500" />
@@ -188,7 +188,7 @@ export default function SystemePage() {
 
         {/* File d'emission */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-yellow-500" />
@@ -229,7 +229,7 @@ export default function SystemePage() {
 
         {/* Stockage */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <HardDrive className="h-4 w-4 text-orange-500" />
@@ -292,7 +292,7 @@ export default function SystemePage() {
 
         {/* Reseau */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Wifi className="h-4 w-4 text-blue-500" />
@@ -329,7 +329,7 @@ export default function SystemePage() {
 
         {/* Cache */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Cpu className="h-4 w-4 text-pink-500" />
@@ -364,7 +364,7 @@ export default function SystemePage() {
       </div>
 
       {/* Uptime section */}
-      <Card className="mb-6">
+      <Card className="mb-4 md:mb-6">
         <CardHeader>
           <CardTitle>Disponibilite (30 derniers jours)</CardTitle>
         </CardHeader>

@@ -78,7 +78,7 @@ export default function ParameterDetailPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link href="/codex/parametres-systeme">
           <Button variant="ghost" className="mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -107,21 +107,21 @@ export default function ParameterDetailPage() {
               )}
             </div>
             <h1
-              className="text-2xl font-bold text-[var(--text-primary)]"
+              className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
               {parameter.name}
             </h1>
-            <p className="text-sm text-[var(--text-muted)] mt-2 max-w-2xl">
+            <p className="text-xs md:text-sm text-[var(--text-muted)] mt-2 max-w-2xl">
               {parameter.description}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         {/* Main content */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-4 md:space-y-5">
           {/* Current Value */}
           <Card>
             <CardHeader>
@@ -161,7 +161,7 @@ export default function ParameterDetailPage() {
           {/* Immutable explanation */}
           {isImmutable && (
             <Card style={{ borderColor: "rgba(239, 68, 68, 0.2)" }}>
-              <CardContent className="p-4">
+              <CardContent className="p-3.5 md:p-4">
                 <div className="flex items-start gap-3">
                   <Lock className="h-5 w-5 mt-0.5 flex-shrink-0 text-red-400" />
                   <div>
@@ -353,7 +353,7 @@ export default function ParameterDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-5">
+        <div className="space-y-4 md:space-y-5">
           {/* Metadata */}
           <Card>
             <CardHeader>
