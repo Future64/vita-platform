@@ -3,6 +3,7 @@ mod audit;
 pub mod auth;
 mod codex;
 mod credit;
+mod crypto;
 mod emissions;
 pub mod governance;
 mod health;
@@ -114,6 +115,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/audit/verify", web::post().to(audit::verify_integrity))
                     .route("/audit/status", web::get().to(audit::get_status))
                     .route("/audit/export", web::get().to(audit::export_logs))
+
+                    // Crypto — Merkle tree & signatures
+                    .route("/crypto/merkle/roots", web::get().to(crypto::list_merkle_roots))
+                    .route("/crypto/merkle/proof/{tx_id}", web::get().to(crypto::get_merkle_proof))
+                    .route("/crypto/merkle/verify", web::post().to(crypto::verify_merkle_tree))
+                    .route("/crypto/pubkey/{user_id}", web::get().to(crypto::get_public_key))
+                    .route("/crypto/verify-tx/{tx_id}", web::get().to(crypto::verify_transaction_signature))
             ),
     );
 }

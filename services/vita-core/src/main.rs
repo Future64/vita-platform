@@ -88,6 +88,27 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    // Daily Merkle tree builder — runs every hour, builds yesterday's tree if missing
+    let merkle_pool = pool.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+            let yesterday = (chrono::Utc::now() - chrono::Duration::days(1)).date_naive();
+            match crypto::merkle::build_daily_merkle(&merkle_pool, yesterday).await {
+                Ok(Some(racine)) => {
+                    info!(
+                        "Merkle tree built for {} — {} leaves, root: {}",
+                        racine.date, racine.nombre_feuilles, racine.racine_hash
+                    );
+                }
+                Ok(None) => {} // No transactions or already built
+                Err(e) => {
+                    tracing::error!("Erreur cron Merkle tree: {}", e);
+                }
+            }
+        }
+    });
+
     // Start HTTP server
     let bind_addr = "127.0.0.1:8080";
     info!("Starting HTTP server on http://{}", bind_addr);

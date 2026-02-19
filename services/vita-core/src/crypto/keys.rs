@@ -1,5 +1,7 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use rand::rngs::OsRng;
+use sha2::{Digest, Sha256};
 
 use crate::error::VitaError;
 
@@ -60,6 +62,42 @@ pub fn deserialize_keypair(bytes: &[u8]) -> Result<KeyPair, VitaError> {
     Ok(keypair_from_seed(&seed))
 }
 
+/// Encrypt a 32-byte private key seed using a password-derived key (HKDF + XOR).
+///
+/// This is a simplified prototype encryption. For production, use a proper
+/// authenticated encryption scheme (e.g. AES-GCM with Argon2 KDF).
+pub fn encrypt_private_key(seed: &[u8; 32], password: &str) -> String {
+    let key = derive_key(password);
+    let encrypted: Vec<u8> = seed.iter().zip(key.iter()).map(|(a, b)| a ^ b).collect();
+    BASE64.encode(encrypted)
+}
+
+/// Decrypt a base64-encoded encrypted private key seed using the same password.
+pub fn decrypt_private_key(encrypted_b64: &str, password: &str) -> Result<[u8; 32], VitaError> {
+    let encrypted = BASE64.decode(encrypted_b64).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid base64 for encrypted key: {e}"))
+    })?;
+    if encrypted.len() != 32 {
+        return Err(VitaError::CryptoError(
+            "Encrypted key must be exactly 32 bytes".into(),
+        ));
+    }
+    let key = derive_key(password);
+    let mut seed = [0u8; 32];
+    for (i, (a, b)) in encrypted.iter().zip(key.iter()).enumerate() {
+        seed[i] = a ^ b;
+    }
+    Ok(seed)
+}
+
+/// Derive a 32-byte key from a password using HKDF-like construction (SHA-256).
+fn derive_key(password: &str) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(b"vita-key-derivation-v1:");
+    hasher.update(password.as_bytes());
+    hasher.finalize().into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +148,24 @@ mod tests {
     fn deserialize_keypair_rejects_wrong_length() {
         assert!(deserialize_keypair(&[0u8; 16]).is_err());
         assert!(deserialize_keypair(&[0u8; 64]).is_err());
+    }
+
+    #[test]
+    fn encrypt_decrypt_roundtrip() {
+        let kp = generate_keypair();
+        let seed = kp.signing_key.to_bytes();
+        let password = "my-secret-password";
+
+        let encrypted = encrypt_private_key(&seed, password);
+        let decrypted = decrypt_private_key(&encrypted, password).unwrap();
+        assert_eq!(seed, decrypted);
+    }
+
+    #[test]
+    fn wrong_password_produces_different_key() {
+        let seed = [42u8; 32];
+        let encrypted = encrypt_private_key(&seed, "correct");
+        let decrypted = decrypt_private_key(&encrypted, "wrong").unwrap();
+        assert_ne!(seed, decrypted);
     }
 }

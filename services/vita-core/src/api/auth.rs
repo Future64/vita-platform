@@ -271,16 +271,25 @@ pub async fn register(
         _ => VitaError::Database(e),
     })?;
 
-    // Create associated wallet/account
-    let mut fake_pubkey = [0u8; 32];
-    use rand::RngCore;
-    rand::thread_rng().fill_bytes(&mut fake_pubkey);
+    // Generate Ed25519 keypair for the new user
+    let keypair = crate::crypto::keys::generate_keypair();
+    let pubkey_bytes = keypair.verifying_key.as_bytes().to_vec();
+    let seed = keypair.signing_key.to_bytes();
+    let encrypted_key = crate::crypto::keys::encrypt_private_key(&seed, &body.password);
 
+    // Store encrypted private key on the user record
+    sqlx::query("UPDATE users SET encrypted_private_key = $1 WHERE id = $2")
+        .bind(&encrypted_key)
+        .bind(user.id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Create associated wallet/account with the real public key
     sqlx::query(
         r#"INSERT INTO accounts (public_key, display_name, user_id, verified)
            VALUES ($1, $2, $3, false)"#,
     )
-    .bind(fake_pubkey.to_vec())
+    .bind(&pubkey_bytes)
     .bind(Some(&body.username))
     .bind(user.id)
     .execute(pool.get_ref())

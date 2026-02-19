@@ -5,6 +5,8 @@ use sqlx::PgPool;
 use tracing::info;
 use uuid::Uuid;
 
+use crate::crypto::keys;
+use crate::crypto::signatures::{self, TransactionPayload};
 use crate::error::VitaError;
 use super::Transaction;
 
@@ -115,7 +117,7 @@ pub async fn execute_transfer(
     .execute(&mut *tx)
     .await?;
 
-    // f. Record transaction
+    // f. Record transaction (without signature first to get the id + timestamp)
     let row = sqlx::query_as::<_, TxRow>(
         r#"INSERT INTO transactions
                (tx_type, from_account_id, to_account_id, amount,
@@ -131,6 +133,46 @@ pub async fn execute_transfer(
     .bind(&req.note)
     .fetch_one(&mut *tx)
     .await?;
+
+    // g. Server-side signing: look up sender's private key and sign the payload
+    let sender_key: Option<SenderKeyRow> = sqlx::query_as(
+        r#"SELECT u.encrypted_private_key, a.public_key
+           FROM accounts a
+           JOIN users u ON u.id = a.user_id
+           WHERE a.id = $1"#,
+    )
+    .bind(req.from_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    if let Some(sk) = sender_key {
+        if let Some(ref enc_key) = sk.encrypted_private_key {
+            // Use a fixed server-side passphrase for prototype signing
+            // (the real password-based decryption happens client-side in future)
+            let server_pass = std::env::var("CRYPTO_SERVER_KEY").unwrap_or_else(|_| "vita-server-prototype".to_string());
+            if let Ok(seed) = keys::decrypt_private_key(enc_key, &server_pass) {
+                let keypair = keys::keypair_from_seed(&seed);
+                let payload = TransactionPayload {
+                    from_id: req.from_id,
+                    to_id: req.to_id,
+                    amount: req.amount,
+                    timestamp: row.created_at,
+                    nonce: row.id,
+                };
+                let (sig_hex, hash_hex, pubkey_hex) = signatures::sign_payload(&payload, &keypair);
+
+                sqlx::query(
+                    "UPDATE transactions SET signature = $1, payload_hash = $2, signer_pubkey = $3 WHERE id = $4",
+                )
+                .bind(&sig_hex)
+                .bind(&hash_hex)
+                .bind(&pubkey_hex)
+                .bind(row.id)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+    }
 
     tx.commit().await?;
 
@@ -205,6 +247,13 @@ struct BalanceRow {
 struct TxRow {
     id: Uuid,
     created_at: DateTime<Utc>,
+}
+
+#[derive(sqlx::FromRow)]
+struct SenderKeyRow {
+    encrypted_private_key: Option<String>,
+    #[allow(dead_code)]
+    public_key: Vec<u8>,
 }
 
 // ── tests ───────────────────────────────────────────────────────────
