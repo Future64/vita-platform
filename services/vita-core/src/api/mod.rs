@@ -3,6 +3,7 @@ pub mod auth;
 mod codex;
 mod credit;
 mod emissions;
+pub mod governance;
 mod health;
 mod transactions;
 mod valuation;
@@ -31,6 +32,18 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
             // Valuation calculator (public)
             .route("/valuation/calculate", web::post().to(valuation::calculate_valuation))
+
+            // Governance (public — read-only)
+            .route("/governance/doleances", web::get().to(governance::list_doleances))
+            .route("/governance/doleances/{id}", web::get().to(governance::get_doleance))
+            .route("/governance/propositions", web::get().to(governance::list_propositions))
+            .route("/governance/propositions/{id}", web::get().to(governance::get_proposition))
+            .route("/governance/propositions/{id}/resultats", web::get().to(governance::get_resultats))
+            .route("/governance/propositions/{id}/fils", web::get().to(governance::list_fils))
+            .route("/governance/fils/{fil_id}/messages", web::get().to(governance::list_messages))
+            .route("/governance/parametres", web::get().to(governance::list_parametres))
+            .route("/governance/parametres/{nom}", web::get().to(governance::get_parametre))
+            .route("/governance/parametres/{nom}/historique", web::get().to(governance::get_historique_parametre))
 
             // ── Protected routes (JWT required) ────────────────────
             .service(
@@ -62,9 +75,22 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/credit/request", web::post().to(credit::request_credit))
                     .route("/credit/loans/{account_id}", web::get().to(credit::get_loans))
 
-                    // Codex (write operations — protected)
+                    // Codex (write operations)
                     .route("/codex/amendments", web::post().to(codex::create_amendment))
                     .route("/codex/amendments", web::get().to(codex::get_amendments))
+
+                    // Governance (write operations — auth required)
+                    .route("/governance/doleances", web::post().to(governance::create_doleance))
+                    .route("/governance/doleances/{id}/soutenir", web::post().to(governance::soutenir_doleance))
+                    .route("/governance/doleances/{id}/convertir", web::post().to(governance::convertir_doleance))
+                    .route("/governance/propositions", web::post().to(governance::create_proposition))
+                    .route("/governance/propositions/{id}/vote", web::post().to(governance::voter))
+                    .route("/governance/propositions/{id}/passage-vote", web::post().to(governance::passage_vote))
+                    .route("/governance/propositions/{id}/cloturer", web::post().to(governance::cloturer_vote))
+                    .route("/governance/propositions/{id}/fils", web::post().to(governance::create_fil))
+                    .route("/governance/fils/{fil_id}/messages", web::post().to(governance::create_message))
+                    .route("/governance/messages/{msg_id}/reaction", web::post().to(governance::reagir_message))
+                    .route("/governance/cron/close-votes", web::post().to(governance::cron_close_votes))
             ),
     );
 }

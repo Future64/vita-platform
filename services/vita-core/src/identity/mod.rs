@@ -1,1 +1,2 @@
-// Identity module — ZK-proof verification
+pub mod verification;
+pub mod parrainage;

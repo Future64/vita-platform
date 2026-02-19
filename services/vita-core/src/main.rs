@@ -5,6 +5,7 @@ pub mod config;
 pub mod credit;
 pub mod crypto;
 pub mod error;
+pub mod governance;
 mod identity;
 pub mod monetary;
 pub mod transaction;
@@ -57,6 +58,23 @@ async fn main() -> std::io::Result<()> {
         .expect("JWT_SECRET must be set in .env");
     let jwt_secret = JwtSecret(jwt_secret);
     info!("JWT secret loaded");
+
+    // Start background vote closure task
+    let cron_pool = pool.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+            match api::governance::check_and_close_votes(&cron_pool).await {
+                Ok(results) if !results.is_empty() => {
+                    info!("{} vote(s) cloture(s) automatiquement", results.len());
+                }
+                Err(e) => {
+                    tracing::error!("Erreur cron cloture votes: {}", e);
+                }
+                _ => {}
+            }
+        }
+    });
 
     // Start HTTP server
     let bind_addr = "127.0.0.1:8080";
