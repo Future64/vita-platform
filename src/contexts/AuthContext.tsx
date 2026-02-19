@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type {
@@ -24,6 +25,7 @@ import type {
 import { buildUserFromIdentity } from "@/types/auth";
 import { hasPermission as checkPermission } from "@/lib/permissions";
 import { seedMockUsers, forceSeedMockUsers } from "@/lib/mockUsers";
+import { api, ApiError } from "@/lib/api";
 
 // --- Context type ---
 
@@ -31,10 +33,11 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isMockMode: boolean;
   simulatedRole: UserRole | null;
   activeRole: UserRole;
-  login: (emailOrUsername: string, password: string) => boolean;
-  register: (data: RegisterData) => boolean;
+  login: (emailOrUsername: string, password: string) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   updatePreferences: (prefs: Partial<UserPreferences>) => void;
@@ -45,11 +48,12 @@ interface AuthContextType {
   hasPermission: (permission: Permission) => boolean;
   updateVerificationStatus: (statut: IdentiteVerifiee['statut'], data?: Partial<IdentiteVerifiee>) => void;
   transitionRole: (newRole: UserRole) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- Storage helpers ---
+// --- Storage helpers (mock mode) ---
 
 const STORAGE_SESSION = "vita_session";
 const STORAGE_USERS = "vita_users";
@@ -177,42 +181,156 @@ function defaultIdentiteProfessionnelle() {
   };
 }
 
+// --- Helper: check if error is a network error ---
+
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true; // fetch network failure
+  if (err instanceof ApiError && err.status === 0) return true;
+  return false;
+}
+
 // --- Provider ---
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMockMode, setIsMockMode] = useState(false);
   const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
+  const mockWarningShown = useRef(false);
 
   const activeRole: UserRole = simulatedRole ?? user?.role ?? "observateur";
   const isAuthenticated = user !== null;
 
-  // Restore session on mount
-  useEffect(() => {
-    // Migrate: if stored users lack identity structures, force reseed
-    const existingUsers = getStoredUsers();
-    if (existingUsers.length > 0 && !existingUsers[0].identitePublique) {
-      forceSeedMockUsers();
-      // Clear stale session since user data has changed
-      saveSession(null);
-    } else {
-      seedMockUsers();
+  // Show mock mode warning once
+  const activateMockMode = useCallback(() => {
+    setIsMockMode(true);
+    if (!mockWarningShown.current) {
+      mockWarningShown.current = true;
+      console.warn("[VITA] Backend indisponible, mode mock active");
     }
-
-    const session = getSession();
-    if (session) {
-      const users = getStoredUsers();
-      const found = users.find((u) => u.id === session.userId);
-      if (found) {
-        setUser(storedToUser(found));
-      } else {
-        saveSession(null);
-      }
-    }
-    setIsLoading(false);
   }, []);
 
-  const login = useCallback((emailOrUsername: string, password: string): boolean => {
+  // Try to convert API profile to local User
+  function apiProfileToUser(profile: Awaited<ReturnType<typeof api.getMe>>): User {
+    const identiteVerifiee: IdentiteVerifiee = {
+      nomLegal: profile.nom,
+      prenomLegal: profile.prenom,
+      dateNaissance: profile.date_naissance || '',
+      nationalite: '',
+      paysResidence: profile.pays || '',
+      statut: profile.verifie ? 'verifie' : 'non_verifie',
+      niveauConfiance: profile.verifie ? 85 : 0,
+      historiqueVerifications: [],
+    };
+
+    const identitePublique: IdentitePublique = {
+      modeVisibilite: 'complet',
+      prenom: profile.prenom,
+      nom: profile.nom,
+      dateInscriptionVisible: true,
+    };
+
+    const identiteProfessionnelle: IdentiteProfessionnelle = {
+      active: false,
+      disponibilite: 'indisponible',
+    };
+
+    return buildUserFromIdentity({
+      id: profile.id,
+      username: profile.username,
+      email: profile.email,
+      role: (profile.role || 'nouveau') as UserRole,
+      dateInscription: profile.date_inscription || new Date().toISOString().split('T')[0],
+      identiteVerifiee,
+      identitePublique,
+      identiteProfessionnelle,
+      preferences: defaultPreferences(),
+      soldeVita: profile.solde_vita ? parseFloat(profile.solde_vita) : 0,
+      joursActifs: profile.jours_actifs || 0,
+      propositionsCreees: 0,
+      votesEffectues: 0,
+      scoreReputation: 0,
+    });
+  }
+
+  // Restore session on mount — try API first, fallback to mock
+  useEffect(() => {
+    async function init() {
+      // Check if we have a JWT token
+      const token = api.getToken();
+      if (token) {
+        try {
+          const profile = await api.getMe();
+          setUser(apiProfileToUser(profile));
+          setIsLoading(false);
+          return;
+        } catch (err) {
+          if (isNetworkError(err)) {
+            activateMockMode();
+            // Fall through to mock init
+          } else {
+            // Token invalid — clear and fall through
+            api.clearTokens();
+          }
+        }
+      }
+
+      // Mock mode init
+      const existingUsers = getStoredUsers();
+      if (existingUsers.length > 0 && !existingUsers[0].identitePublique) {
+        forceSeedMockUsers();
+        saveSession(null);
+      } else {
+        seedMockUsers();
+      }
+
+      const session = getSession();
+      if (session) {
+        const users = getStoredUsers();
+        const found = users.find((u) => u.id === session.userId);
+        if (found) {
+          setUser(storedToUser(found));
+        } else {
+          saveSession(null);
+        }
+      }
+      setIsLoading(false);
+    }
+
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- Login: try API, fallback to mock ---
+
+  const login = useCallback(async (emailOrUsername: string, password: string): Promise<boolean> => {
+    if (!isMockMode) {
+      try {
+        const result = await api.login({
+          username_or_email: emailOrUsername,
+          password,
+        });
+        api.setToken(result.access_token);
+        if (typeof window !== "undefined" && result.refresh_token) {
+          localStorage.setItem("vita_refresh_token", result.refresh_token);
+        }
+        // Fetch full profile
+        const profile = await api.getMe();
+        setUser(apiProfileToUser(profile));
+        setSimulatedRole(null);
+        return true;
+      } catch (err) {
+        if (isNetworkError(err)) {
+          activateMockMode();
+          // Fall through to mock login
+        } else {
+          // API reachable but login failed (wrong credentials)
+          return false;
+        }
+      }
+    }
+
+    // Mock login
     const users = getStoredUsers();
     const found = users.find(
       (u) =>
@@ -229,12 +347,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(storedToUser(found));
     setSimulatedRole(null);
     return true;
-  }, []);
+  }, [isMockMode, activateMockMode]);
 
-  const register = useCallback((data: RegisterData): boolean => {
+  // --- Register: try API, fallback to mock ---
+
+  const register = useCallback(async (data: RegisterData): Promise<boolean> => {
+    if (!isMockMode) {
+      try {
+        const result = await api.register({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          prenom: data.prenom,
+          nom: data.nom,
+          date_naissance: data.dateNaissance,
+          pays: data.pays,
+        });
+        api.setToken(result.access_token);
+        if (typeof window !== "undefined" && result.refresh_token) {
+          localStorage.setItem("vita_refresh_token", result.refresh_token);
+        }
+        // Fetch full profile
+        const profile = await api.getMe();
+        setUser(apiProfileToUser(profile));
+        return true;
+      } catch (err) {
+        if (isNetworkError(err)) {
+          activateMockMode();
+          // Fall through to mock register
+        } else {
+          return false;
+        }
+      }
+    }
+
+    // Mock register
     const users = getStoredUsers();
-
-    // Check for duplicates
     if (users.some((u) => u.email === data.email || u.username === data.username)) {
       return false;
     }
@@ -247,7 +395,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       username: data.username,
       email: data.email,
-      role: "nouveau", // Default: nouveau (non verifie)
+      role: "nouveau",
       dateInscription: new Date().toISOString().split("T")[0],
       identiteVerifiee,
       identitePublique,
@@ -275,27 +423,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(session);
     setUser(storedToUser(newUser));
     return true;
-  }, []);
+  }, [isMockMode, activateMockMode]);
+
+  // --- Logout ---
 
   const logout = useCallback(() => {
+    if (!isMockMode) {
+      api.logout().catch(() => {});
+    }
+    api.clearTokens();
     saveSession(null);
     setUser(null);
     setSimulatedRole(null);
-  }, []);
+  }, [isMockMode]);
+
+  // --- Refresh user from API ---
+
+  const refreshUser = useCallback(async () => {
+    if (isMockMode) return;
+    try {
+      const profile = await api.getMe();
+      setUser(apiProfileToUser(profile));
+    } catch (err) {
+      if (isNetworkError(err)) {
+        activateMockMode();
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMockMode, activateMockMode]);
+
+  // --- Local profile updates (mock mode or local state) ---
 
   const updateProfile = useCallback(
     (data: Partial<User>) => {
       if (!user) return;
+      if (!isMockMode) {
+        // Fire-and-forget API update
+        api.updateProfile(data as Record<string, unknown>).catch(() => {});
+      }
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        // Not in mock storage — just update local state
+        setUser((prev) => prev ? { ...prev, ...data, id: prev.id, role: prev.role } : prev);
+        return;
+      }
       const updated = { ...users[idx], ...data, id: user.id, role: users[idx].role };
       users[idx] = updated;
       saveStoredUsers(users);
       setUser(storedToUser(updated));
     },
-    [user]
+    [user, isMockMode]
   );
 
   const updatePreferences = useCallback(
@@ -303,8 +481,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) =>
+          prev ? { ...prev, preferences: { ...prev.preferences, ...prefs } } : prev
+        );
+        return;
+      }
       users[idx].preferences = { ...users[idx].preferences, ...prefs };
       saveStoredUsers(users);
       setUser(storedToUser(users[idx]));
@@ -317,10 +499,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) =>
+          prev ? { ...prev, identitePublique: { ...prev.identitePublique, ...data } } : prev
+        );
+        return;
+      }
       users[idx].identitePublique = { ...users[idx].identitePublique, ...data };
-      // Rebuild legacy fields
       users[idx] = rebuildLegacyFields(users[idx]);
       saveStoredUsers(users);
       setUser(storedToUser(users[idx]));
@@ -333,10 +518,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) =>
+          prev
+            ? { ...prev, identiteProfessionnelle: { ...prev.identiteProfessionnelle, ...data } }
+            : prev
+        );
+        return;
+      }
       users[idx].identiteProfessionnelle = { ...users[idx].identiteProfessionnelle, ...data };
-      // Rebuild legacy fields
       users[idx] = rebuildLegacyFields(users[idx]);
       saveStoredUsers(users);
       setUser(storedToUser(users[idx]));
@@ -349,10 +539,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                identitePublique: { ...prev.identitePublique, modeVisibilite: mode },
+              }
+            : prev
+        );
+        return;
+      }
       users[idx].identitePublique = { ...users[idx].identitePublique, modeVisibilite: mode };
-      // Rebuild legacy fields
       users[idx] = rebuildLegacyFields(users[idx]);
       saveStoredUsers(users);
       setUser(storedToUser(users[idx]));
@@ -365,8 +563,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                identiteVerifiee: { ...prev.identiteVerifiee, ...data, statut },
+              }
+            : prev
+        );
+        return;
+      }
       users[idx].identiteVerifiee = {
         ...users[idx].identiteVerifiee,
         ...data,
@@ -384,8 +591,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
       const users = getStoredUsers();
       const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) return;
-
+      if (idx === -1) {
+        setUser((prev) => (prev ? { ...prev, role: newRole } : prev));
+        return;
+      }
       users[idx].role = newRole;
       saveStoredUsers(users);
       setUser(storedToUser(users[idx]));
@@ -406,6 +615,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated,
         isLoading,
+        isMockMode,
         simulatedRole,
         activeRole,
         login,
@@ -420,6 +630,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasPermission: hasPermissionFn,
         updateVerificationStatus,
         transitionRole,
+        refreshUser,
       }}
     >
       {children}

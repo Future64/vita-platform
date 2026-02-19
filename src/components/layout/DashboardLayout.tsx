@@ -8,6 +8,7 @@ import { SearchModal } from "./SearchModal";
 import { OnboardingChecklist, OnboardingCelebration } from "@/components/onboarding/OnboardingChecklist";
 import { TourGuide } from "@/components/onboarding/TourGuide";
 import { VerificationBanner } from "@/components/verification/VerificationBanner";
+import { MockModeBanner } from "./MockModeBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_METADATA } from "@/lib/permissions";
 
@@ -53,6 +54,7 @@ export function DashboardLayout({
       <OnboardingCelebration />
       <TourGuide />
 
+      <MockModeBanner />
       <VerificationBanner />
 
       {/* Simulation banner */}

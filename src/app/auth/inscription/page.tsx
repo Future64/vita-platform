@@ -207,7 +207,7 @@ export default function InscriptionPage() {
     setSubmitting(true);
     setGlobalError(null);
 
-    const success = register({
+    const success = await register({
       prenom,
       nom,
       username,

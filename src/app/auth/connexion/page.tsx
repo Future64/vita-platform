@@ -22,12 +22,12 @@ export default function ConnexionPage() {
   const [shake, setShake] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
 
-    const success = login(identifier, password);
+    const success = await login(identifier, password);
 
     if (success) {
       toast.success("Connecte avec succes");
