@@ -6,6 +6,7 @@ use sha2::Digest;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::auth::jwt;
 use crate::auth::middleware::{AuthUser, JwtSecret};
 use crate::auth::password;
@@ -323,6 +324,18 @@ pub async fn register(
     .execute(pool.get_ref())
     .await?;
 
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        None,
+        "user.register",
+        "auth",
+        "info",
+        &format!("Inscription de @{}", &user.username),
+        None,
+        Some(("user", user.id)),
+    );
+
     Ok(HttpResponse::Created().json(AuthResponse {
         user: UserPublic {
             id: user.id,
@@ -362,6 +375,16 @@ pub async fn login(
 
     // Verify password
     if !password::verify_password(&body.password, &user.password_hash)? {
+        audit::audit(
+            pool.get_ref().clone(),
+            None,
+            "user.login_failed",
+            "auth",
+            "warning",
+            &format!("Tentative de connexion echouee pour {}", &body.email),
+            Some(serde_json::json!({ "email": &body.email })),
+            Some(("user", user.id)),
+        );
         return Err(VitaError::Unauthorized(
             "Email ou mot de passe incorrect".into(),
         ));
@@ -415,6 +438,18 @@ pub async fn login(
     .bind(expires_at)
     .execute(pool.get_ref())
     .await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        None,
+        "user.login",
+        "auth",
+        "info",
+        &format!("Connexion de @{}", &user.username),
+        None,
+        Some(("user", user.id)),
+    );
 
     Ok(HttpResponse::Ok().json(AuthResponse {
         user: UserPublic {
@@ -499,6 +534,18 @@ pub async fn logout(
         .bind(uuid::Uuid::parse_str(&user.user_id).unwrap_or_default())
         .execute(pool.get_ref())
         .await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "user.logout",
+        "auth",
+        "info",
+        &format!("Deconnexion de @{}", &user.username),
+        None,
+        None,
+    );
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Deconnexion reussie"
@@ -624,6 +671,27 @@ pub async fn update_me(
     .execute(pool.get_ref())
     .await?;
 
+    // Audit
+    let mut champs_modifies = Vec::new();
+    if body.prenom_affiche.is_some() { champs_modifies.push("prenom_affiche"); }
+    if body.nom_affiche.is_some() { champs_modifies.push("nom_affiche"); }
+    if body.pseudonyme.is_some() { champs_modifies.push("pseudonyme"); }
+    if body.bio.is_some() { champs_modifies.push("bio"); }
+    if body.photo_profil.is_some() { champs_modifies.push("photo_profil"); }
+    if body.pays_affiche.is_some() { champs_modifies.push("pays_affiche"); }
+    if body.mode_visibilite.is_some() { champs_modifies.push("mode_visibilite"); }
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "user.profile_update",
+        "auth",
+        "info",
+        &format!("Modification du profil de @{}", &user.username),
+        Some(serde_json::json!({ "champs_modifies": champs_modifies })),
+        Some(("user", user_id)),
+    );
+
     // Return updated profile
     get_me(pool, user).await
 }
@@ -664,6 +732,18 @@ pub async fn change_password(
         .bind(user_id)
         .execute(pool.get_ref())
         .await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "user.password_change",
+        "auth",
+        "info",
+        &format!("Changement de mot de passe de @{}", &user.username),
+        None,
+        Some(("user", user_id)),
+    );
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Mot de passe mis a jour. Toutes les sessions ont ete revoquees."

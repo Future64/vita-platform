@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::error::VitaError;
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -129,6 +130,22 @@ pub async fn appliquer_modification(
     .bind(proposition_id)
     .fetch_one(pool)
     .await?;
+
+    // Audit the parameter modification
+    audit::audit_system(
+        pool.clone(),
+        "parametre.modify",
+        "governance",
+        "critique",
+        &format!("Parametre '{}' modifie: {} -> {}", nom, &param.valeur, nouvelle_valeur),
+        Some(serde_json::json!({
+            "parametre": nom,
+            "ancienne_valeur": &param.valeur,
+            "nouvelle_valeur": nouvelle_valeur,
+            "proposition_id": proposition_id
+        })),
+        Some(("parametre", updated.id)),
+    );
 
     Ok(updated)
 }

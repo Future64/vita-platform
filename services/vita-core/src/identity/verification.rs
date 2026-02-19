@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::error::VitaError;
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -385,6 +386,17 @@ pub async fn check_expiration(pool: &PgPool) -> Result<Vec<Uuid>, VitaError> {
         .bind(user_id)
         .execute(pool)
         .await?;
+
+        audit::audit_system(
+            pool.clone(),
+            "identity.expired",
+            "identity",
+            "warning",
+            &format!("Verification expiree pour l'utilisateur {}", user_id),
+            None,
+            Some(("user", *user_id)),
+        );
+
         affected_users.push(*user_id);
     }
 

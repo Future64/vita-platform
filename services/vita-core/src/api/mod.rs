@@ -1,4 +1,5 @@
 mod accounts;
+mod audit;
 pub mod auth;
 mod codex;
 mod credit;
@@ -106,6 +107,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/identity/parrains-potentiels", web::get().to(identity::search_parrains))
                     .route("/identity/verifications", web::get().to(identity::get_historique_verifications))
                     .route("/identity/cron/check-expirations", web::post().to(identity::cron_check_expirations))
+
+                    // Audit — hash chain integrity
+                    .route("/audit/logs", web::get().to(audit::get_logs))
+                    .route("/audit/logs/{id}", web::get().to(audit::get_log_detail))
+                    .route("/audit/verify", web::post().to(audit::verify_integrity))
+                    .route("/audit/status", web::get().to(audit::get_status))
+                    .route("/audit/export", web::get().to(audit::export_logs))
             ),
     );
 }

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::error::VitaError;
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -262,6 +263,22 @@ pub async fn attester(
         } else {
             None
         };
+
+        // Audit the verification completion
+        audit::audit_system(
+            pool.clone(),
+            "identity.verified",
+            "identity",
+            "info",
+            &format!("Utilisateur {} verifie — {} attestations, transition: {} -> {}",
+                demandeur_id, acceptes, &current_role, new_role),
+            Some(serde_json::json!({
+                "parrainages": acceptes,
+                "ancien_role": &current_role,
+                "nouveau_role": new_role,
+            })),
+            Some(("user", demandeur_id)),
+        );
 
         return Ok(AttestationResult {
             verification_complete: true,

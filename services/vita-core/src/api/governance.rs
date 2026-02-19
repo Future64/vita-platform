@@ -3,6 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::governance::{doleances, propositions, votes, parametres, discussions};
@@ -50,6 +51,17 @@ pub async fn create_doleance(
     )
     .await?;
 
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "doleance.create",
+        "governance",
+        "info",
+        &format!("Doleance creee: {}", &body.titre),
+        None,
+        Some(("doleance", doleance.id)),
+    );
+
     Ok(HttpResponse::Created().json(doleance))
 }
 
@@ -83,6 +95,18 @@ pub async fn soutenir_doleance(
     let doleance_id = path.into_inner();
 
     let doleance = doleances::soutenir_doleance(pool.get_ref(), doleance_id, user_id).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "doleance.soutien",
+        "governance",
+        "info",
+        &format!("Soutien a la doleance '{}'", &doleance.titre),
+        None,
+        Some(("doleance", doleance_id)),
+    );
+
     Ok(HttpResponse::Ok().json(doleance))
 }
 
@@ -107,6 +131,17 @@ pub async fn convertir_doleance(
 
     let prop_id = doleances::convertir_en_proposition(pool.get_ref(), doleance_id, user_id).await?;
 
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "doleance.convert",
+        "governance",
+        "info",
+        &format!("Doleance {} convertie en proposition {}", doleance_id, prop_id),
+        Some(serde_json::json!({ "proposition_id": prop_id })),
+        Some(("doleance", doleance_id)),
+    );
+
     Ok(HttpResponse::Created().json(serde_json::json!({
         "message": "Doleance convertie en proposition",
         "proposition_id": prop_id
@@ -125,6 +160,18 @@ pub async fn create_proposition(
     let user_id = parse_user_uuid(&user)?;
 
     let prop = propositions::create_proposition(pool.get_ref(), user_id, &body).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "proposition.create",
+        "governance",
+        "info",
+        &format!("Proposition creee: {}", &prop.titre),
+        None,
+        Some(("proposition", prop.id)),
+    );
+
     Ok(HttpResponse::Created().json(prop))
 }
 
@@ -166,6 +213,18 @@ pub async fn voter(
     let proposition_id = path.into_inner();
 
     let vote = votes::voter(pool.get_ref(), proposition_id, user_id, &body.choix).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "vote.cast",
+        "vote",
+        "info",
+        &format!("Vote '{}' sur la proposition {}", &body.choix, proposition_id),
+        Some(serde_json::json!({ "choix": &body.choix })),
+        Some(("proposition", proposition_id)),
+    );
+
     Ok(HttpResponse::Created().json(vote))
 }
 
@@ -189,6 +248,18 @@ pub async fn passage_vote(
     let proposition_id = path.into_inner();
 
     let prop = propositions::passer_en_vote(pool.get_ref(), proposition_id).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "proposition.vote_start",
+        "governance",
+        "info",
+        &format!("Passage en vote de la proposition '{}'", &prop.titre),
+        None,
+        Some(("proposition", proposition_id)),
+    );
+
     Ok(HttpResponse::Ok().json(prop))
 }
 
@@ -202,6 +273,23 @@ pub async fn cloturer_vote(
     let proposition_id = path.into_inner();
 
     let resultat = propositions::cloturer_vote(pool.get_ref(), proposition_id).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "proposition.vote_close",
+        "governance",
+        "info",
+        &format!("Vote cloture: proposition {} -> {}", proposition_id, &resultat.statut_final),
+        Some(serde_json::json!({
+            "resultat": &resultat.statut_final,
+            "pour": resultat.votes_pour,
+            "contre": resultat.votes_contre,
+            "participation": resultat.taux_participation
+        })),
+        Some(("proposition", proposition_id)),
+    );
+
     Ok(HttpResponse::Ok().json(resultat))
 }
 
@@ -381,6 +469,20 @@ pub async fn check_and_close_votes(
                     "Vote cloture automatiquement: proposition {} -> {}",
                     id,
                     result.statut_final
+                );
+                audit::audit_system(
+                    pool.clone(),
+                    "proposition.vote_close_auto",
+                    "governance",
+                    "info",
+                    &format!("Vote cloture automatiquement: proposition {} -> {}", id, &result.statut_final),
+                    Some(serde_json::json!({
+                        "resultat": &result.statut_final,
+                        "pour": result.votes_pour,
+                        "contre": result.votes_contre,
+                        "participation": result.taux_participation
+                    })),
+                    Some(("proposition", id)),
                 );
                 results.push(result);
             }

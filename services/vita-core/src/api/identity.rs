@@ -3,6 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::identity::{verification, parrainage};
@@ -46,6 +47,17 @@ pub async fn create_demande(
         &body.parrains,
     )
     .await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "identity.request",
+        "identity",
+        "info",
+        &format!("Demande de verification par @{} ({} parrains)", &user.username, body.parrains.len()),
+        None,
+        Some(("demande_verification", demande.demande.id)),
+    );
 
     Ok(HttpResponse::Created().json(demande))
 }
@@ -185,6 +197,20 @@ pub async fn attester(
     )
     .await?;
 
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "identity.attest",
+        "identity",
+        "info",
+        &format!("@{} atteste pour le parrainage {}", &user.username, parrainage_id),
+        Some(serde_json::json!({
+            "lien": &body.lien,
+            "verification_complete": result.verification_complete
+        })),
+        Some(("parrainage", parrainage_id)),
+    );
+
     Ok(HttpResponse::Ok().json(result))
 }
 
@@ -205,6 +231,17 @@ pub async fn refuser_parrainage(
     let parrainage_id = path.into_inner();
 
     parrainage::refuser(pool.get_ref(), parrainage_id, user_id, &body.motif).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "identity.refuse",
+        "identity",
+        "info",
+        &format!("@{} refuse le parrainage {}", &user.username, parrainage_id),
+        Some(serde_json::json!({ "motif": &body.motif })),
+        Some(("parrainage", parrainage_id)),
+    );
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Parrainage refuse"

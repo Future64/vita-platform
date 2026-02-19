@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::monetary::emission;
@@ -44,6 +45,17 @@ pub async fn claim_emission(
     // Fetch updated balance
     let balance = crate::transaction::transfer::get_balance(pool.get_ref(), body.account_id).await?;
 
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "emission.daily",
+        "transaction",
+        "info",
+        &format!("Emission de {} V pour @{}", log.amount, &user.username),
+        None,
+        Some(("account", body.account_id)),
+    );
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "emission_date": log.emission_date,
         "amount": log.amount,
@@ -58,6 +70,18 @@ pub async fn batch_emission(
 ) -> Result<HttpResponse, VitaError> {
     require_role(&user, &["dieu", "super_admin", "admin"])?;
     let result = emission::emit_daily_all(pool.get_ref()).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "emission.batch",
+        "transaction",
+        "info",
+        "Emission batch declenchee par admin",
+        None,
+        None,
+    );
+
     Ok(HttpResponse::Ok().json(result))
 }
 

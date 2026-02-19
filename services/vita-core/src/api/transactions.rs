@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::audit;
 use crate::auth::middleware::AuthUser;
 use crate::config::SystemParams;
 use crate::crypto::keys::public_key_from_hex;
@@ -105,6 +106,21 @@ pub async fn create_transfer(
 
     let common_fund_rate = params.configurable.common_pot_rate;
     let result = transfer::execute_transfer(pool.get_ref(), req, common_fund_rate).await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "transaction.transfer",
+        "transaction",
+        "info",
+        &format!("Transfert de {} V de {} vers {}", body.amount, body.from_id, body.to_id),
+        Some(serde_json::json!({
+            "amount": body.amount.to_string(),
+            "from_id": body.from_id,
+            "to_id": body.to_id,
+        })),
+        Some(("transaction", result.transaction_id)),
+    );
 
     Ok(HttpResponse::Ok().json(result))
 }
