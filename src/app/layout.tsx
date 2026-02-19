@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { I18nProvider } from "@/contexts/I18nProvider";
 
@@ -36,7 +37,9 @@ export default function RootLayout({
         <AuthProvider>
           <I18nProvider>
             <NotificationProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <OnboardingProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </OnboardingProvider>
             </NotificationProvider>
           </I18nProvider>
         </AuthProvider>

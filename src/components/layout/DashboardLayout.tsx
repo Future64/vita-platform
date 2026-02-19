@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Eye } from "lucide-react";
 import { TopNav } from "./TopNav";
 import { Sidebar, SidebarItem } from "./Sidebar";
+import { SearchModal } from "./SearchModal";
+import { OnboardingChecklist, OnboardingCelebration } from "@/components/onboarding/OnboardingChecklist";
+import { TourGuide } from "@/components/onboarding/TourGuide";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_METADATA } from "@/lib/permissions";
 
@@ -21,12 +24,33 @@ export function DashboardLayout({
   const { simulatedRole, setSimulatedRole } = useAuth();
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const hasSidebar = sidebarItems && sidebarItems.length > 0;
 
+  // Global Ctrl+K / Cmd+K shortcut
+  const handleSearchShortcut = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setSearchOpen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleSearchShortcut);
+    return () => window.removeEventListener("keydown", handleSearchShortcut);
+  }, [handleSearchShortcut]);
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
-      <TopNav onOpenMobileSidebar={() => setSidebarMobileOpen(true)} />
+      <TopNav
+        onOpenMobileSidebar={() => setSidebarMobileOpen(true)}
+        onOpenSearch={() => setSearchOpen(true)}
+      />
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <OnboardingChecklist />
+      <OnboardingCelebration />
+      <TourGuide />
 
       {/* Simulation banner */}
       {simulatedRole && (

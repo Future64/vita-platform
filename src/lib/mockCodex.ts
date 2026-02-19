@@ -82,7 +82,7 @@ export const CODEX_NAVIGATION: CodexSection[] = [
   {
     id: "nav-parametres",
     type: "parametre",
-    title: "Parametres Systeme",
+    title: "Parametres en vigueur",
     icon: "Settings",
     path: "/codex/parametres-systeme",
     children: [

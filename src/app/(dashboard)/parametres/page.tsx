@@ -23,12 +23,16 @@ import {
   Laptop,
   Chrome,
   Smartphone,
+  Sparkles,
+  Play,
+  RotateCcw,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useToast } from "@/components/ui/Toast";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import type { UserPreferences } from "@/types/auth";
@@ -219,6 +223,16 @@ export default function ParametresPage() {
   const { user, activeRole, updateProfile, updatePreferences, logout } =
     useAuth();
   const { toast } = useToast();
+  const {
+    state: onboardingState,
+    completedCount,
+    totalSteps,
+    progress: onboardingProgress,
+    dismissChecklist,
+    showChecklist,
+    startTourGuide,
+    resetOnboarding,
+  } = useOnboarding();
   const [activeTab, setActiveTab] = useState<TabId>("compte");
   const [hasChanges, setHasChanges] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -774,6 +788,53 @@ export default function ParametresPage() {
                     </option>
                   ))}
                 </select>
+              </SettingsSection>
+
+              <SettingsSection
+                title="Guide de demarrage"
+                description="Gerez le guide premiers pas et la visite guidee"
+              >
+                <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                  <SettingRow
+                    label="Checklist premiers pas"
+                    description={`${completedCount}/${totalSteps} etapes completees`}
+                  >
+                    <Toggle
+                      checked={!onboardingState.dismissed}
+                      onChange={(v) => {
+                        if (v) {
+                          showChecklist();
+                        } else {
+                          dismissChecklist();
+                        }
+                      }}
+                    />
+                  </SettingRow>
+                  <div className="py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          startTourGuide();
+                          toast.info("Visite guidee lancee");
+                        }}
+                      >
+                        <Play className="h-4 w-4" />
+                        Relancer la visite guidee
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          resetOnboarding();
+                          toast.info("Progression reintialisee");
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reinitialiser la progression
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </SettingsSection>
             </>
           )}

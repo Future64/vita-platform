@@ -29,7 +29,7 @@ import {
 
 const sidebarItems: SidebarItem[] = [
   { icon: BookOpen, label: "Constitution", href: "/codex" },
-  { icon: Settings, label: "Parametres", href: "/codex/parametres-systeme" },
+  { icon: Settings, label: "Parametres en vigueur", href: "/codex/parametres-systeme" },
   { icon: Code, label: "Documentation", href: "/codex/technique/emission-quotidienne" },
   { icon: History, label: "Registre", href: "/codex/registre" },
   { icon: PenTool, label: "Proposer", href: "/codex/amendement/nouveau" },

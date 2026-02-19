@@ -32,7 +32,7 @@ import type { ParameterCategory } from "@/types/parameters";
 
 const sidebarItems: SidebarItem[] = [
   { icon: BookOpen, label: "Constitution", href: "/codex" },
-  { icon: Settings, label: "Parametres", href: "/codex/parametres-systeme" },
+  { icon: Settings, label: "Parametres en vigueur", href: "/codex/parametres-systeme" },
   { icon: Code, label: "Documentation", href: "/codex/technique/emission-quotidienne" },
   { icon: History, label: "Registre", href: "/codex/registre" },
   { icon: PenTool, label: "Proposer", href: "/codex/amendement/nouveau" },
@@ -104,7 +104,7 @@ export default function ParametresSystemePage() {
           className="text-xl md:text-2xl font-bold text-[var(--text-primary)]"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
-          Parametres Systeme
+          Parametres en vigueur
         </h1>
         <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
           {SYSTEM_PARAMETERS.length} parametres &middot; Configuration complete du systeme VITA

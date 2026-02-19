@@ -15,6 +15,7 @@ import {
   Menu,
   Settings,
   LogOut,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,9 +36,10 @@ const modules = [
 
 interface TopNavProps {
   onOpenMobileSidebar?: () => void;
+  onOpenSearch?: () => void;
 }
 
-export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
+export function TopNav({ onOpenMobileSidebar, onOpenSearch }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, activeRole } = useAuth();
@@ -125,6 +127,7 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
                 <Link
                   key={module.id}
                   href={module.path}
+                  data-tour={module.id}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all",
                     isActive
@@ -140,13 +143,35 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
           </div>
         </div>
 
-        {/* Right: RoleSimulator + Theme + Notifications + Avatar */}
+        {/* Right: Search + RoleSimulator + Theme + Notifications + Avatar */}
         <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
+          {/* Search bar — desktop */}
+          <button
+            onClick={() => onOpenSearch?.()}
+            data-tour="recherche"
+            className="hidden lg:flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:border-violet-500/50 hover:text-[var(--text-secondary)] w-48 xl:w-64"
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left truncate">Rechercher...</span>
+            <kbd className="rounded border border-[var(--border)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[0.625rem] font-mono text-[var(--text-muted)]">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Search icon — tablet/mobile */}
+          <button
+            onClick={() => onOpenSearch?.()}
+            className="flex lg:hidden h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+            aria-label="Rechercher"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+
           {/* Role Simulator (dieu only — hidden on mobile via RoleSimulator's own hidden md:block) */}
           <RoleSimulator />
 
           {/* Theme Toggle */}
-          <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-0.5 md:p-1">
+          <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-0.5 md:p-1" data-tour="theme">
             <button
               onClick={() => {
                 setTheme("light");
@@ -181,7 +206,7 @@ export function TopNav({ onOpenMobileSidebar }: TopNavProps) {
           <NotificationCenter />
 
           {/* Avatar + Dropdown */}
-          <div className="relative" ref={avatarMenuRef}>
+          <div className="relative" ref={avatarMenuRef} data-tour="profil">
             <button
               onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
               className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-xs md:text-sm font-semibold text-white transition-transform hover:scale-105"

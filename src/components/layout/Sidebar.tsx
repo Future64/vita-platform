@@ -285,7 +285,7 @@ export function Sidebar({
               </button>
             </div>
             {/* Main modules navigation — mobile only */}
-            <div className="border-b px-3 py-3" style={{ borderColor: "var(--border)" }}>
+            <div className="border-b px-3 py-3" style={{ borderColor: "var(--border)" }} data-tour="sidebar">
               <div className="mb-2 pl-3 text-[0.6875rem] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                 Modules
               </div>
@@ -298,6 +298,7 @@ export function Sidebar({
                       key={mod.id}
                       href={mod.path}
                       onClick={onMobileClose}
+                      data-tour={mod.id}
                       className={cn(
                         "flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium transition-all",
                         isActive
@@ -326,6 +327,7 @@ export function Sidebar({
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-card)" }}
         role="navigation"
         aria-label={title}
+        data-tour="sidebar"
       >
         {sidebarContent}
       </aside>

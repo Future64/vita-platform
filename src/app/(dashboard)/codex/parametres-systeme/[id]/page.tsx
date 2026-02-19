@@ -28,7 +28,7 @@ import type { ParameterCategory } from "@/types/parameters";
 
 const sidebarItems: SidebarItem[] = [
   { icon: BookOpen, label: "Constitution", href: "/codex" },
-  { icon: Settings, label: "Parametres", href: "/codex/parametres-systeme" },
+  { icon: Settings, label: "Parametres en vigueur", href: "/codex/parametres-systeme" },
   { icon: Code, label: "Documentation", href: "/codex/technique/emission-quotidienne" },
   { icon: History, label: "Registre", href: "/codex/registre" },
   { icon: PenTool, label: "Proposer", href: "/codex/amendement/nouveau" },
@@ -57,7 +57,7 @@ export default function ParameterDetailPage() {
           <Link href="/codex/parametres-systeme">
             <Button variant="secondary">
               <ArrowLeft className="h-4 w-4" />
-              Retour aux parametres
+              Retour aux parametres en vigueur
             </Button>
           </Link>
         </div>
