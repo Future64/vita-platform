@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useApiQuery } from "./useApiQuery";
 import {
   MOCK_DOLEANCES,
   ALL_PROPOSALS,
 } from "@/lib/mockProposals";
+import { vitaWs } from "@/lib/websocket";
+import type { WsVoteUpdate } from "@/lib/websocket";
 
 // Re-export types from mockProposals for compatibility
 import type { Doleance } from "@/lib/mockProposals";
@@ -46,6 +48,13 @@ export function useGovernance(filters?: Record<string, unknown>): UseGovernanceR
       doleances: MOCK_DOLEANCES,
     }),
   });
+
+  // Listen for real-time vote updates via WebSocket — trigger refresh
+  useEffect(() => {
+    return vitaWs.on("vote_update", (_data: WsVoteUpdate) => {
+      refresh();
+    });
+  }, [refresh]);
 
   const voter = useCallback(
     async (propositionId: string, choix: "pour" | "contre" | "abstention"): Promise<boolean> => {

@@ -13,6 +13,7 @@ use crate::crypto::range_proofs;
 use crate::crypto::signatures::signature_from_hex;
 use crate::error::VitaError;
 use crate::transaction::transfer;
+use crate::ws::{WsServer, ServerMessage};
 
 // ── request types ───────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ pub struct VerifyCommitmentBody {
 pub async fn create_transfer(
     pool: web::Data<PgPool>,
     params: web::Data<SystemParams>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     body: web::Json<TransferBody>,
 ) -> Result<HttpResponse, VitaError> {
@@ -138,6 +140,50 @@ pub async fn create_transfer(
         Some(("transaction", result.transaction_id)),
     );
 
+    // ── WebSocket notifications ───────────────────────────────────
+    // Notify sender
+    ws_server.send_to_user(
+        &user.user_id,
+        ServerMessage::BalanceUpdate {
+            nouvelle_balance: result.new_sender_balance.to_string(),
+            raison: format!("Envoi de {} V", body.amount),
+        },
+    );
+
+    // Notify receiver (lookup user_id from account)
+    if let Ok(Some(receiver_user_id)) = sqlx::query_scalar::<_, Uuid>(
+        "SELECT user_id FROM accounts WHERE id = $1",
+    )
+    .bind(body.to_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    {
+        let receiver_balance = transfer::get_balance(pool.get_ref(), body.to_id).await.unwrap_or_default();
+        ws_server.send_to_user(
+            &receiver_user_id.to_string(),
+            ServerMessage::BalanceUpdate {
+                nouvelle_balance: receiver_balance.to_string(),
+                raison: format!("Reception de {} V", result.net_amount),
+            },
+        );
+        ws_server.send_to_user(
+            &receiver_user_id.to_string(),
+            ServerMessage::Notification {
+                type_: "vita_recu".to_string(),
+                titre: "Ѵ recu".to_string(),
+                contenu: format!("Vous avez recu {} V de {}", result.net_amount, user.username),
+                lien: Some("/bourse/historique".to_string()),
+            },
+        );
+    }
+
+    // Global activity feed
+    ws_server.broadcast(ServerMessage::ActivityFeed {
+        type_: "transfer".to_string(),
+        message: format!("Transfert de {} V effectue", body.amount),
+        timestamp: result.timestamp.to_rfc3339(),
+    });
+
     Ok(HttpResponse::Ok().json(result))
 }
 
@@ -187,6 +233,7 @@ pub async fn get_transaction_history(
 pub async fn create_confidential_transfer(
     pool: web::Data<PgPool>,
     params: web::Data<SystemParams>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     body: web::Json<ConfidentialTransferBody>,
 ) -> Result<HttpResponse, VitaError> {
@@ -304,6 +351,35 @@ pub async fn create_confidential_transfer(
         })),
         Some(("transaction", result.transaction_id)),
     );
+
+    // ── WebSocket notifications ───────────────────────────────────
+    ws_server.send_to_user(
+        &user.user_id,
+        ServerMessage::BalanceUpdate {
+            nouvelle_balance: result.new_sender_balance.to_string(),
+            raison: "Envoi confidentiel".to_string(),
+        },
+    );
+
+    if let Some(recv_uid) = receiver_user_id {
+        let recv_balance = transfer::get_balance(pool.get_ref(), body.to_id).await.unwrap_or_default();
+        ws_server.send_to_user(
+            &recv_uid.to_string(),
+            ServerMessage::BalanceUpdate {
+                nouvelle_balance: recv_balance.to_string(),
+                raison: "Reception confidentielle".to_string(),
+            },
+        );
+        ws_server.send_to_user(
+            &recv_uid.to_string(),
+            ServerMessage::Notification {
+                type_: "vita_recu".to_string(),
+                titre: "Ѵ recu".to_string(),
+                contenu: "Vous avez recu un transfert confidentiel".to_string(),
+                lien: Some("/bourse/historique".to_string()),
+            },
+        );
+    }
 
     // Return response WITHOUT the amount (confidential!)
     Ok(HttpResponse::Ok().json(serde_json::json!({

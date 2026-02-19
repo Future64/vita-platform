@@ -1,4 +1,5 @@
 use actix_web::{web, HttpResponse};
+use chrono::Utc;
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -7,6 +8,7 @@ use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::governance::{doleances, propositions, votes, parametres, discussions};
+use crate::ws::{WsServer, ServerMessage};
 
 // ── Helper ─────────────────────────────────────────────────────────
 
@@ -153,6 +155,7 @@ pub async fn convertir_doleance(
 /// POST /api/v1/governance/propositions
 pub async fn create_proposition(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     body: web::Json<propositions::CreatePropositionData>,
 ) -> Result<HttpResponse, VitaError> {
@@ -171,6 +174,13 @@ pub async fn create_proposition(
         None,
         Some(("proposition", prop.id)),
     );
+
+    // ── WebSocket: broadcast new proposition ──────────────────────
+    ws_server.broadcast(ServerMessage::ActivityFeed {
+        type_: "nouvelle_proposition".to_string(),
+        message: format!("Nouvelle proposition : {}", &prop.titre),
+        timestamp: Utc::now().to_rfc3339(),
+    });
 
     Ok(HttpResponse::Created().json(prop))
 }
@@ -204,6 +214,7 @@ pub struct VoteBody {
 /// POST /api/v1/governance/propositions/{id}/vote
 pub async fn voter(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     path: web::Path<Uuid>,
     body: web::Json<VoteBody>,
@@ -225,6 +236,17 @@ pub async fn voter(
         Some(("proposition", proposition_id)),
     );
 
+    // ── WebSocket: broadcast updated vote results ─────────────────
+    if let Ok(resultats) = votes::get_resultats(pool.get_ref(), proposition_id).await {
+        ws_server.broadcast(ServerMessage::VoteUpdate {
+            proposition_id: proposition_id.to_string(),
+            pour: resultats.votes_pour as i32,
+            contre: resultats.votes_contre as i32,
+            abstention: resultats.votes_abstention as i32,
+            participation: resultats.taux_participation,
+        });
+    }
+
     Ok(HttpResponse::Created().json(vote))
 }
 
@@ -241,6 +263,7 @@ pub async fn get_resultats(
 /// POST /api/v1/governance/propositions/{id}/passage-vote (admin)
 pub async fn passage_vote(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
@@ -260,12 +283,20 @@ pub async fn passage_vote(
         Some(("proposition", proposition_id)),
     );
 
+    // ── WebSocket: broadcast vote opened ──────────────────────────
+    ws_server.broadcast(ServerMessage::ActivityFeed {
+        type_: "vote_ouvert".to_string(),
+        message: format!("Vote ouvert : {}", &prop.titre),
+        timestamp: Utc::now().to_rfc3339(),
+    });
+
     Ok(HttpResponse::Ok().json(prop))
 }
 
 /// POST /api/v1/governance/propositions/{id}/cloturer (admin or auto)
 pub async fn cloturer_vote(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
@@ -289,6 +320,20 @@ pub async fn cloturer_vote(
         })),
         Some(("proposition", proposition_id)),
     );
+
+    // ── WebSocket: broadcast vote closed ──────────────────────────
+    ws_server.broadcast(ServerMessage::VoteUpdate {
+        proposition_id: proposition_id.to_string(),
+        pour: resultat.votes_pour as i32,
+        contre: resultat.votes_contre as i32,
+        abstention: resultat.votes_abstention as i32,
+        participation: resultat.taux_participation,
+    });
+    ws_server.broadcast(ServerMessage::ActivityFeed {
+        type_: "vote_resultat".to_string(),
+        message: format!("Vote cloture : {}", &resultat.statut_final),
+        timestamp: Utc::now().to_rfc3339(),
+    });
 
     Ok(HttpResponse::Ok().json(resultat))
 }

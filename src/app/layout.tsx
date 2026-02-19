@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { VerificationProvider } from "@/contexts/VerificationContext";
@@ -36,15 +37,17 @@ export default function RootLayout({
     <html lang="fr" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen antialiased">
         <AuthProvider>
-          <I18nProvider>
-            <NotificationProvider>
-              <VerificationProvider>
-                <OnboardingProvider>
-                  <ToastProvider>{children}</ToastProvider>
-                </OnboardingProvider>
-              </VerificationProvider>
-            </NotificationProvider>
-          </I18nProvider>
+          <WebSocketProvider>
+            <I18nProvider>
+              <NotificationProvider>
+                <VerificationProvider>
+                  <OnboardingProvider>
+                    <ToastProvider>{children}</ToastProvider>
+                  </OnboardingProvider>
+                </VerificationProvider>
+              </NotificationProvider>
+            </I18nProvider>
+          </WebSocketProvider>
         </AuthProvider>
       </body>
     </html>

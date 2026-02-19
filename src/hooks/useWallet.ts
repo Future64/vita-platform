@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useApiQuery } from "./useApiQuery";
 import { MOCK_WALLET } from "@/lib/mockBourse";
 import type { WalletData, Transaction } from "@/types/bourse";
+import { vitaWs } from "@/lib/websocket";
+import type { WsBalanceUpdate } from "@/lib/websocket";
 
 interface UseWalletReturn {
   balance: number;
@@ -24,6 +26,17 @@ interface UseWalletReturn {
 
 export function useWallet(accountId?: string): UseWalletReturn {
   const [sendError, setSendError] = useState<string | null>(null);
+  const [liveBalance, setLiveBalance] = useState<number | null>(null);
+
+  // Listen for real-time balance updates via WebSocket
+  useEffect(() => {
+    return vitaWs.on("balance_update", (data: WsBalanceUpdate) => {
+      const newBalance = parseFloat(data.nouvelle_balance);
+      if (!isNaN(newBalance)) {
+        setLiveBalance(newBalance);
+      }
+    });
+  }, []);
 
   const { data, loading, error, isMock, refresh } = useApiQuery<WalletData>({
     queryFn: async () => {
@@ -161,7 +174,7 @@ export function useWallet(accountId?: string): UseWalletReturn {
   }, [refresh]);
 
   return {
-    balance: data?.solde ?? 0,
+    balance: liveBalance ?? data?.solde ?? 0,
     transactions: data?.transactions ?? [],
     emissionAujourdHui: data?.emissionAujourdHui ?? false,
     prochaineEmission: data?.prochaineEmission ?? "",

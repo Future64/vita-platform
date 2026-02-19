@@ -9,12 +9,14 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { Notification } from "@/types/notifications";
+import type { Notification, NotificationType } from "@/types/notifications";
 import {
   MOCK_NOTIFICATIONS,
   generateRandomNotification,
 } from "@/lib/mockNotifications";
 import { MOCK_VERIFICATION_NOTIFICATIONS } from "@/lib/mockVerificationNotifications";
+import { vitaWs } from "@/lib/websocket";
+import type { WsNotification } from "@/lib/websocket";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -29,6 +31,34 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
+// Map WS notification_type to icon/color
+function wsNotifToNotification(ws: WsNotification): Notification {
+  const iconMap: Record<string, { icone: string; couleur: string }> = {
+    vita_recu: { icone: "Wallet", couleur: "green" },
+    emission_quotidienne: { icone: "Sunrise", couleur: "violet" },
+    attestation_recue: { icone: "ShieldCheck", couleur: "green" },
+    verification_complete: { icone: "ShieldCheck", couleur: "green" },
+    demande_parrainage: { icone: "UserPlus", couleur: "blue" },
+    vote_ouvert: { icone: "Vote", couleur: "blue" },
+    vote_resultat: { icone: "BarChart3", couleur: "violet" },
+    parametre_modifie: { icone: "Settings", couleur: "amber" },
+  };
+
+  const meta = iconMap[ws.notification_type] ?? { icone: "Bell", couleur: "blue" };
+
+  return {
+    id: `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type: (ws.notification_type || "systeme") as NotificationType,
+    titre: ws.titre,
+    message: ws.contenu,
+    date: new Date().toISOString(),
+    lue: false,
+    lien: ws.lien,
+    icone: meta.icone,
+    couleur: meta.couleur,
+  };
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -41,13 +71,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  // Simulate new notification every 60 seconds
+  // Simulate new notification every 60 seconds (mock mode only)
   useEffect(() => {
     const interval = setInterval(() => {
       const newNotif = generateRandomNotification();
       setNotifications((prev) => [newNotif, ...prev]);
     }, 60_000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Listen for real-time notifications via WebSocket (singleton — no context needed)
+  useEffect(() => {
+    return vitaWs.on("notification", (data: WsNotification) => {
+      const notif = wsNotifToNotification(data);
+      setNotifications((prev) => [notif, ...prev]);
+    });
   }, []);
 
   const unreadCount = useMemo(

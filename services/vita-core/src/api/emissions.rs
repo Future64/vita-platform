@@ -8,6 +8,7 @@ use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::monetary::emission;
+use crate::ws::{WsServer, ServerMessage};
 
 // ── request types ───────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ pub struct ClaimEmissionRequest {
 /// POST /api/v1/emissions/claim — Claim today's daily emission for one account.
 pub async fn claim_emission(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     body: web::Json<ClaimEmissionRequest>,
 ) -> Result<HttpResponse, VitaError> {
@@ -54,6 +56,24 @@ pub async fn claim_emission(
         &format!("Emission de {} V pour @{}", log.amount, &user.username),
         None,
         Some(("account", body.account_id)),
+    );
+
+    // ── WebSocket notifications ───────────────────────────────────
+    ws_server.send_to_user(
+        &user.user_id,
+        ServerMessage::BalanceUpdate {
+            nouvelle_balance: balance.to_string(),
+            raison: format!("Emission quotidienne de {} V", log.amount),
+        },
+    );
+    ws_server.send_to_user(
+        &user.user_id,
+        ServerMessage::Notification {
+            type_: "emission_quotidienne".to_string(),
+            titre: "Emission quotidienne".to_string(),
+            contenu: format!("Votre emission quotidienne de {} V a ete creditee", log.amount),
+            lien: Some("/bourse".to_string()),
+        },
     );
 
     Ok(HttpResponse::Ok().json(serde_json::json!({

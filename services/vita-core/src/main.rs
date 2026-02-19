@@ -11,6 +11,7 @@ pub mod identity;
 pub mod monetary;
 pub mod transaction;
 mod valuation;
+pub mod ws;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer, middleware};
@@ -109,6 +110,10 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    // Create shared WebSocket server
+    let ws_server = web::Data::new(ws::WsServer::new());
+    info!("WebSocket server initialized");
+
     // Start HTTP server
     let bind_addr = "127.0.0.1:8080";
     info!("Starting HTTP server on http://{}", bind_addr);
@@ -127,8 +132,11 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(params.clone()))
             .app_data(web::Data::new(jwt_secret.clone()))
+            .app_data(ws_server.clone())
             .wrap(cors)
             .wrap(middleware::Logger::default())
+            // WebSocket route (before API configure, outside auth middleware)
+            .route("/api/v1/ws", web::get().to(ws::ws_handler))
             .configure(api::configure)
     })
     .bind(bind_addr)?

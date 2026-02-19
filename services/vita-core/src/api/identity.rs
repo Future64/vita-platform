@@ -7,6 +7,7 @@ use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::identity::{verification, parrainage};
+use crate::ws::{WsServer, ServerMessage};
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -180,6 +181,7 @@ pub struct AttesterBody {
 /// POST /api/v1/identity/parrainages/{id}/attester
 pub async fn attester(
     pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
     user: AuthUser,
     path: web::Path<Uuid>,
     body: web::Json<AttesterBody>,
@@ -187,6 +189,16 @@ pub async fn attester(
     require_verified(&user)?;
     let user_id = parse_user_uuid(&user)?;
     let parrainage_id = path.into_inner();
+
+    // Look up the demandeur before the attestation
+    let demandeur_id: Option<Uuid> = sqlx::query_scalar(
+        r#"SELECT dv.demandeur_id FROM parrainages p
+           JOIN demandes_verification dv ON p.demande_id = dv.id
+           WHERE p.id = $1"#,
+    )
+    .bind(parrainage_id)
+    .fetch_optional(pool.get_ref())
+    .await?;
 
     let result = parrainage::attester(
         pool.get_ref(),
@@ -210,6 +222,37 @@ pub async fn attester(
         })),
         Some(("parrainage", parrainage_id)),
     );
+
+    // ── WebSocket notifications ───────────────────────────────────
+    if let Some(dem_id) = demandeur_id {
+        ws_server.send_to_user(
+            &dem_id.to_string(),
+            ServerMessage::Notification {
+                type_: "attestation_recue".to_string(),
+                titre: "Attestation recue".to_string(),
+                contenu: format!("@{} a atteste votre identite ({}/{})",
+                    &user.username, result.parrainages_actuels, result.parrainages_requis),
+                lien: Some("/civis/verification".to_string()),
+            },
+        );
+
+        if result.verification_complete {
+            ws_server.send_to_user(
+                &dem_id.to_string(),
+                ServerMessage::Notification {
+                    type_: "verification_complete".to_string(),
+                    titre: "Verification terminee !".to_string(),
+                    contenu: "Votre identite est verifiee. Vous etes maintenant citoyen.".to_string(),
+                    lien: Some("/civis/verification".to_string()),
+                },
+            );
+            ws_server.broadcast(ServerMessage::ActivityFeed {
+                type_: "verification_complete".to_string(),
+                message: "Un nouveau citoyen a ete verifie".to_string(),
+                timestamp: chrono::Utc::now().to_rfc3339(),
+            });
+        }
+    }
 
     Ok(HttpResponse::Ok().json(result))
 }
