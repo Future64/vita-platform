@@ -11,6 +11,9 @@ pub enum VitaError {
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Bad request: {0}")]
     BadRequest(String),
 
@@ -39,6 +42,7 @@ impl ResponseError for VitaError {
             VitaError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
             VitaError::NotFound(_) => StatusCode::NOT_FOUND,
             VitaError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            VitaError::Forbidden(_) => StatusCode::FORBIDDEN,
             VitaError::BadRequest(_) => StatusCode::BAD_REQUEST,
             VitaError::InsufficientBalance => StatusCode::BAD_REQUEST,
             VitaError::DuplicateAccount => StatusCode::CONFLICT,
@@ -54,6 +58,7 @@ impl ResponseError for VitaError {
             VitaError::Database(_) => "DATABASE_ERROR",
             VitaError::NotFound(_) => "NOT_FOUND",
             VitaError::Unauthorized(_) => "UNAUTHORIZED",
+            VitaError::Forbidden(_) => "FORBIDDEN",
             VitaError::BadRequest(_) => "BAD_REQUEST",
             VitaError::InsufficientBalance => "INSUFFICIENT_BALANCE",
             VitaError::DuplicateAccount => "DUPLICATE_ACCOUNT",

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::monetary::Account;
 
@@ -95,13 +96,16 @@ pub async fn get_account(
     }))
 }
 
-/// POST /api/v1/accounts/{id}/verify — Mark an account as verified (prototype).
+/// POST /api/v1/accounts/{id}/verify — Mark an account as verified (admin only, prototype).
 ///
 /// In production this will be replaced by zero-knowledge proof of identity.
 pub async fn verify_account(
     pool: web::Data<PgPool>,
+    user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
+    require_role(&user, &["dieu", "super_admin", "admin"])?;
+
     let account_id = path.into_inner();
 
     let result = sqlx::query(

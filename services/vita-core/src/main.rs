@@ -1,4 +1,5 @@
 mod api;
+pub mod auth;
 pub mod codex;
 pub mod config;
 pub mod credit;
@@ -13,6 +14,8 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer, middleware};
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
+
+use auth::middleware::JwtSecret;
 
 pub use error::{VitaError, Result};
 pub use monetary::{Account, CommonFund, EmissionLog};
@@ -49,6 +52,12 @@ async fn main() -> std::io::Result<()> {
     let params = config::SystemParams::new();
     info!("System parameters loaded (daily emission: {} Ѵ)", params.immutable.daily_emission);
 
+    // Load JWT secret
+    let jwt_secret = std::env::var("JWT_SECRET")
+        .expect("JWT_SECRET must be set in .env");
+    let jwt_secret = JwtSecret(jwt_secret);
+    info!("JWT secret loaded");
+
     // Start HTTP server
     let bind_addr = "127.0.0.1:8080";
     info!("Starting HTTP server on http://{}", bind_addr);
@@ -66,6 +75,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(params.clone()))
+            .app_data(web::Data::new(jwt_secret.clone()))
             .wrap(cors)
             .wrap(middleware::Logger::default())
             .configure(api::configure)

@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::auth::middleware::AuthUser;
 use crate::config::SystemParams;
 use crate::crypto::keys::public_key_from_hex;
 use crate::crypto::signatures::signature_from_hex;
@@ -40,8 +41,24 @@ pub struct HistoryQuery {
 pub async fn create_transfer(
     pool: web::Data<PgPool>,
     params: web::Data<SystemParams>,
+    user: AuthUser,
     body: web::Json<TransferBody>,
 ) -> Result<HttpResponse, VitaError> {
+    // Verify the user owns the sender account
+    let user_id = uuid::Uuid::parse_str(&user.user_id)
+        .map_err(|_| VitaError::Internal("Invalid user ID in token".into()))?;
+    let owns: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1 AND user_id = $2)",
+    )
+    .bind(body.from_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    if !owns {
+        return Err(VitaError::Forbidden("Ce compte ne vous appartient pas".into()));
+    }
+
     // ── optional signature verification ──────────────────────────
     if let Some(ref sig_hex) = body.signature {
         // Build canonical JSON bytes for the signed payload
@@ -95,10 +112,27 @@ pub async fn create_transfer(
 /// GET /api/v1/transactions/{account_id} — Transaction history for an account.
 pub async fn get_transaction_history(
     pool: web::Data<PgPool>,
+    user: AuthUser,
     path: web::Path<Uuid>,
     query: web::Query<HistoryQuery>,
 ) -> Result<HttpResponse, VitaError> {
     let account_id = path.into_inner();
+
+    // Verify the user owns this account
+    let user_id = uuid::Uuid::parse_str(&user.user_id)
+        .map_err(|_| VitaError::Internal("Invalid user ID in token".into()))?;
+    let owns: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1 AND user_id = $2)",
+    )
+    .bind(account_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    if !owns {
+        return Err(VitaError::Forbidden("Ce compte ne vous appartient pas".into()));
+    }
+
     let limit = query.limit.unwrap_or(20).min(100);
     let offset = query.offset.unwrap_or(0).max(0);
 

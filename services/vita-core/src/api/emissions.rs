@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
 use crate::monetary::emission;
 
@@ -19,8 +20,24 @@ pub struct ClaimEmissionRequest {
 /// POST /api/v1/emissions/claim — Claim today's daily emission for one account.
 pub async fn claim_emission(
     pool: web::Data<PgPool>,
+    user: AuthUser,
     body: web::Json<ClaimEmissionRequest>,
 ) -> Result<HttpResponse, VitaError> {
+    // Verify the user owns this account
+    let user_id = uuid::Uuid::parse_str(&user.user_id)
+        .map_err(|_| VitaError::Internal("Invalid user ID in token".into()))?;
+    let owns: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1 AND user_id = $2)",
+    )
+    .bind(body.account_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    if !owns {
+        return Err(VitaError::Forbidden("Ce compte ne vous appartient pas".into()));
+    }
+
     let today = Utc::now().date_naive();
     let log = emission::emit_daily(pool.get_ref(), body.account_id, today).await?;
 
@@ -34,10 +51,12 @@ pub async fn claim_emission(
     })))
 }
 
-/// POST /api/v1/emissions/batch — Trigger daily emission for all verified accounts.
+/// POST /api/v1/emissions/batch — Trigger daily emission for all verified accounts (admin only).
 pub async fn batch_emission(
     pool: web::Data<PgPool>,
+    user: AuthUser,
 ) -> Result<HttpResponse, VitaError> {
+    require_role(&user, &["dieu", "super_admin", "admin"])?;
     let result = emission::emit_daily_all(pool.get_ref()).await?;
     Ok(HttpResponse::Ok().json(result))
 }
@@ -45,9 +64,25 @@ pub async fn batch_emission(
 /// GET /api/v1/emissions/{account_id} — Emission history for an account.
 pub async fn get_emission_history(
     pool: web::Data<PgPool>,
+    user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
     let account_id = path.into_inner();
+
+    // Verify the user owns this account
+    let user_id = uuid::Uuid::parse_str(&user.user_id)
+        .map_err(|_| VitaError::Internal("Invalid user ID in token".into()))?;
+    let owns: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = $1 AND user_id = $2)",
+    )
+    .bind(account_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    if !owns {
+        return Err(VitaError::Forbidden("Ce compte ne vous appartient pas".into()));
+    }
 
     let rows = sqlx::query_as::<_, emission::EmissionLog>(
         r#"SELECT id, account_id, emission_date, amount, created_at
