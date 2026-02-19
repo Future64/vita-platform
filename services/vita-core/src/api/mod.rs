@@ -5,6 +5,7 @@ mod credit;
 mod emissions;
 pub mod governance;
 mod health;
+pub mod identity;
 mod transactions;
 mod valuation;
 
@@ -91,6 +92,20 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/governance/fils/{fil_id}/messages", web::post().to(governance::create_message))
                     .route("/governance/messages/{msg_id}/reaction", web::post().to(governance::reagir_message))
                     .route("/governance/cron/close-votes", web::post().to(governance::cron_close_votes))
+
+                    // Identity — verification by parrainage
+                    .route("/identity/demande", web::post().to(identity::create_demande))
+                    .route("/identity/demande", web::get().to(identity::get_demande_active))
+                    .route("/identity/demande", web::delete().to(identity::annuler_demande))
+                    .route("/identity/demande/inviter", web::post().to(identity::inviter_parrain))
+                    .route("/identity/demande/{parrainage_id}/relancer", web::post().to(identity::relancer_parrain))
+                    .route("/identity/parrainages", web::get().to(identity::get_parrainages_recus))
+                    .route("/identity/parrainages/{id}/attester", web::post().to(identity::attester))
+                    .route("/identity/parrainages/{id}/refuser", web::post().to(identity::refuser_parrainage))
+                    .route("/identity/parrainages/compteur", web::get().to(identity::get_compteur))
+                    .route("/identity/parrains-potentiels", web::get().to(identity::search_parrains))
+                    .route("/identity/verifications", web::get().to(identity::get_historique_verifications))
+                    .route("/identity/cron/check-expirations", web::post().to(identity::cron_check_expirations))
             ),
     );
 }

@@ -6,7 +6,7 @@ pub mod credit;
 pub mod crypto;
 pub mod error;
 pub mod governance;
-mod identity;
+pub mod identity;
 pub mod monetary;
 pub mod transaction;
 mod valuation;
@@ -59,17 +59,28 @@ async fn main() -> std::io::Result<()> {
     let jwt_secret = JwtSecret(jwt_secret);
     info!("JWT secret loaded");
 
-    // Start background vote closure task
+    // Start background tasks
     let cron_pool = pool.clone();
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+            // Auto-close expired votes
             match api::governance::check_and_close_votes(&cron_pool).await {
                 Ok(results) if !results.is_empty() => {
                     info!("{} vote(s) cloture(s) automatiquement", results.len());
                 }
                 Err(e) => {
                     tracing::error!("Erreur cron cloture votes: {}", e);
+                }
+                _ => {}
+            }
+            // Check verification expirations
+            match api::identity::check_expirations(&cron_pool).await {
+                Ok(affected) if !affected.is_empty() => {
+                    info!("{} verification(s) expiree(s)", affected.len());
+                }
+                Err(e) => {
+                    tracing::error!("Erreur cron expirations verifications: {}", e);
                 }
                 _ => {}
             }
