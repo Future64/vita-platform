@@ -65,6 +65,14 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   parametre_modifie: "Parametres",
   systeme: "Systeme",
   bienvenue: "Bienvenue",
+  demande_parrainage: "Demandes de parrainage",
+  rappel_parrainage: "Rappels parrainage",
+  attestation_recue: "Attestations",
+  verification_complete: "Verification complete",
+  parrainage_refuse: "Parrainages refuses",
+  demande_expiree: "Demandes expirees",
+  verification_expiration: "Expiration verification",
+  verification_expiree: "Verification expiree",
 };
 
 type FilterMode = "all" | "unread";

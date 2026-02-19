@@ -1,6 +1,7 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import Link from "next/link";
+import { Lock, ShieldAlert, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Permission } from "@/types/auth";
 
@@ -19,7 +20,7 @@ export function PermissionGate({
   hide = false,
   requireAll = false,
 }: PermissionGateProps) {
-  const { hasPermission } = useAuth();
+  const { hasPermission, activeRole } = useAuth();
 
   const permissions = Array.isArray(permission) ? permission : [permission];
   const allowed = requireAll
@@ -36,6 +37,31 @@ export function PermissionGate({
 
   if (fallback) {
     return <>{fallback}</>;
+  }
+
+  // Enhanced fallback for 'nouveau' role: show verification CTA
+  if (activeRole === "nouveau") {
+    return (
+      <div className="relative inline-flex">
+        <div className="pointer-events-none select-none opacity-40">
+          {children}
+        </div>
+        <Link
+          href="/civis/verification"
+          className="absolute -right-1 -top-1 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors hover:opacity-80"
+          style={{
+            backgroundColor: "rgba(245, 158, 11, 0.15)",
+            color: "rgb(245, 158, 11)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+          }}
+          title="Verification requise"
+        >
+          <ShieldAlert className="h-2.5 w-2.5" />
+          <span className="hidden sm:inline">Verifier</span>
+          <ArrowRight className="h-2 w-2 hidden sm:inline" />
+        </Link>
+      </div>
+    );
   }
 
   // Default fallback: grayed-out version with lock

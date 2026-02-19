@@ -18,6 +18,7 @@ import type {
   AuthSession,
   IdentitePublique,
   IdentiteProfessionnelle,
+  IdentiteVerifiee,
   ModeVisibilite,
 } from "@/types/auth";
 import { buildUserFromIdentity } from "@/types/auth";
@@ -42,6 +43,8 @@ interface AuthContextType {
   setModeVisibilite: (mode: ModeVisibilite) => void;
   setSimulatedRole: (role: UserRole | null) => void;
   hasPermission: (permission: Permission) => boolean;
+  updateVerificationStatus: (statut: IdentiteVerifiee['statut'], data?: Partial<IdentiteVerifiee>) => void;
+  transitionRole: (newRole: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -244,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       username: data.username,
       email: data.email,
-      role: "dieu", // Default: dieu (mode dev)
+      role: "nouveau", // Default: nouveau (non verifie)
       dateInscription: new Date().toISOString().split("T")[0],
       identiteVerifiee,
       identitePublique,
@@ -357,6 +360,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  const updateVerificationStatus = useCallback(
+    (statut: IdentiteVerifiee['statut'], data?: Partial<IdentiteVerifiee>) => {
+      if (!user) return;
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) return;
+
+      users[idx].identiteVerifiee = {
+        ...users[idx].identiteVerifiee,
+        ...data,
+        statut,
+      };
+      users[idx] = rebuildLegacyFields(users[idx]);
+      saveStoredUsers(users);
+      setUser(storedToUser(users[idx]));
+    },
+    [user]
+  );
+
+  const transitionRole = useCallback(
+    (newRole: UserRole) => {
+      if (!user) return;
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) return;
+
+      users[idx].role = newRole;
+      saveStoredUsers(users);
+      setUser(storedToUser(users[idx]));
+    },
+    [user]
+  );
+
   const hasPermissionFn = useCallback(
     (permission: Permission): boolean => {
       return checkPermission(activeRole, permission);
@@ -382,6 +418,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setModeVisibilite: setModeVisibiliteFn,
         setSimulatedRole,
         hasPermission: hasPermissionFn,
+        updateVerificationStatus,
+        transitionRole,
       }}
     >
       {children}

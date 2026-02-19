@@ -55,6 +55,8 @@ import type { ModeVisibilite, IdentitePublique, IdentiteProfessionnelle } from "
 // ─── Sidebar ───
 const sidebarItems: SidebarItem[] = [
   { icon: User, label: "Profil", href: "/civis" },
+  { icon: ShieldCheck, label: "Verification", href: "/civis/verification" },
+  { icon: UserCheck, label: "Parrainages", href: "/civis/parrainages" },
   { icon: Wallet, label: "Portefeuille", href: "/civis/wallet" },
   { icon: Activity, label: "Activite", href: "/civis/activity" },
   { icon: Award, label: "Recompenses", href: "/civis/achievements" },

@@ -14,6 +14,7 @@ import {
   MOCK_NOTIFICATIONS,
   generateRandomNotification,
 } from "@/lib/mockNotifications";
+import { MOCK_VERIFICATION_NOTIFICATIONS } from "@/lib/mockVerificationNotifications";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -34,7 +35,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Load mock notifications on mount
   useEffect(() => {
     setNotifications(
-      [...MOCK_NOTIFICATIONS].sort(
+      [...MOCK_NOTIFICATIONS, ...MOCK_VERIFICATION_NOTIFICATIONS].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )
     );

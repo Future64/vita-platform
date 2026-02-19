@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import { VerificationProvider } from "@/contexts/VerificationContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { I18nProvider } from "@/contexts/I18nProvider";
 
@@ -37,9 +38,11 @@ export default function RootLayout({
         <AuthProvider>
           <I18nProvider>
             <NotificationProvider>
-              <OnboardingProvider>
-                <ToastProvider>{children}</ToastProvider>
-              </OnboardingProvider>
+              <VerificationProvider>
+                <OnboardingProvider>
+                  <ToastProvider>{children}</ToastProvider>
+                </OnboardingProvider>
+              </VerificationProvider>
             </NotificationProvider>
           </I18nProvider>
         </AuthProvider>

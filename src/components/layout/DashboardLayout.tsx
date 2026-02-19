@@ -7,6 +7,7 @@ import { Sidebar, SidebarItem } from "./Sidebar";
 import { SearchModal } from "./SearchModal";
 import { OnboardingChecklist, OnboardingCelebration } from "@/components/onboarding/OnboardingChecklist";
 import { TourGuide } from "@/components/onboarding/TourGuide";
+import { VerificationBanner } from "@/components/verification/VerificationBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_METADATA } from "@/lib/permissions";
 
@@ -51,6 +52,8 @@ export function DashboardLayout({
       <OnboardingChecklist />
       <OnboardingCelebration />
       <TourGuide />
+
+      <VerificationBanner />
 
       {/* Simulation banner */}
       {simulatedRole && (

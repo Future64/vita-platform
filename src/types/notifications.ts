@@ -10,7 +10,16 @@ export type NotificationType =
   | "role_change" // Mon rôle a changé
   | "parametre_modifie" // Un paramètre système a été modifié
   | "systeme" // Notification système (maintenance, mise à jour)
-  | "bienvenue"; // Après inscription
+  | "bienvenue" // Après inscription
+  // Verification d'identite
+  | "demande_parrainage" // Quelqu'un me demande de le parrainer
+  | "rappel_parrainage" // Rappel pour une demande de parrainage en attente
+  | "attestation_recue" // Un parrain a atteste mon identite
+  | "verification_complete" // Ma verification est terminee (3/3)
+  | "parrainage_refuse" // Un parrain a refuse ma demande
+  | "demande_expiree" // Ma demande de verification a expire
+  | "verification_expiration" // Ma verification expire bientot
+  | "verification_expiree"; // Ma verification a expire
 
 export interface Notification {
   id: string;

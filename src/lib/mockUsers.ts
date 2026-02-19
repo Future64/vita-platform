@@ -105,6 +105,54 @@ const identiteSakura: IdentiteVerifiee = {
   historiqueVerifications: [],
 };
 
+const identiteAlex: IdentiteVerifiee = {
+  nomLegal: 'Martin',
+  prenomLegal: 'Alexandre',
+  dateNaissance: '1998-06-25',
+  nationalite: 'Francaise',
+  paysResidence: 'France',
+  statut: 'non_verifie',
+  niveauConfiance: 0,
+  historiqueVerifications: [],
+};
+
+const identiteFatou: IdentiteVerifiee = {
+  nomLegal: 'Diop',
+  prenomLegal: 'Fatou',
+  dateNaissance: '1993-02-14',
+  nationalite: 'Senegalaise',
+  paysResidence: 'Senegal',
+  statut: 'en_cours',
+  methodeVerification: 'parrainage',
+  parrains: [
+    { username: 'maxim', dateAttestation: '2026-02-10' },
+    { username: 'amina.b', dateAttestation: '2026-02-12' },
+  ],
+  niveauConfiance: 55,
+  historiqueVerifications: [],
+};
+
+const identiteAncien: IdentiteVerifiee = {
+  nomLegal: 'Lefevre',
+  prenomLegal: 'Pierre',
+  dateNaissance: '1982-11-30',
+  nationalite: 'Francaise',
+  paysResidence: 'France',
+  statut: 'expire',
+  dateVerification: '2025-01-15T10:00:00Z',
+  dateExpiration: '2026-01-15T10:00:00Z',
+  methodeVerification: 'parrainage',
+  parrains: [
+    { username: 'maxim', dateAttestation: '2025-01-14' },
+    { username: 'jp.moreau', dateAttestation: '2025-01-14' },
+    { username: 'amina.b', dateAttestation: '2025-01-15' },
+  ],
+  niveauConfiance: 70,
+  historiqueVerifications: [
+    { date: '2025-01-15', methode: 'Parrainage (3/3)', statut: 'expire', details: 'Verification expiree le 15/01/2026' },
+  ],
+};
+
 const identiteJP: IdentiteVerifiee = {
   nomLegal: 'Moreau',
   prenomLegal: 'Jean-Pierre',
@@ -158,6 +206,39 @@ const pubLucas: IdentitePublique = {
 const pubSakura: IdentitePublique = {
   modeVisibilite: 'anonyme',
   dateInscriptionVisible: false,
+};
+
+const pubAlex: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Alexandre',
+  nom: 'Martin',
+  bio: 'Etudiant en economie. Curieux du projet VITA.',
+  paysAffiche: 'France',
+  langues: ['Francais', 'Anglais'],
+  centresInteret: ['Economie', 'Technologie'],
+  dateInscriptionVisible: true,
+};
+
+const pubFatou: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Fatou',
+  nom: 'Diop',
+  bio: 'Infirmiere passionnee par l\'acces aux soins pour tous.',
+  paysAffiche: 'Senegal',
+  langues: ['Francais', 'Wolof'],
+  centresInteret: ['Sante', 'Social', 'Education'],
+  dateInscriptionVisible: true,
+};
+
+const pubAncien: IdentitePublique = {
+  modeVisibilite: 'complet',
+  prenom: 'Pierre',
+  nom: 'Lefevre',
+  bio: 'Ancien enseignant a la retraite. Citoyen VITA depuis le debut.',
+  paysAffiche: 'France',
+  langues: ['Francais'],
+  centresInteret: ['Education', 'Philosophie', 'Culture'],
+  dateInscriptionVisible: true,
 };
 
 const pubJP: IdentitePublique = {
@@ -236,6 +317,37 @@ const proLucas: IdentiteProfessionnelle = {
 };
 
 const proSakura: IdentiteProfessionnelle = {
+  active: false,
+  disponibilite: 'indisponible',
+};
+
+const proAlex: IdentiteProfessionnelle = {
+  active: false,
+  disponibilite: 'indisponible',
+};
+
+const proFatou: IdentiteProfessionnelle = {
+  active: true,
+  titre: 'Infirmiere',
+  description: 'Soins infirmiers a domicile. Specialisee en soins palliatifs.',
+  secteur: 'Sante',
+  experience: 'Confirme (3-5 ans)',
+  competences: [
+    { nom: 'Soins infirmiers', niveau: 'expert' },
+    { nom: 'Premiers secours', niveau: 'expert' },
+    { nom: 'Accompagnement patient', niveau: 'avance' },
+  ],
+  tarifHoraire: 1.5,
+  coefficients: { formation: 0.3, penibilite: 0.3, responsabilite: 0.3, rarete: 0.1 },
+  disponibilite: 'disponible',
+  zonesIntervention: ['Dakar', 'Thies'],
+  avis: [],
+  noteMoyenne: undefined,
+  nombreAvis: 0,
+  realisations: [],
+};
+
+const proAncien: IdentiteProfessionnelle = {
   active: false,
   disponibilite: 'indisponible',
 };
@@ -362,6 +474,57 @@ export const MOCK_USERS: StoredUser[] = [
     propositionsCreees: 2,
     votesEffectues: 18,
     scoreReputation: 88,
+  }),
+  buildStoredUser({
+    id: 'usr-006-nouveau',
+    username: 'alex_martin',
+    email: 'alex@vita.world',
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: 'nouveau',
+    dateInscription: '2026-02-15',
+    identiteVerifiee: identiteAlex,
+    identitePublique: pubAlex,
+    identiteProfessionnelle: proAlex,
+    preferences: defaultPreferences(),
+    soldeVita: 4,
+    joursActifs: 4,
+    propositionsCreees: 0,
+    votesEffectues: 0,
+    scoreReputation: 5,
+  }),
+  buildStoredUser({
+    id: 'usr-007-nouveau',
+    username: 'fatou_diop',
+    email: 'fatou@vita.world',
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: 'nouveau',
+    dateInscription: '2026-02-05',
+    identiteVerifiee: identiteFatou,
+    identitePublique: pubFatou,
+    identiteProfessionnelle: proFatou,
+    preferences: defaultPreferences(),
+    soldeVita: 14,
+    joursActifs: 14,
+    propositionsCreees: 0,
+    votesEffectues: 0,
+    scoreReputation: 15,
+  }),
+  buildStoredUser({
+    id: 'usr-008-expire',
+    username: 'ancien_citoyen',
+    email: 'pierre@vita.world',
+    passwordHash: DEFAULT_PASSWORD_HASH,
+    role: 'citoyen',
+    dateInscription: '2025-01-10',
+    identiteVerifiee: identiteAncien,
+    identitePublique: pubAncien,
+    identiteProfessionnelle: proAncien,
+    preferences: defaultPreferences(),
+    soldeVita: 380,
+    joursActifs: 380,
+    propositionsCreees: 3,
+    votesEffectues: 25,
+    scoreReputation: 72,
   }),
 ];
 
