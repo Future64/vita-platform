@@ -71,6 +71,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
                     // Transactions
                     .route("/transactions/transfer", web::post().to(transactions::create_transfer))
+                    .route("/transactions/transfer-confidentiel", web::post().to(transactions::create_confidential_transfer))
+                    .route("/transactions/{id}/commitment", web::get().to(transactions::get_commitment))
+                    .route("/transactions/{id}/verify-commitment", web::post().to(transactions::verify_commitment))
+                    .route("/transactions/{id}/blinding-factor", web::get().to(transactions::get_blinding_factor))
                     .route("/transactions/{account_id}", web::get().to(transactions::get_transaction_history))
 
                     // Credit

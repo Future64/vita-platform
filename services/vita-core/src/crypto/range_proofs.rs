@@ -100,6 +100,23 @@ pub fn create_transfer_proof(
     })
 }
 
+// ── Serialization helpers ───────────────────────────────────────────
+
+/// Serialize a RangeProof to hex for database storage.
+pub fn range_proof_to_hex(proof: &RangeProof) -> String {
+    hex::encode(proof.to_bytes())
+}
+
+/// Deserialize a RangeProof from hex.
+pub fn range_proof_from_hex(hex_str: &str) -> Result<RangeProof, VitaError> {
+    let bytes = hex::decode(hex_str).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid hex for range proof: {e}"))
+    })?;
+    RangeProof::from_bytes(&bytes).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid range proof bytes: {e}"))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -214,5 +231,19 @@ mod tests {
             &tp.transfer_amount_proof,
             &tp.transfer_amount_commitment,
         ));
+    }
+
+    // ── serialization ────────────────────────────────────────────────
+
+    #[test]
+    fn range_proof_hex_roundtrip() {
+        let blinding = Scalar::from(42u64);
+        let (proof, commitment) = create_range_proof(100, &blinding).unwrap();
+
+        let hex_str = range_proof_to_hex(&proof);
+        let restored = range_proof_from_hex(&hex_str).unwrap();
+
+        // Verify that the restored proof still validates
+        assert!(verify_range_proof(&restored, &commitment));
     }
 }

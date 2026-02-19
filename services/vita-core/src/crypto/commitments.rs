@@ -11,6 +11,9 @@
 use bulletproofs::PedersenGens;
 use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
+use rand::rngs::OsRng;
+
+use crate::error::VitaError;
 
 /// A balance hidden behind a Pedersen commitment.
 ///
@@ -58,6 +61,112 @@ pub fn verify_balance_equation(
 
     // sender_old - sender_new == receiver_new - receiver_old
     so - sn == rn - ro
+}
+
+// ── Blinding factor helpers ─────────────────────────────────────────
+
+/// Generate a cryptographically random blinding factor.
+pub fn generate_blinding_factor() -> Scalar {
+    Scalar::random(&mut OsRng)
+}
+
+/// Encode a Scalar blinding factor as hex (32 bytes = 64 hex chars).
+pub fn blinding_to_hex(s: &Scalar) -> String {
+    hex::encode(s.as_bytes())
+}
+
+/// Decode a hex-encoded Scalar blinding factor.
+pub fn blinding_from_hex(hex_str: &str) -> Result<Scalar, VitaError> {
+    let bytes = hex::decode(hex_str).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid hex for blinding factor: {e}"))
+    })?;
+    let bytes: [u8; 32] = bytes.try_into().map_err(|_| {
+        VitaError::CryptoError("Blinding factor must be exactly 32 bytes".into())
+    })?;
+    // Scalar::from_canonical_bytes returns an Option in dalek 4.x
+    let opt = Scalar::from_canonical_bytes(bytes);
+    if opt.is_some().into() {
+        Ok(opt.unwrap())
+    } else {
+        // Fall back to from_bytes_mod_order for non-canonical scalars
+        Ok(Scalar::from_bytes_mod_order(bytes))
+    }
+}
+
+// ── Commitment hex helpers ─────────────────────────────────────────
+
+/// Encode a CompressedRistretto commitment as hex.
+pub fn commitment_to_hex(c: &CompressedRistretto) -> String {
+    hex::encode(c.as_bytes())
+}
+
+/// Decode a CompressedRistretto commitment from hex.
+pub fn commitment_from_hex(hex_str: &str) -> Result<CompressedRistretto, VitaError> {
+    let bytes = hex::decode(hex_str).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid hex for commitment: {e}"))
+    })?;
+    let bytes: [u8; 32] = bytes.try_into().map_err(|_| {
+        VitaError::CryptoError("Commitment must be exactly 32 bytes".into())
+    })?;
+    Ok(CompressedRistretto(bytes))
+}
+
+/// Verify that a given commitment matches the expected amount and blinding factor.
+pub fn verify_commitment(
+    commitment: &CompressedRistretto,
+    amount: u64,
+    blinding_factor: &Scalar,
+) -> bool {
+    let recomputed = commit_balance(amount, blinding_factor);
+    *commitment == recomputed
+}
+
+/// Encrypt a blinding factor for a specific user using a simple XOR
+/// with a key derived from the user's public key.
+///
+/// NOTE: Prototype encryption. Production should use ECIES or similar.
+pub fn encrypt_blinding_factor(blinding: &Scalar, user_pubkey: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"vita-blinding-encryption-v1:");
+    hasher.update(user_pubkey);
+    let key: [u8; 32] = hasher.finalize().into();
+
+    let blinding_bytes = blinding.as_bytes();
+    let encrypted: Vec<u8> = blinding_bytes
+        .iter()
+        .zip(key.iter())
+        .map(|(a, b)| a ^ b)
+        .collect();
+    hex::encode(encrypted)
+}
+
+/// Decrypt a blinding factor encrypted with `encrypt_blinding_factor`.
+pub fn decrypt_blinding_factor(
+    encrypted_hex: &str,
+    user_pubkey: &[u8],
+) -> Result<Scalar, VitaError> {
+    use sha2::{Digest, Sha256};
+    let encrypted = hex::decode(encrypted_hex).map_err(|e| {
+        VitaError::CryptoError(format!("Invalid hex for encrypted blinding factor: {e}"))
+    })?;
+    if encrypted.len() != 32 {
+        return Err(VitaError::CryptoError(
+            "Encrypted blinding factor must be exactly 32 bytes".into(),
+        ));
+    }
+
+    let mut hasher = Sha256::new();
+    hasher.update(b"vita-blinding-encryption-v1:");
+    hasher.update(user_pubkey);
+    let key: [u8; 32] = hasher.finalize().into();
+
+    let mut decrypted = [0u8; 32];
+    for (i, (a, b)) in encrypted.iter().zip(key.iter()).enumerate() {
+        decrypted[i] = a ^ b;
+    }
+
+    Ok(Scalar::from_bytes_mod_order(decrypted))
 }
 
 #[cfg(test)]
@@ -192,5 +301,56 @@ mod tests {
         let c1 = commit_balance(42, &blinding);
         let c2 = commit_balance(42, &blinding);
         assert_eq!(c1, c2);
+    }
+
+    // ── hex roundtrip tests ──────────────────────────────────────────
+
+    #[test]
+    fn commitment_hex_roundtrip() {
+        let blinding = Scalar::from(42u64);
+        let c = commit_balance(100, &blinding);
+        let hex_str = commitment_to_hex(&c);
+        assert_eq!(hex_str.len(), 64); // 32 bytes = 64 hex chars
+        let restored = commitment_from_hex(&hex_str).unwrap();
+        assert_eq!(c, restored);
+    }
+
+    #[test]
+    fn blinding_hex_roundtrip() {
+        let b = Scalar::from(12345u64);
+        let hex_str = blinding_to_hex(&b);
+        assert_eq!(hex_str.len(), 64);
+        let restored = blinding_from_hex(&hex_str).unwrap();
+        assert_eq!(b, restored);
+    }
+
+    #[test]
+    fn verify_commitment_correct() {
+        let blinding = Scalar::from(77u64);
+        let c = commit_balance(500, &blinding);
+        assert!(verify_commitment(&c, 500, &blinding));
+    }
+
+    #[test]
+    fn verify_commitment_wrong_amount() {
+        let blinding = Scalar::from(77u64);
+        let c = commit_balance(500, &blinding);
+        assert!(!verify_commitment(&c, 501, &blinding));
+    }
+
+    #[test]
+    fn encrypt_decrypt_blinding_roundtrip() {
+        let blinding = Scalar::from(999u64);
+        let pubkey = b"fake-public-key-32-bytes-padding";
+        let encrypted = encrypt_blinding_factor(&blinding, pubkey);
+        let decrypted = decrypt_blinding_factor(&encrypted, pubkey).unwrap();
+        assert_eq!(blinding, decrypted);
+    }
+
+    #[test]
+    fn generate_blinding_is_random() {
+        let b1 = generate_blinding_factor();
+        let b2 = generate_blinding_factor();
+        assert_ne!(b1, b2);
     }
 }
