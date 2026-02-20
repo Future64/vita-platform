@@ -143,21 +143,34 @@ class ApiClient {
     nom: string;
     date_naissance: string;
     pays: string;
+    mode_visibilite?: string;
+    pseudonyme?: string;
   }) {
+    // Map frontend field names to backend RegisterRequest fields
     return this.request<{
-      user_id: string;
-      username: string;
+      user: { id: string; username: string };
       access_token: string;
       refresh_token: string;
-    }>("POST", "/auth/register", data);
+      expires_in: number;
+    }>("POST", "/auth/register", {
+      username: data.username,
+      email: data.email,
+      password: data.password,
+      prenom_legal: data.prenom,
+      nom_legal: data.nom,
+      date_naissance: data.date_naissance,
+      pays_residence: data.pays,
+      mode_visibilite: data.mode_visibilite,
+      pseudonyme: data.pseudonyme,
+    });
   }
 
   async login(data: { username_or_email: string; password: string }) {
     return this.request<{
-      user_id: string;
-      username: string;
+      user: { id: string; username: string };
       access_token: string;
       refresh_token: string;
+      expires_in: number;
     }>("POST", "/auth/login", data);
   }
 
@@ -171,15 +184,28 @@ class ApiClient {
       username: string;
       email: string;
       role: string;
-      prenom: string;
-      nom: string;
-      date_naissance: string;
-      pays: string;
+      identite_publique: {
+        mode_visibilite: string;
+        prenom_affiche?: string;
+        nom_affiche?: string;
+        pseudonyme?: string;
+        bio?: string;
+        photo_profil?: string;
+        pays_affiche?: string;
+      };
+      verification: {
+        statut: string;
+        date?: string;
+        expiration?: string;
+        niveau_confiance: number;
+      };
+      wallet?: {
+        id: string;
+        balance: string;
+        total_received: string;
+      };
       date_inscription: string;
-      solde_vita: string;
-      jours_actifs: number;
-      verifie: boolean;
-      public_key?: string;
+      derniere_connexion?: string;
     }>("GET", "/auth/me");
   }
 

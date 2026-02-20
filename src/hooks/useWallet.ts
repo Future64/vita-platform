@@ -48,7 +48,7 @@ export function useWallet(accountId?: string): UseWalletReturn {
           api.getTransactions(acctId, 20, 0),
         ]);
 
-        const solde = me.solde_vita ? parseFloat(me.solde_vita) : 0;
+        const solde = me.wallet ? parseFloat(me.wallet.balance) : 0;
         // Map API transactions to frontend format
         const transactions: Transaction[] = (txs as Array<{
           id: string;

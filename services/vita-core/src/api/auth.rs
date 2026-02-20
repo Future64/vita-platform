@@ -30,7 +30,10 @@ pub struct RegisterRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
+    /// Legacy field — email only
+    pub email: Option<String>,
+    /// Preferred field — accepts email or username
+    pub username_or_email: Option<String>,
     pub password: String,
 }
 
@@ -369,15 +372,20 @@ pub async fn login(
     jwt_secret: web::Data<JwtSecret>,
     body: web::Json<LoginRequest>,
 ) -> Result<HttpResponse, VitaError> {
-    // Find user by email
+    // Resolve identifier: prefer username_or_email, fallback to email
+    let identifier = body.username_or_email.as_deref()
+        .or(body.email.as_deref())
+        .ok_or_else(|| VitaError::BadRequest("Email ou nom d'utilisateur requis".into()))?;
+
+    // Find user by email OR username
     let user = sqlx::query_as::<_, UserRow>(
         r#"SELECT id, email, username, role, verification_statut, mode_visibilite,
                   prenom_affiche, nom_affiche, pseudonyme, bio, photo_profil,
                   pays_affiche, date_inscription, derniere_connexion, password_hash,
                   niveau_confiance, verification_date, verification_expiration
-           FROM users WHERE email = $1 AND actif = true"#,
+           FROM users WHERE (email = $1 OR username = $1) AND actif = true"#,
     )
-    .bind(&body.email)
+    .bind(identifier)
     .fetch_optional(pool.get_ref())
     .await?
     .ok_or_else(|| VitaError::Unauthorized("Email ou mot de passe incorrect".into()))?;
@@ -390,8 +398,8 @@ pub async fn login(
             "user.login_failed",
             "auth",
             "warning",
-            &format!("Tentative de connexion echouee pour {}", &body.email),
-            Some(serde_json::json!({ "email": &body.email })),
+            &format!("Tentative de connexion echouee pour {}", identifier),
+            Some(serde_json::json!({ "identifier": identifier })),
             Some(("user", user.id)),
         );
         return Err(VitaError::Unauthorized(

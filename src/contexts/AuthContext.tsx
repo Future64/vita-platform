@@ -37,7 +37,7 @@ interface AuthContextType {
   simulatedRole: UserRole | null;
   activeRole: UserRole;
   login: (emailOrUsername: string, password: string) => Promise<boolean>;
-  register: (data: RegisterData) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean | string>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   updatePreferences: (prefs: Partial<UserPreferences>) => void;
@@ -212,21 +212,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Try to convert API profile to local User
   function apiProfileToUser(profile: Awaited<ReturnType<typeof api.getMe>>): User {
+    const verif = profile.verification;
+    const pub_ = profile.identite_publique;
+
     const identiteVerifiee: IdentiteVerifiee = {
-      nomLegal: profile.nom,
-      prenomLegal: profile.prenom,
-      dateNaissance: profile.date_naissance || '',
+      nomLegal: pub_.prenom_affiche || '',
+      prenomLegal: pub_.nom_affiche || '',
+      dateNaissance: '',
       nationalite: '',
-      paysResidence: profile.pays || '',
-      statut: profile.verifie ? 'verifie' : 'non_verifie',
-      niveauConfiance: profile.verifie ? 85 : 0,
+      paysResidence: pub_.pays_affiche || '',
+      statut: (verif.statut || 'non_verifie') as IdentiteVerifiee['statut'],
+      niveauConfiance: verif.niveau_confiance || 0,
       historiqueVerifications: [],
+      ...(verif.date ? { dateVerification: verif.date } : {}),
+      ...(verif.expiration ? { dateExpiration: verif.expiration } : {}),
     };
 
     const identitePublique: IdentitePublique = {
-      modeVisibilite: 'complet',
-      prenom: profile.prenom,
-      nom: profile.nom,
+      modeVisibilite: (pub_.mode_visibilite || 'complet') as ModeVisibilite,
+      prenom: pub_.prenom_affiche,
+      nom: pub_.nom_affiche,
+      pseudonyme: pub_.pseudonyme,
+      bio: pub_.bio,
+      photoProfil: pub_.photo_profil,
+      paysAffiche: pub_.pays_affiche,
       dateInscriptionVisible: true,
     };
 
@@ -245,8 +254,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       identitePublique,
       identiteProfessionnelle,
       preferences: defaultPreferences(),
-      soldeVita: profile.solde_vita ? parseFloat(profile.solde_vita) : 0,
-      joursActifs: profile.jours_actifs || 0,
+      soldeVita: profile.wallet ? parseFloat(profile.wallet.balance) : 0,
+      joursActifs: 0,
       propositionsCreees: 0,
       votesEffectues: 0,
       scoreReputation: 0,
@@ -351,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --- Register: try API, fallback to mock ---
 
-  const register = useCallback(async (data: RegisterData): Promise<boolean> => {
+  const register = useCallback(async (data: RegisterData): Promise<boolean | string> => {
     if (!isMockMode) {
       try {
         const result = await api.register({
@@ -362,6 +371,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nom: data.nom,
           date_naissance: data.dateNaissance,
           pays: data.pays,
+          mode_visibilite: data.modeVisibilite,
+          pseudonyme: data.pseudonyme,
         });
         api.setToken(result.access_token);
         if (typeof window !== "undefined" && result.refresh_token) {
@@ -376,7 +387,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           activateMockMode();
           // Fall through to mock register
         } else {
-          return false;
+          // Return the backend error message so the UI can display it
+          if (err instanceof ApiError) {
+            try {
+              const parsed = JSON.parse(err.message);
+              return parsed.error || parsed.message || err.message;
+            } catch {
+              return err.message || "Erreur lors de l'inscription";
+            }
+          }
+          return "Erreur lors de l'inscription";
         }
       }
     }

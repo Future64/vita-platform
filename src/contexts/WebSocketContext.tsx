@@ -54,10 +54,10 @@ function usePollingFallback(
     pollingRef.current = setInterval(async () => {
       try {
         const me = await api.getMe();
-        if (me.solde_vita) {
+        if (me.wallet) {
           onBalanceUpdate({
             type: "balance_update",
-            nouvelle_balance: me.solde_vita,
+            nouvelle_balance: me.wallet.balance,
             raison: "polling",
           });
         }

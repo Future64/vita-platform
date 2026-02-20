@@ -202,29 +202,46 @@ export default function InscriptionPage() {
       pays: true, acceptCGU: true, acceptPrivacy: true,
     });
 
-    if (!isValid) return;
+    if (!isValid) {
+      const firstError = Object.entries(errors).find(([, v]) => v !== null);
+      if (firstError) {
+        toast.error(firstError[1]!);
+      }
+      return;
+    }
 
     setSubmitting(true);
     setGlobalError(null);
 
-    const success = await register({
-      prenom,
-      nom,
-      username,
-      email,
-      password,
-      dateNaissance,
-      pays,
-      modeVisibilite,
-      pseudonyme: modeVisibilite === "pseudonyme" ? pseudonyme : undefined,
-    });
+    try {
+      const result = await register({
+        prenom,
+        nom,
+        username,
+        email,
+        password,
+        dateNaissance,
+        pays,
+        modeVisibilite,
+        pseudonyme: modeVisibilite === "pseudonyme" ? pseudonyme : undefined,
+      });
 
-    if (success) {
-      toast.success("Bienvenue sur VITA !");
-      router.push("/panorama");
-    } else {
-      toast.error("Un compte avec cet email ou ce nom d'utilisateur existe deja");
-      setGlobalError("Un compte avec cet email ou ce nom d'utilisateur existe deja.");
+      if (result === true) {
+        toast.success("Bienvenue sur VITA !");
+        router.push("/panorama");
+      } else {
+        const errorMsg = typeof result === "string"
+          ? result
+          : "Un compte avec cet email ou ce nom d'utilisateur existe deja.";
+        toast.error(errorMsg);
+        setGlobalError(errorMsg);
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error("[VITA] Registration error:", err);
+      const errorMsg = "Erreur lors de l'inscription. Veuillez reessayer.";
+      toast.error(errorMsg);
+      setGlobalError(errorMsg);
       setSubmitting(false);
     }
   }
