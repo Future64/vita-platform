@@ -191,6 +191,7 @@ export function CountryIdentitySelector({
       <div ref={dropdownRef} className="relative">
         {/* Input de recherche / affichage du pays */}
         <div
+          data-testid="country-dropdown"
           className={cn(
             "flex items-center gap-2 rounded-xl border px-3 py-2.5 cursor-pointer",
             "transition-all duration-200",
@@ -239,6 +240,7 @@ export function CountryIdentitySelector({
               </svg>
               <input
                 ref={inputRef}
+                data-testid="country-search"
                 type="text"
                 placeholder="Rechercher un pays..."
                 value={searchQuery}
