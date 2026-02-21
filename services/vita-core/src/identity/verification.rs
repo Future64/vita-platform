@@ -126,7 +126,7 @@ pub async fn create_demande(
         return Err(VitaError::BadRequest("Vous ne pouvez pas etre votre propre parrain".into()));
     }
 
-    // Validate each sponsor exists and is verified
+    // Validate each sponsor exists, is verified, and no cross-sponsorship
     for parrain_id in parrains_ids {
         let parrain_statut: Option<String> = sqlx::query_scalar(
             "SELECT verification_statut FROM users WHERE id = $1 AND actif = true",
@@ -148,10 +148,26 @@ pub async fn create_demande(
                 )));
             }
         }
+
+        // Web of Trust: anti-cross-sponsorship check at request creation
+        crate::identity::parrainage::check_anti_cross_sponsorship(
+            pool,
+            *parrain_id,
+            demandeur_id,
+        )
+        .await?;
     }
 
-    // Create the request (expires in 30 days)
-    let date_expiration = Utc::now() + Duration::days(30);
+    // Create the request — expiration from system parameter (default 14 days)
+    let duree_demande: i64 = sqlx::query_scalar::<_, String>(
+        "SELECT valeur FROM parametres_systeme WHERE nom = 'duree_demande_verification_jours'",
+    )
+    .fetch_optional(pool)
+    .await?
+    .and_then(|v| v.parse().ok())
+    .unwrap_or(14);
+
+    let date_expiration = Utc::now() + Duration::days(duree_demande);
 
     let demande = sqlx::query_as::<_, DemandeVerification>(
         r#"INSERT INTO demandes_verification (demandeur_id, message_personnel, parrainages_requis, date_expiration)

@@ -308,6 +308,109 @@ pub async fn get_compteur(
     })))
 }
 
+// ── Web of Trust — Cooldown status ────────────────────────────────
+
+/// GET /api/v1/identity/parrainages/cooldown
+pub async fn get_cooldown_status(
+    pool: web::Data<PgPool>,
+    user: AuthUser,
+) -> Result<HttpResponse, VitaError> {
+    require_verified(&user)?;
+    let user_id = parse_user_uuid(&user)?;
+
+    let status = parrainage::check_cooldown(pool.get_ref(), user_id).await?;
+
+    Ok(HttpResponse::Ok().json(status))
+}
+
+// ── Web of Trust — Revocation ────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct RevoquerBody {
+    pub motif: String,
+}
+
+/// DELETE /api/v1/identity/parrainages/{id}/revoquer
+pub async fn revoquer_parrainage(
+    pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
+    user: AuthUser,
+    path: web::Path<Uuid>,
+    body: web::Json<RevoquerBody>,
+) -> Result<HttpResponse, VitaError> {
+    require_verified(&user)?;
+    let user_id = parse_user_uuid(&user)?;
+    let parrainage_id = path.into_inner();
+
+    // Look up the demandeur before revocation
+    let demandeur_id: Option<Uuid> = sqlx::query_scalar(
+        r#"SELECT dv.demandeur_id FROM parrainages p
+           JOIN demandes_verification dv ON p.demande_id = dv.id
+           WHERE p.id = $1"#,
+    )
+    .bind(parrainage_id)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    let result = parrainage::revoquer_parrainage(
+        pool.get_ref(),
+        parrainage_id,
+        user_id,
+        &body.motif,
+    )
+    .await?;
+
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "identity.revoke",
+        "identity",
+        "warning",
+        &format!(
+            "@{} revoque le parrainage {} (invalidation: {})",
+            &user.username, parrainage_id, result.verification_invalidated
+        ),
+        Some(serde_json::json!({
+            "motif": &body.motif,
+            "verification_invalidated": result.verification_invalidated,
+        })),
+        Some(("parrainage", parrainage_id)),
+    );
+
+    // WebSocket notifications
+    if let Some(dem_id) = demandeur_id {
+        if result.verification_invalidated {
+            ws_server.send_to_user(
+                &dem_id.to_string(),
+                ServerMessage::Notification {
+                    type_: "verification_revoked".to_string(),
+                    titre: "Verification invalidee".to_string(),
+                    contenu: format!(
+                        "@{} a revoque son attestation. Votre verification n'est plus valide.",
+                        &user.username
+                    ),
+                    lien: Some("/civis/verification".to_string()),
+                },
+            );
+        } else {
+            ws_server.send_to_user(
+                &dem_id.to_string(),
+                ServerMessage::Notification {
+                    type_: "attestation_revoked".to_string(),
+                    titre: "Attestation revoquee".to_string(),
+                    contenu: format!(
+                        "@{} a revoque son attestation. Votre verification reste valide.",
+                        &user.username
+                    ),
+                    lien: Some("/civis/verification".to_string()),
+                },
+            );
+        }
+    }
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
 // ── Recherche de parrains potentiels ───────────────────────────────
 
 #[derive(Debug, Deserialize)]

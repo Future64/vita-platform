@@ -25,6 +25,21 @@ pub struct DemandeParrainage {
 }
 
 #[derive(Debug, Serialize)]
+pub struct CooldownStatus {
+    pub can_attest: bool,
+    pub last_attestation: Option<DateTime<Utc>>,
+    pub available_at: Option<DateTime<Utc>>,
+    pub cooldown_days: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RevocationResult {
+    pub revoked: bool,
+    pub parrainage_id: Uuid,
+    pub verification_invalidated: bool,
+}
+
+#[derive(Debug, Serialize)]
 pub struct AttestationResult {
     pub verification_complete: bool,
     pub parrainages_actuels: i64,
@@ -103,6 +118,29 @@ pub async fn attester(
         )));
     }
 
+    // ── Web of Trust: 30-day cooldown check ──────────────────────
+    let cooldown = check_cooldown(pool, parrain_id).await?;
+    if !cooldown.can_attest {
+        let available = cooldown
+            .available_at
+            .map(|d| d.format("%d/%m/%Y").to_string())
+            .unwrap_or_default();
+        return Err(VitaError::BadRequest(format!(
+            "Cooldown de {} jours entre attestations. Prochaine attestation possible le {}",
+            cooldown.cooldown_days, available
+        )));
+    }
+
+    // ── Web of Trust: anti-cross-sponsorship check ───────────────
+    let demandeur_id_for_cross: Uuid = sqlx::query_scalar(
+        "SELECT demandeur_id FROM demandes_verification WHERE id = $1",
+    )
+    .bind(parrainage.demande_id)
+    .fetch_one(pool)
+    .await?;
+
+    check_anti_cross_sponsorship(pool, parrain_id, demandeur_id_for_cross).await?;
+
     // Check annual counter
     let current_year = Utc::now().year();
     let max_par_an: i32 = sqlx::query_scalar::<_, String>(
@@ -133,13 +171,14 @@ pub async fn attester(
         return Err(VitaError::BadRequest("Le lien avec le demandeur est requis".into()));
     }
 
-    // Update sponsorship
+    // Update sponsorship (including cooldown tracker)
     sqlx::query(
         r#"UPDATE parrainages SET
             statut = 'accepte',
             lien_avec_demandeur = $2,
             commentaire = $3,
-            date_reponse = NOW()
+            date_reponse = NOW(),
+            date_derniere_attestation = NOW()
            WHERE id = $1"#,
     )
     .bind(parrainage_id)
@@ -417,6 +456,241 @@ pub async fn get_compteur_annuel(
     Ok((nombre_utilise, max_par_an))
 }
 
+// ── Web of Trust — Cooldown (30 jours entre attestations) ─────────
+
+/// Check if a sponsor can attest right now (30-day cooldown).
+pub async fn check_cooldown(
+    pool: &PgPool,
+    parrain_id: Uuid,
+) -> Result<CooldownStatus, VitaError> {
+    let cooldown_days: i64 = sqlx::query_scalar::<_, String>(
+        "SELECT valeur FROM parametres_systeme WHERE nom = 'cooldown_parrainage_jours'",
+    )
+    .fetch_optional(pool)
+    .await?
+    .and_then(|v| v.parse().ok())
+    .unwrap_or(30);
+
+    // Get the most recent accepted attestation
+    let last_attestation: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"SELECT MAX(date_reponse) FROM parrainages
+           WHERE parrain_id = $1 AND statut = 'accepte'"#,
+    )
+    .bind(parrain_id)
+    .fetch_optional(pool)
+    .await?
+    .flatten();
+
+    match last_attestation {
+        Some(last) => {
+            let available_at = last + Duration::days(cooldown_days);
+            let can_attest = Utc::now() >= available_at;
+            Ok(CooldownStatus {
+                can_attest,
+                last_attestation: Some(last),
+                available_at: Some(available_at),
+                cooldown_days,
+            })
+        }
+        None => Ok(CooldownStatus {
+            can_attest: true,
+            last_attestation: None,
+            available_at: None,
+            cooldown_days,
+        }),
+    }
+}
+
+// ── Web of Trust — Anti-parrainage croise ─────────────────────────
+
+/// Check that the sponsor was NOT previously sponsored by the requester.
+/// Prevents mutual sponsorship: if A sponsored B, B cannot sponsor A.
+pub async fn check_anti_cross_sponsorship(
+    pool: &PgPool,
+    parrain_id: Uuid,
+    demandeur_id: Uuid,
+) -> Result<(), VitaError> {
+    // Did the demandeur (the person requesting verification) ever sponsor
+    // the parrain (the person now being asked to attest)?
+    let cross_exists: bool = sqlx::query_scalar(
+        r#"SELECT EXISTS(
+            SELECT 1 FROM parrainages p
+            JOIN demandes_verification dv ON p.demande_id = dv.id
+            WHERE p.parrain_id = $1
+              AND dv.demandeur_id = $2
+              AND p.statut = 'accepte'
+        )"#,
+    )
+    .bind(demandeur_id) // demandeur was the parrain in a previous request
+    .bind(parrain_id)   // parrain was the demandeur in a previous request
+    .fetch_one(pool)
+    .await?;
+
+    if cross_exists {
+        return Err(VitaError::BadRequest(
+            "Parrainage croise interdit : cette personne a deja atteste votre identite. \
+             Vous ne pouvez pas attester la sienne en retour."
+                .into(),
+        ));
+    }
+
+    Ok(())
+}
+
+// ── Web of Trust — Revocation ─────────────────────────────────────
+
+/// Revoke a previously accepted sponsorship attestation.
+/// If this brings the demandeur below the required threshold,
+/// their verification is invalidated.
+pub async fn revoquer_parrainage(
+    pool: &PgPool,
+    parrainage_id: Uuid,
+    parrain_id: Uuid,
+    motif: &str,
+) -> Result<RevocationResult, VitaError> {
+    // Verify sponsorship exists and belongs to this sponsor
+    let parrainage = sqlx::query_as::<_, super::verification::ParrainageRow>(
+        r#"SELECT id, demande_id, parrain_id, statut, lien_avec_demandeur,
+                  commentaire, date_invitation, date_reponse
+           FROM parrainages WHERE id = $1"#,
+    )
+    .bind(parrainage_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| VitaError::NotFound("Parrainage introuvable".into()))?;
+
+    if parrainage.parrain_id != parrain_id {
+        return Err(VitaError::Forbidden(
+            "Ce parrainage ne vous est pas destine".into(),
+        ));
+    }
+
+    if parrainage.statut != "accepte" {
+        return Err(VitaError::BadRequest(format!(
+            "Impossible de revoquer un parrainage en statut '{}'",
+            parrainage.statut
+        )));
+    }
+
+    if motif.is_empty() {
+        return Err(VitaError::BadRequest(
+            "Le motif de revocation est requis".into(),
+        ));
+    }
+
+    // Update sponsorship to revoked
+    sqlx::query(
+        r#"UPDATE parrainages SET
+            statut = 'revoque',
+            date_revocation = NOW(),
+            motif_revocation = $2
+           WHERE id = $1"#,
+    )
+    .bind(parrainage_id)
+    .bind(motif)
+    .execute(pool)
+    .await?;
+
+    // Check if this invalidates the demandeur's verification
+    let demande_id = parrainage.demande_id;
+
+    let remaining_acceptes: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM parrainages WHERE demande_id = $1 AND statut = 'accepte'",
+    )
+    .bind(demande_id)
+    .fetch_one(pool)
+    .await?;
+
+    let requis: i32 = sqlx::query_scalar(
+        "SELECT parrainages_requis FROM demandes_verification WHERE id = $1",
+    )
+    .bind(demande_id)
+    .fetch_one(pool)
+    .await?;
+
+    let mut verification_invalidated = false;
+
+    // If remaining attestations < required, invalidate verification
+    if remaining_acceptes < requis as i64 {
+        let demandeur_id: Uuid = sqlx::query_scalar(
+            "SELECT demandeur_id FROM demandes_verification WHERE id = $1",
+        )
+        .bind(demande_id)
+        .fetch_one(pool)
+        .await?;
+
+        // Check if the user was verified via this request
+        let user_statut: String = sqlx::query_scalar(
+            "SELECT verification_statut FROM users WHERE id = $1",
+        )
+        .bind(demandeur_id)
+        .fetch_one(pool)
+        .await?;
+
+        if user_statut == "verifie" {
+            // Revert verification
+            sqlx::query(
+                r#"UPDATE users SET
+                    verification_statut = 'non_verifie',
+                    verification_date = NULL,
+                    verification_expiration = NULL,
+                    niveau_confiance = 0,
+                    updated_at = NOW()
+                   WHERE id = $1"#,
+            )
+            .bind(demandeur_id)
+            .execute(pool)
+            .await?;
+
+            // Reopen the request
+            sqlx::query(
+                "UPDATE demandes_verification SET statut = 'en_attente', updated_at = NOW() WHERE id = $1",
+            )
+            .bind(demande_id)
+            .execute(pool)
+            .await?;
+
+            // Log in verification history
+            sqlx::query(
+                r#"INSERT INTO historique_verifications (user_id, methode, statut, details)
+                   VALUES ($1, 'parrainage', 'revoque', $2)"#,
+            )
+            .bind(demandeur_id)
+            .bind(format!(
+                "Attestation revoquee par parrain — restant: {}/{}",
+                remaining_acceptes, requis
+            ))
+            .execute(pool)
+            .await?;
+
+            verification_invalidated = true;
+
+            audit::audit_system(
+                pool.clone(),
+                "identity.revoked",
+                "identity",
+                "warning",
+                &format!(
+                    "Verification invalidee pour {} — parrainage revoque, restant: {}/{}",
+                    demandeur_id, remaining_acceptes, requis
+                ),
+                Some(serde_json::json!({
+                    "parrainage_id": parrainage_id,
+                    "remaining": remaining_acceptes,
+                    "required": requis,
+                })),
+                Some(("user", demandeur_id)),
+            );
+        }
+    }
+
+    Ok(RevocationResult {
+        revoked: true,
+        parrainage_id,
+        verification_invalidated,
+    })
+}
+
 // ── Helper ─────────────────────────────────────────────────────────
 
 trait YearHelper {
@@ -426,5 +700,58 @@ trait YearHelper {
 impl YearHelper for DateTime<Utc> {
     fn year(&self) -> i32 {
         chrono::Datelike::year(&self.date_naive())
+    }
+}
+
+// ── Tests ──────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cooldown_status_fields() {
+        let status = CooldownStatus {
+            can_attest: true,
+            last_attestation: None,
+            available_at: None,
+            cooldown_days: 30,
+        };
+        assert!(status.can_attest);
+        assert_eq!(status.cooldown_days, 30);
+    }
+
+    #[test]
+    fn test_cooldown_status_with_date() {
+        let now = Utc::now();
+        let status = CooldownStatus {
+            can_attest: false,
+            last_attestation: Some(now),
+            available_at: Some(now + Duration::days(30)),
+            cooldown_days: 30,
+        };
+        assert!(!status.can_attest);
+        assert!(status.available_at.unwrap() > now);
+    }
+
+    #[test]
+    fn test_revocation_result_fields() {
+        let result = RevocationResult {
+            revoked: true,
+            parrainage_id: Uuid::new_v4(),
+            verification_invalidated: false,
+        };
+        assert!(result.revoked);
+        assert!(!result.verification_invalidated);
+    }
+
+    #[test]
+    fn test_revocation_result_with_invalidation() {
+        let result = RevocationResult {
+            revoked: true,
+            parrainage_id: Uuid::new_v4(),
+            verification_invalidated: true,
+        };
+        assert!(result.verification_invalidated);
     }
 }
