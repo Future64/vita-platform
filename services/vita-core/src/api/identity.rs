@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
-use crate::identity::{verification, parrainage};
+use crate::identity::{verification, parrainage, provider};
 use crate::ws::{WsServer, ServerMessage};
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -429,4 +429,96 @@ pub async fn cron_check_expirations(
 /// Run expiration checks (called by cron and admin endpoint).
 pub async fn check_expirations(pool: &PgPool) -> Result<Vec<Uuid>, VitaError> {
     verification::check_expiration(pool).await
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Provider-based identity verification (FranceConnect, Signicat)
+// ══════════════════════════════════════════════════════════════════
+
+/// POST /api/v1/identity/verify
+///
+/// Recoit un code OAuth2 et un code_verifier PKCE.
+/// Echange le code contre un token, recupere le sub,
+/// calcule le nullifier_hash, et verifie l'unicite.
+///
+/// Retourne 409 DuplicateIdentity si le nullifier existe deja
+/// pour un autre compte.
+pub async fn verify_provider_endpoint(
+    pool: web::Data<PgPool>,
+    ws_server: web::Data<WsServer>,
+    user: AuthUser,
+    body: web::Json<provider::VerifyRequest>,
+) -> Result<HttpResponse, VitaError> {
+    let user_id = parse_user_uuid(&user)?;
+
+    // Validation du provider
+    let allowed_providers = ["franceconnect", "signicat"];
+    if !allowed_providers.contains(&body.provider.as_str()) {
+        return Err(VitaError::BadRequest(format!(
+            "Provider non supporte: {}. Utiliser: {}",
+            body.provider,
+            allowed_providers.join(", ")
+        )));
+    }
+
+    // Verification
+    let result = provider::verify_provider(pool.get_ref(), user_id, &body).await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        Some(&user),
+        "identity.verify_provider",
+        "identity",
+        "info",
+        &format!(
+            "@{} verifie via {} (pays: {})",
+            &user.username,
+            &result.provider,
+            result.country_code.as_deref().unwrap_or("?")
+        ),
+        Some(serde_json::json!({
+            "provider": &result.provider,
+            "country_code": &result.country_code,
+            "assurance_level": &result.assurance_level,
+        })),
+        None,
+    );
+
+    // WebSocket notification
+    ws_server.send_to_user(
+        &user_id.to_string(),
+        ServerMessage::Notification {
+            type_: "verification_complete".to_string(),
+            titre: "Verification terminee !".to_string(),
+            contenu: format!(
+                "Votre identite a ete verifiee via {}.",
+                &result.provider
+            ),
+            lien: Some("/civis/verification".to_string()),
+        },
+    );
+
+    ws_server.broadcast(ServerMessage::ActivityFeed {
+        type_: "verification_complete".to_string(),
+        message: "Un nouveau citoyen a ete verifie".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+/// GET /api/v1/identity/status/{account_id}
+///
+/// Retourne le statut de verification d'un compte.
+pub async fn get_verification_status(
+    pool: web::Data<PgPool>,
+    _user: AuthUser,
+    path: web::Path<Uuid>,
+) -> Result<HttpResponse, VitaError> {
+    let account_id = path.into_inner();
+
+    let status = provider::get_verification_status(pool.get_ref(), account_id).await?;
+
+    Ok(HttpResponse::Ok().json(status))
 }

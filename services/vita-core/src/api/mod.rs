@@ -99,6 +99,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/governance/messages/{msg_id}/reaction", web::post().to(governance::reagir_message))
                     .route("/governance/cron/close-votes", web::post().to(governance::cron_close_votes))
 
+                    // Identity — provider-based verification (FranceConnect, Signicat)
+                    .route("/identity/verify", web::post().to(identity::verify_provider_endpoint))
+                    .route("/identity/status/{account_id}", web::get().to(identity::get_verification_status))
+
                     // Identity — verification by parrainage
                     .route("/identity/demande", web::post().to(identity::create_demande))
                     .route("/identity/demande", web::get().to(identity::get_demande_active))

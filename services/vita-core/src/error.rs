@@ -32,6 +32,15 @@ pub enum VitaError {
     #[error("Crypto error: {0}")]
     CryptoError(String),
 
+    #[error("Duplicate identity: this identity is already associated with an account")]
+    DuplicateIdentity,
+
+    #[error("Provider error: {0}")]
+    ProviderError(String),
+
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
+
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -49,6 +58,9 @@ impl ResponseError for VitaError {
             VitaError::EmissionAlreadyClaimed => StatusCode::CONFLICT,
             VitaError::InvalidSignature(_) => StatusCode::BAD_REQUEST,
             VitaError::CryptoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            VitaError::DuplicateIdentity => StatusCode::CONFLICT,
+            VitaError::ProviderError(_) => StatusCode::BAD_GATEWAY,
+            VitaError::InvalidState(_) => StatusCode::BAD_REQUEST,
             VitaError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -65,6 +77,9 @@ impl ResponseError for VitaError {
             VitaError::EmissionAlreadyClaimed => "EMISSION_ALREADY_CLAIMED",
             VitaError::InvalidSignature(_) => "INVALID_SIGNATURE",
             VitaError::CryptoError(_) => "CRYPTO_ERROR",
+            VitaError::DuplicateIdentity => "DUPLICATE_IDENTITY",
+            VitaError::ProviderError(_) => "PROVIDER_ERROR",
+            VitaError::InvalidState(_) => "INVALID_STATE",
             VitaError::Internal(_) => "INTERNAL_ERROR",
         };
 
