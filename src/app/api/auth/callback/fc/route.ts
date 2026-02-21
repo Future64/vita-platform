@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     return redirectWithError('invalid_state', 'Session expirée ou invalide');
   }
 
-  let session: { state: string; codeVerifier: string; nonce: string; redirectUri: string };
+  let session: { state: string; codeVerifier: string; nonce: string; redirectUri: string; returnTo?: string };
   try {
     session = JSON.parse(sessionCookie.value);
   } catch {
@@ -113,9 +113,20 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Succes — nettoyer le cookie de session et rediriger
-    const response = NextResponse.redirect(
-      new URL('/civis/verification?success=true', request.url)
-    );
+    const returnTo = session.returnTo || '/civis/verification';
+    const successUrl = new URL(returnTo, request.url);
+
+    if (returnTo.includes('/auth/register')) {
+      // Inscription : passer les params de verification dans l'URL
+      successUrl.searchParams.set('verified', 'true');
+      successUrl.searchParams.set('provider', verificationResult.providerId);
+      successUrl.searchParams.set('nullifier_hash', verificationResult.nullifierHash);
+      successUrl.searchParams.set('country', verificationResult.countryCode);
+    } else {
+      successUrl.searchParams.set('success', 'true');
+    }
+
+    const response = NextResponse.redirect(successUrl);
     response.cookies.delete('fc_session');
     return response;
 

@@ -183,7 +183,7 @@ export default function ConnexionPage() {
       {/* Link to register */}
       <p className="mt-4 md:mt-6 text-center text-xs md:text-sm text-[var(--text-muted)]">
         Pas encore de compte ?{" "}
-        <Link href="/auth/inscription" className="font-medium text-violet-500 hover:underline">
+        <Link href="/auth/register" className="font-medium text-violet-500 hover:underline">
           S&apos;inscrire
         </Link>
       </p>

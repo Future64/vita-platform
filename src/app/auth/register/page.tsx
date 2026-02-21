@@ -123,7 +123,7 @@ const LANGUAGES = [
 
 function StepIndicator({ current, total }: { current: Step; total: number }) {
   return (
-    <div className="flex items-center gap-1.5 mb-6">
+    <div className="flex items-center justify-between mb-6">
       {Array.from({ length: total }, (_, i) => {
         const step = (i + 1) as Step;
         const config = STEP_LABELS[step];
@@ -132,10 +132,10 @@ function StepIndicator({ current, total }: { current: Step; total: number }) {
         const isDone = step < current;
 
         return (
-          <div key={step} className="flex items-center gap-1.5">
+          <div key={step} className="flex flex-1 items-center">
             {i > 0 && (
               <div
-                className="h-px w-4 md:w-6"
+                className="h-px flex-1"
                 style={{
                   backgroundColor: isDone
                     ? "rgb(139, 92, 246)"
@@ -144,26 +144,46 @@ function StepIndicator({ current, total }: { current: Step; total: number }) {
               />
             )}
             <div
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-all"
-              style={{
-                backgroundColor: isActive
-                  ? "rgba(139, 92, 246, 0.15)"
-                  : isDone
-                  ? "rgba(34, 197, 94, 0.1)"
-                  : "transparent",
-                color: isActive
-                  ? "rgb(139, 92, 246)"
-                  : isDone
-                  ? "rgb(34, 197, 94)"
-                  : "var(--text-muted)",
-              }}
+              className="flex flex-col items-center gap-1"
             >
-              {isDone ? (
-                <Check className="h-3 w-3" />
-              ) : (
-                <Icon className="h-3 w-3" />
-              )}
-              <span className="hidden sm:inline">{config.label}</span>
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-all"
+                style={{
+                  backgroundColor: isActive
+                    ? "rgba(139, 92, 246, 0.15)"
+                    : isDone
+                    ? "rgba(34, 197, 94, 0.1)"
+                    : "var(--bg-elevated, rgba(255,255,255,0.05))",
+                  color: isActive
+                    ? "rgb(139, 92, 246)"
+                    : isDone
+                    ? "rgb(34, 197, 94)"
+                    : "var(--text-muted)",
+                  border: isActive
+                    ? "1.5px solid rgb(139, 92, 246)"
+                    : isDone
+                    ? "1.5px solid rgb(34, 197, 94)"
+                    : "1.5px solid var(--border, rgba(255,255,255,0.1))",
+                }}
+              >
+                {isDone ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Icon className="h-3.5 w-3.5" />
+                )}
+              </div>
+              <span
+                className="text-[0.625rem] font-medium leading-tight"
+                style={{
+                  color: isActive
+                    ? "rgb(139, 92, 246)"
+                    : isDone
+                    ? "rgb(34, 197, 94)"
+                    : "var(--text-muted)",
+                }}
+              >
+                {config.label}
+              </span>
             </div>
           </div>
         );
@@ -325,12 +345,6 @@ export default function RegisterPage() {
     !errors.username && !errors.password && !errors.confirmPassword;
   const step5Valid = !errors.acceptCGU && !errors.acceptPrivacy;
 
-  // ── Provider verified callback ─────────────────────────────────
-  const handleIdentityVerified = useCallback(() => {
-    setIdentityVerified(true);
-    setStep(3);
-  }, []);
-
   // ── Web of Trust path ──────────────────────────────────────────
   const handleWebOfTrustSelected = useCallback(() => {
     // Store registration intent in sessionStorage, then redirect
@@ -441,8 +455,9 @@ export default function RegisterPage() {
       {step === 1 && (
         <div className="space-y-4" data-testid="step-identity">
           <CountryIdentitySelector
-            onVerified={handleIdentityVerified}
+            onVerified={handleWebOfTrustSelected}
             disabled={identityVerified}
+            returnTo="/auth/register"
           />
 
           <p className="text-center text-xs text-[var(--text-muted)]">

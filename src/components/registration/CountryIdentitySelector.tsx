@@ -80,6 +80,8 @@ interface CountryIdentitySelectorProps {
   disabled?: boolean;
   /** Classes CSS additionnelles */
   className?: string;
+  /** URL de retour apres verification OAuth (ex: '/auth/register') */
+  returnTo?: string;
 }
 
 // ── Composant principal ──────────────────────────────────────────
@@ -89,6 +91,7 @@ export function CountryIdentitySelector({
   defaultCountry = "",
   disabled = false,
   className,
+  returnTo,
 }: CountryIdentitySelectorProps) {
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry.toUpperCase());
   const [searchQuery, setSearchQuery] = useState("");
@@ -142,12 +145,14 @@ export function CountryIdentitySelector({
         if (entry.provider === "franceconnect") {
           endpoint = "/api/auth/authorize/fc";
           body = { callbackUrl: "/api/auth/callback/fc" };
+          if (returnTo) body.returnTo = returnTo;
         } else if (entry.provider === "signicat") {
           endpoint = "/api/auth/authorize/signicat";
           body = { countryCode: selectedCountry, methodId: entry.methodId || "" };
+          if (returnTo) body.returnTo = returnTo;
         } else {
-          // Web of Trust — redirection directe vers le parrainage
-          window.location.href = "/civis/verification?method=web_of_trust";
+          // Web of Trust — appeler onVerified directement (pas d'OAuth)
+          onVerified?.();
           return;
         }
 
@@ -164,15 +169,14 @@ export function CountryIdentitySelector({
         const data = await response.json();
 
         setSuccessProvider(entry.key);
-        onVerified?.();
 
-        // Redirection vers le provider
+        // Redirection vers le provider OAuth — onVerified sera appele au retour
         window.location.href = data.authorizationUrl;
       } catch {
         setLoadingProvider(null);
       }
     },
-    [loadingProvider, disabled, selectedCountry, onVerified]
+    [loadingProvider, disabled, selectedCountry, onVerified, returnTo]
   );
 
   return (
