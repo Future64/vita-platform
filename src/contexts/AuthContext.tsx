@@ -373,6 +373,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           pays: data.pays,
           mode_visibilite: data.modeVisibilite,
           pseudonyme: data.pseudonyme,
+          nullifier_hash: data.nullifierHash,
         });
         api.setToken(result.access_token);
         if (typeof window !== "undefined" && result.refresh_token) {

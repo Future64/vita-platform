@@ -146,8 +146,8 @@ describe('supportsCountry', () => {
 
   it('ne supporte pas les pays sans methode', () => {
     expect(provider.supportsCountry('US')).toBe(false);
-    expect(provider.supportsCountry('BR')).toBe(false);
     expect(provider.supportsCountry('JP')).toBe(false);
+    expect(provider.supportsCountry('MX')).toBe(false);
   });
 
   it('est insensible a la casse', () => {

@@ -96,6 +96,13 @@ export interface FCCallbackParams extends CallbackParams {
   codeVerifier: string;
 }
 
+/** Resultat etendu du callback avec champs optionnels pour le prefill */
+export interface FCExtendedCallbackResult extends CallbackResult {
+  email?: string;
+  gender?: string;
+  birthdate?: string;
+}
+
 // ── Provider ─────────────────────────────────────────────────────
 
 export class FranceConnectProvider implements IdentityProvider {
@@ -140,14 +147,14 @@ export class FranceConnectProvider implements IdentityProvider {
     url.searchParams.set('client_id', this.clientId);
     url.searchParams.set('redirect_uri', params.redirectUri);
     // FC v2 requiert ces scopes pour la verification d'identite
-    url.searchParams.set('scope', 'openid given_name family_name birthdate');
+    url.searchParams.set('scope', 'openid given_name family_name birthdate email gender');
     url.searchParams.set('state', params.state);
     url.searchParams.set('nonce', params.nonce);
     // PKCE obligatoire en v2
     url.searchParams.set('code_challenge', codeChallenge);
     url.searchParams.set('code_challenge_method', 'S256');
-    // Niveau eIDAS demande
-    url.searchParams.set('acr_values', 'eidas2');
+    // Niveau eIDAS demande (eidas1 pour compatibilite maximale)
+    url.searchParams.set('acr_values', 'eidas1');
 
     return {
       authorizationUrl: url.toString(),
@@ -166,7 +173,7 @@ export class FranceConnectProvider implements IdentityProvider {
    *   3. Recupere le sub via /userinfo
    *   4. Retourne UNIQUEMENT le sub (pas de donnees personnelles)
    */
-  async handleCallback(params: CallbackParams): Promise<CallbackResult> {
+  async handleCallback(params: CallbackParams): Promise<FCExtendedCallbackResult> {
     const { code, state, redirectUri } = params;
     const codeVerifier = (params as FCCallbackParams).codeVerifier;
 
@@ -252,13 +259,16 @@ export class FranceConnectProvider implements IdentityProvider {
       acr === 'eidas1' ? 'low' :
       'low';
 
-    // Retourne UNIQUEMENT le sub — aucune donnee personnelle
+    // Retourne le sub + champs optionnels pour le prefill (non stockes en base)
     return {
       sub: userinfo.sub,
       providerId: 'franceconnect',
       countryCode: 'FR',
       assuranceLevel,
       verifiedAt: new Date(),
+      email: typeof userinfo.email === 'string' ? userinfo.email : undefined,
+      gender: typeof userinfo.gender === 'string' ? userinfo.gender : undefined,
+      birthdate: typeof userinfo.birthdate === 'string' ? userinfo.birthdate : undefined,
     };
   }
 

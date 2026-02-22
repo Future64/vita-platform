@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -260,9 +260,16 @@ export default function RegisterPage() {
   const [verificationMethod, setVerificationMethod] = useState<string | null>(null);
   const [nullifierHash, setNullifierHash] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+
+  // ── Stripe Identity polling ────────────────────────────────────
+  const [stripeVerifying, setStripeVerifying] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingStartRef = useRef<number>(0);
 
   // ── Step 4: VITA form ──────────────────────────────────────────
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [langue, setLangue] = useState("fr");
@@ -284,21 +291,164 @@ export default function RegisterPage() {
   const [acceptCGU, setAcceptCGU] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
 
-  // ── Handle OAuth callback (step 2 → 3) ─────────────────────────
-  useEffect(() => {
-    const verified = searchParams.get("verified");
-    const provider = searchParams.get("provider");
-    const hash = searchParams.get("nullifier_hash");
-    const country = searchParams.get("country");
+  // ── Stripe polling function ────────────────────────────────────
+  const pollStripeStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/identity/stripe/status");
+      if (!res.ok) throw new Error("Erreur de statut");
 
-    if (verified === "true" && hash) {
-      setIdentityVerified(true);
-      setVerificationMethod(provider || "eID");
-      setNullifierHash(hash);
-      setCountryCode(country);
-      setStep(3);
+      const data = await res.json();
+
+      if (data.status === "verified") {
+        // Stop polling
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+
+        // Fetch prefill data
+        const prefillRes = await fetch("/api/auth/prefill");
+        if (prefillRes.ok) {
+          const { prefill } = await prefillRes.json();
+          if (prefill?.nullifierHash) {
+            setIdentityVerified(true);
+            setVerificationMethod(prefill.provider || "stripe_identity");
+            setNullifierHash(prefill.nullifierHash);
+            setCountryCode(prefill.countryCode || null);
+            setVerifiedAt(prefill.verifiedAt || null);
+            if (prefill.suggestedEmail) setEmail(prefill.suggestedEmail);
+            if (prefill.suggestedPseudo) setUsername(prefill.suggestedPseudo);
+          }
+        }
+
+        setStripeVerifying(false);
+        setStep(3);
+        return;
+      }
+
+      if (data.status === "duplicate") {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+        setStripeVerifying(false);
+        setGlobalError(data.message || "Cette identite est deja associee a un compte VITA. Remboursement en cours.");
+        toast.error(data.message || "Identite deja inscrite. Remboursement en cours.");
+        setStep(1);
+        return;
+      }
+
+      if (data.status === "cancelled" || data.status === "requires_input") {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+        setStripeVerifying(false);
+        setGlobalError(data.message || "Verification annulee.");
+        toast.error(data.message || "Verification annulee.");
+        setStep(1);
+        return;
+      }
+
+      // Timeout after 10 minutes
+      if (Date.now() - pollingStartRef.current > 10 * 60 * 1000) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+        setStripeVerifying(false);
+        setGlobalError("Delai de verification depasse. Veuillez reessayer.");
+        toast.error("Delai de verification depasse.");
+        setStep(1);
+      }
+
+      // processing → continue polling
+    } catch {
+      // Silently retry on network errors
     }
+  }, [toast]);
+
+  // ── Handle errors, prefill cookie, Stripe verifying, or OAuth callback
+  useEffect(() => {
+    async function loadPrefill() {
+      // 1. Verifier d'abord s'il y a une erreur dans l'URL
+      const errorCode = searchParams.get("error");
+      const errorMessage = searchParams.get("message");
+
+      if (errorCode) {
+        const messages: Record<string, string> = {
+          init_failed: "Impossible d'initier la verification. Verifiez la configuration.",
+          user_cancelled: "Authentification annulee.",
+          already_registered: "Cette identite est deja associee a un compte VITA.",
+          invalid_state: "Session expiree ou invalide. Veuillez reessayer.",
+          token_exchange_failed: "Erreur lors de la verification.",
+          payment_cancelled: "Paiement annule. Vous pouvez reessayer.",
+        };
+        const displayMsg = errorMessage || messages[errorCode] || "Erreur lors de la verification.";
+        setGlobalError(displayMsg);
+        toast.error(displayMsg);
+        return;
+      }
+
+      // 2. Verifier si on revient de Stripe Identity (verifying=true)
+      if (searchParams.get("verifying") === "true") {
+        setStripeVerifying(true);
+        setStep(2);
+        pollingStartRef.current = Date.now();
+        pollingRef.current = setInterval(pollStripeStatus, 3000);
+        // Also trigger immediately
+        pollStripeStatus();
+        return;
+      }
+
+      // 3. Verifier le cookie prefill chiffre
+      try {
+        const res = await fetch("/api/auth/prefill");
+        if (res.ok) {
+          const { prefill } = await res.json();
+          if (prefill && prefill.nullifierHash) {
+            setIdentityVerified(true);
+            setVerificationMethod(prefill.provider || "eID");
+            setNullifierHash(prefill.nullifierHash);
+            setCountryCode(prefill.countryCode || null);
+            setVerifiedAt(prefill.verifiedAt || null);
+            if (prefill.suggestedEmail) setEmail(prefill.suggestedEmail);
+            if (prefill.suggestedPseudo) setUsername(prefill.suggestedPseudo);
+            setStep(3);
+            return;
+          }
+        }
+      } catch {
+        // Prefill unavailable — try searchParams fallback
+      }
+
+      // 4. Fallback: searchParams (used by Signicat and legacy flows)
+      const verified = searchParams.get("verified");
+      const provider = searchParams.get("provider");
+      const hash = searchParams.get("nullifier_hash");
+      const country = searchParams.get("country");
+
+      if (verified === "true" && hash) {
+        setIdentityVerified(true);
+        setVerificationMethod(provider || "eID");
+        setNullifierHash(hash);
+        setCountryCode(country);
+        setStep(3);
+      }
+    }
+
+    loadPrefill();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
 
   // ── Generate keypair when reaching step 4 ──────────────────────
   useEffect(() => {
@@ -345,16 +495,6 @@ export default function RegisterPage() {
     !errors.username && !errors.password && !errors.confirmPassword;
   const step5Valid = !errors.acceptCGU && !errors.acceptPrivacy;
 
-  // ── Web of Trust path ──────────────────────────────────────────
-  const handleWebOfTrustSelected = useCallback(() => {
-    // Store registration intent in sessionStorage, then redirect
-    sessionStorage.setItem("vita_register_wot", "true");
-    setVerificationMethod("web_of_trust");
-    setIdentityVerified(true);
-    setNullifierHash("wot_pending");
-    setStep(3);
-  }, []);
-
   // ── Copy private key ───────────────────────────────────────────
   const handleCopyKey = useCallback(async () => {
     try {
@@ -381,7 +521,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!keysCopied && verificationMethod !== "web_of_trust") {
+    if (!keysCopied) {
       toast.warning(
         "Copiez votre cle privee avant de continuer. Elle ne sera pas stockee."
       );
@@ -396,12 +536,13 @@ export default function RegisterPage() {
         prenom: "",
         nom: "",
         username,
-        email: `${username}@vita.local`,
+        email: email || `${username}@vita.local`,
         password,
         dateNaissance: "2000-01-01",
         pays: countryCode || "",
         modeVisibilite,
         pseudonyme: modeVisibilite === "pseudonyme" ? pseudonyme : undefined,
+        nullifierHash: nullifierHash || undefined,
       });
 
       if (result === true) {
@@ -455,7 +596,6 @@ export default function RegisterPage() {
       {step === 1 && (
         <div className="space-y-4" data-testid="step-identity">
           <CountryIdentitySelector
-            onVerified={handleWebOfTrustSelected}
             disabled={identityVerified}
             returnTo="/auth/register"
           />
@@ -472,7 +612,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* ── STEP 2: Redirect in progress (placeholder) ─────────── */}
+      {/* ── STEP 2: Verification in progress ─────────────────────── */}
       {step === 2 && (
         <div
           className="flex flex-col items-center gap-4 py-12"
@@ -480,10 +620,14 @@ export default function RegisterPage() {
         >
           <Loader2 className="h-10 w-10 animate-spin text-violet-500" />
           <p className="text-sm text-[var(--text-secondary)]">
-            Redirection vers le service de verification...
+            {stripeVerifying
+              ? "Verification en cours..."
+              : "Redirection vers le service de verification..."}
           </p>
           <p className="text-xs text-[var(--text-muted)]">
-            Vous allez etre redirige automatiquement.
+            {stripeVerifying
+              ? "Analyse de votre document et selfie. Cela peut prendre quelques instants."
+              : "Vous allez etre redirige automatiquement."}
           </p>
         </div>
       )}
@@ -511,29 +655,15 @@ export default function RegisterPage() {
                   Identite verifiee
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">
-                  {verificationMethod === "web_of_trust"
-                    ? "Verification par Web of Trust (3 parrains requis)"
-                    : `Via ${verificationMethod}`}
+                  {verificationMethod === "franceconnect"
+                    ? `Via FranceConnect${verifiedAt ? ` — ${new Date(verifiedAt).toLocaleDateString("fr-FR")}` : ""}`
+                    : verificationMethod === "stripe_identity"
+                      ? "Via Stripe Identity (document + selfie)"
+                      : `Via ${verificationMethod}`}
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Nullifier stored in session */}
-          {nullifierHash && nullifierHash !== "wot_pending" && (
-            <div className="rounded-lg p-3" style={{ backgroundColor: "var(--bg-elevated)" }}>
-              <p className="text-xs font-medium text-[var(--text-muted)] mb-1">
-                Empreinte d&apos;identite (nullifier)
-              </p>
-              <p
-                className="text-xs font-mono break-all"
-                style={{ color: "var(--text-secondary)" }}
-                data-testid="nullifier-hash"
-              >
-                {nullifierHash}
-              </p>
-            </div>
-          )}
 
           <Button
             variant="primary"
@@ -563,6 +693,24 @@ export default function RegisterPage() {
               data-testid="input-username"
             />
             {touched.username && <FieldError error={errors.username} />}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
+              Adresse email
+            </label>
+            <Input
+              type="email"
+              placeholder="vous@exemple.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => touch("email")}
+              data-testid="input-email"
+            />
+            {touched.email && !email && (
+              <FieldError error="Email requis" />
+            )}
           </div>
 
           {/* Language */}
@@ -830,10 +978,7 @@ export default function RegisterPage() {
             {[
               {
                 label: "Methode de verification",
-                value:
-                  verificationMethod === "web_of_trust"
-                    ? "Web of Trust"
-                    : verificationMethod || "-",
+                value: verificationMethod || "-",
               },
               { label: "Pseudonyme VITA", value: `@${username}` },
               { label: "Langue", value: LANGUAGES.find((l) => l.code === langue)?.label || langue },

@@ -937,7 +937,7 @@ export default function CivisProfilePage() {
                       <p className="text-base font-semibold" style={{ color: verifStatus.color }}>{verifStatus.label}</p>
                       {verif.methodeVerification && (
                         <p className="text-sm text-[var(--text-muted)]">
-                          Methode : {verif.methodeVerification === "zkp" ? "Zero-Knowledge Proof" : verif.methodeVerification === "parrainage" ? "Parrainage" : "Document officiel"}
+                          Methode : {verif.methodeVerification === "zkp" ? "Zero-Knowledge Proof" : verif.methodeVerification === "stripe_identity" ? "Stripe Identity" : "Document officiel"}
                         </p>
                       )}
                       {verif.dateVerification && <p className="text-xs text-[var(--text-muted)]">Verifie le {new Date(verif.dateVerification).toLocaleDateString("fr-FR")}</p>}
@@ -988,40 +988,7 @@ export default function CivisProfilePage() {
                 </CardContent>
               </Card>
 
-              {/* Parrains */}
-              {verif.methodeVerification === "parrainage" && verif.parrains && (
-                <Card>
-                  <CardHeader><CardTitle>Parrains ({verif.parrains.length}/3)</CardTitle></CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {verif.parrains.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: "var(--bg-elevated)" }}>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
-                              <UserCheck className="h-4 w-4 text-green-500" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-[var(--text-primary)]">@{p.username}</p>
-                              <p className="text-xs text-[var(--text-muted)]">Atteste le {p.dateAttestation}</p>
-                            </div>
-                          </div>
-                          <BadgeCheck className="h-4 w-4 text-green-500" />
-                        </div>
-                      ))}
-                      {verif.parrains.length < 3 && (
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-dashed" style={{ borderColor: "var(--border)" }}>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-elevated)]">
-                              <Plus className="h-4 w-4 text-[var(--text-muted)]" />
-                            </div>
-                            <p className="text-sm text-[var(--text-muted)]">{3 - verif.parrains.length} parrain(s) manquant(s)</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Parrains section removed — Web of Trust supprime */}
 
               {/* Historique */}
               {verif.historiqueVerifications.length > 0 && (

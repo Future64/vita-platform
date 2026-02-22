@@ -145,7 +145,7 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
       setDemandesParrainage((prev) => [...prev, ...nouvellesDemandesParrainage]);
 
       updateVerificationStatus("en_cours", {
-        methodeVerification: "parrainage",
+        methodeVerification: "document",
         parrains: [],
       });
 
@@ -317,7 +317,7 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
                 statut: "verifie",
                 dateVerification: verificationDate,
                 dateExpiration: expirationDate,
-                methodeVerification: "parrainage",
+                methodeVerification: "document",
                 parrains: acceptedParrains,
                 niveauConfiance: CONFIANCE_PAR_PARRAIN * PARRAINS_REQUIS,
                 historiqueVerifications: [

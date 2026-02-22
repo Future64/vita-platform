@@ -401,8 +401,8 @@ export default function VerificationPage() {
                 <div className="space-y-1">
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>Methode</p>
                   <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                    {user.identiteVerifiee.methodeVerification === "parrainage"
-                      ? "Parrainage"
+                    {user.identiteVerifiee.methodeVerification === "stripe_identity"
+                      ? "Stripe Identity"
                       : user.identiteVerifiee.methodeVerification === "zkp"
                       ? "Zero-Knowledge Proof"
                       : "Document officiel"}

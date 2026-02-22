@@ -57,7 +57,7 @@ const identiteAmina: IdentiteVerifiee = {
   statut: 'verifie',
   dateVerification: '2025-12-15T10:30:00Z',
   dateExpiration: '2026-12-15T10:30:00Z',
-  methodeVerification: 'parrainage',
+  methodeVerification: 'document',
   parrains: [
     { username: 'maxim', dateAttestation: '2025-12-14' },
     { username: 'lucas.d', dateAttestation: '2025-12-15' },
@@ -78,7 +78,7 @@ const identiteLucas: IdentiteVerifiee = {
   statut: 'verifie',
   dateVerification: '2025-02-20T14:00:00Z',
   dateExpiration: '2026-02-20T14:00:00Z',
-  methodeVerification: 'parrainage',
+  methodeVerification: 'document',
   parrains: [
     { username: 'maxim', dateAttestation: '2025-02-19' },
     { username: 'amina.b', dateAttestation: '2025-02-20' },
@@ -97,7 +97,7 @@ const identiteSakura: IdentiteVerifiee = {
   nationalite: 'Japonaise',
   paysResidence: 'Japon',
   statut: 'en_cours',
-  methodeVerification: 'parrainage',
+  methodeVerification: 'document',
   parrains: [
     { username: 'amina.b', dateAttestation: '2025-12-02' },
   ],
@@ -123,7 +123,7 @@ const identiteFatou: IdentiteVerifiee = {
   nationalite: 'Senegalaise',
   paysResidence: 'Senegal',
   statut: 'en_cours',
-  methodeVerification: 'parrainage',
+  methodeVerification: 'document',
   parrains: [
     { username: 'maxim', dateAttestation: '2026-02-10' },
     { username: 'amina.b', dateAttestation: '2026-02-12' },
@@ -141,7 +141,7 @@ const identiteAncien: IdentiteVerifiee = {
   statut: 'expire',
   dateVerification: '2025-01-15T10:00:00Z',
   dateExpiration: '2026-01-15T10:00:00Z',
-  methodeVerification: 'parrainage',
+  methodeVerification: 'document',
   parrains: [
     { username: 'maxim', dateAttestation: '2025-01-14' },
     { username: 'jp.moreau', dateAttestation: '2025-01-14' },

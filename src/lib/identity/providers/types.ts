@@ -4,9 +4,9 @@
 // ── Providers supportes ──────────────────────────────────────────
 
 export type IdentityProviderId =
-  | 'franceconnect'   // FranceConnect v2
-  | 'signicat'        // Signicat (agregateur europeen, 35+ pays)
-  | 'web_of_trust';   // Parrainage / Web of Trust (fallback pays sans eID)
+  | 'franceconnect'      // FranceConnect v2
+  | 'signicat'           // Signicat (agregateur europeen, 35+ pays)
+  | 'stripe_identity';   // Stripe Identity (verification payante, pays sans eID)
 
 // ── Configuration d'un provider ──────────────────────────────────
 
@@ -92,7 +92,7 @@ export interface VerificationResult {
 
 export interface ZkProofData {
   /** Schema de preuve utilise */
-  scheme: 'groth16' | 'plonk' | 'web_of_trust';
+  scheme: 'groth16' | 'plonk';
   /** Preuve serialisee */
   proof: string;
   /** Inputs publics */
@@ -109,7 +109,7 @@ export interface IdentityProvider {
 
   /**
    * Genere l'URL d'autorisation OAuth2/OIDC.
-   * Pour les providers non-OAuth (web_of_trust), retourne null.
+   * Pour les providers non-OAuth (stripe_identity), retourne null.
    */
   authorize(params: AuthorizeParams): Promise<AuthorizeResult | null>;
 
@@ -125,7 +125,7 @@ export interface IdentityProvider {
    * Verifie une identite et retourne le resultat avec nullifier.
    * C'est le point d'entree principal pour la verification complete.
    * Pour OAuth: enchaine authorize → callback → verify.
-   * Pour web_of_trust: verifie via le systeme de parrainage.
+   * Pour stripe_identity: verifie via Stripe Identity (document + selfie).
    */
   verify(callbackResult: CallbackResult): Promise<VerificationResult>;
 

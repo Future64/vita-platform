@@ -7,7 +7,7 @@
 // Providers disponibles :
 //   - FranceConnect v2    → France
 //   - Signicat            → Europe + 35 pays (agregateur eIDAS)
-//   - Web of Trust        → Fallback universel (parrainage VITA)
+//   - Stripe Identity     → Pays sans eID (verification payante)
 
 import type {
   IdentityProvider,
@@ -19,7 +19,6 @@ import type {
   CallbackResult,
   VerificationResult,
   AssuranceLevel,
-  ZkProofData,
 } from './types';
 import { generateNullifier } from './nullifier';
 
@@ -281,21 +280,21 @@ class SignicatProvider implements IdentityProvider {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// WEB OF TRUST (fallback pour les pays sans eID)
+// STRIPE IDENTITY (verification payante pour les pays sans eID)
 // ══════════════════════════════════════════════════════════════════
 
-const WEB_OF_TRUST_CONFIG: IdentityProviderConfig = {
-  id: 'web_of_trust',
-  displayName: 'Web of Trust (Parrainage)',
+const STRIPE_IDENTITY_CONFIG: IdentityProviderConfig = {
+  id: 'stripe_identity',
+  displayName: 'Stripe Identity',
   // Universel : couvre tous les pays non supportes par les autres providers
   supportedCountries: ['*'],
   isOAuth: false,
   baseUrl: '',
-  assuranceLevels: ['low', 'substantial'],
+  assuranceLevels: ['substantial'],
 };
 
-class WebOfTrustProvider implements IdentityProvider {
-  readonly config = WEB_OF_TRUST_CONFIG;
+class StripeIdentityProvider implements IdentityProvider {
+  readonly config = STRIPE_IDENTITY_CONFIG;
 
   supportsCountry(): boolean {
     // Fallback universel — accepte tous les pays
@@ -303,19 +302,18 @@ class WebOfTrustProvider implements IdentityProvider {
   }
 
   async authorize(): Promise<null> {
-    // Pas de flux OAuth — le parrainage est gere par le systeme interne
+    // Pas de flux OAuth — la verification est geree par les routes Stripe
+    // (/api/identity/stripe/checkout → success → status)
     return null;
   }
 
   async handleCallback(params: CallbackParams): Promise<CallbackResult> {
-    // Pour le web of trust, le "sub" est l'identifiant interne VITA
-    // du compte verifie par parrainage. Le code contient le
-    // demande_verification_id.
+    // Pour Stripe Identity, le "sub" est le verificationSession.id
     return {
       sub: params.code,
-      providerId: 'web_of_trust',
-      countryCode: params.state, // Utilise pour passer le country code
-      assuranceLevel: 'low',
+      providerId: 'stripe_identity',
+      countryCode: params.state,
+      assuranceLevel: 'substantial',
       verifiedAt: new Date(),
     };
   }
@@ -326,20 +324,12 @@ class WebOfTrustProvider implements IdentityProvider {
       callbackResult.providerId
     );
 
-    const zkProof: ZkProofData = {
-      scheme: 'web_of_trust',
-      proof: callbackResult.sub,
-      publicInputs: [nullifierHash],
-      generatedAt: new Date().toISOString(),
-    };
-
     return {
       nullifierHash,
       providerId: callbackResult.providerId,
       countryCode: callbackResult.countryCode,
       assuranceLevel: callbackResult.assuranceLevel,
       verifiedAt: callbackResult.verifiedAt,
-      zkProof,
     };
   }
 }
@@ -352,45 +342,45 @@ class WebOfTrustProvider implements IdentityProvider {
 const providers: Record<IdentityProviderId, IdentityProvider> = {
   franceconnect: new FranceConnectProvider(),
   signicat: new SignicatProvider(),
-  web_of_trust: new WebOfTrustProvider(),
+  stripe_identity: new StripeIdentityProvider(),
 };
 
 /**
  * Ordre de priorite pour la selection du provider :
  *   1. Provider specifique au pays (ex: FranceConnect pour FR)
  *   2. Agregateur multi-pays (Signicat pour l'Europe)
- *   3. Web of Trust (fallback universel)
+ *   3. Stripe Identity (fallback universel payant)
  */
 const PROVIDER_PRIORITY: IdentityProviderId[] = [
   'franceconnect',
   'signicat',
-  'web_of_trust',
+  'stripe_identity',
 ];
 
 /**
  * Selectionne le provider le plus adapte pour un pays donne.
  *
  * @param countryCode - Code ISO 3166-1 alpha-2 (ex: "FR", "DE", "US")
- * @returns Le provider selectionne (toujours defini grace au fallback web_of_trust)
+ * @returns Le provider selectionne (toujours defini grace au fallback stripe_identity)
  *
  * @example
  * getProviderForCountry("FR") // → FranceConnectProvider
  * getProviderForCountry("DE") // → SignicatProvider
- * getProviderForCountry("BR") // → WebOfTrustProvider
+ * getProviderForCountry("US") // → StripeIdentityProvider
  */
 export function getProviderForCountry(countryCode: string): IdentityProvider {
   const code = countryCode.toUpperCase();
 
   for (const providerId of PROVIDER_PRIORITY) {
     const provider = providers[providerId];
-    // Ignore le wildcard '*' sauf pour le dernier (web_of_trust)
+    // Ignore le wildcard '*' sauf pour le dernier (stripe_identity)
     if (provider.config.supportedCountries.includes(code)) {
       return provider;
     }
   }
 
-  // Fallback : web of trust (accepte '*')
-  return providers.web_of_trust;
+  // Fallback : stripe_identity (accepte '*')
+  return providers.stripe_identity;
 }
 
 /**

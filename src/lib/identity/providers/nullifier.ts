@@ -14,10 +14,10 @@ import type { IdentityProviderId } from './types';
 // ── Secret applicatif ────────────────────────────────────────────
 
 function getNullifierSecret(): string {
-  const secret = process.env.VITA_NULLIFIER_SECRET;
+  const secret = process.env.VITA_NULLIFIER_SECRET || process.env.VITA_HMAC_SECRET;
   if (!secret) {
     throw new Error(
-      'VITA_NULLIFIER_SECRET is not defined. ' +
+      'VITA_NULLIFIER_SECRET (or VITA_HMAC_SECRET) is not defined. ' +
       'Set it in .env.local (min 32 characters, random hex).'
     );
   }
@@ -62,7 +62,7 @@ async function hmacSha256(key: string, message: string): Promise<string> {
  * Le prefixe versionne permet de migrer le schema si necessaire.
  *
  * @param sub - Subject identifier retourne par le provider OAuth/OIDC
- * @param provider - Identifiant du provider (franceconnect, signicat, web_of_trust)
+ * @param provider - Identifiant du provider (franceconnect, signicat, stripe_identity)
  * @returns Hash hexadecimal de 64 caracteres (SHA-256)
  *
  * @example

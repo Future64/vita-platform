@@ -25,7 +25,7 @@ export interface IdentiteVerifiee {
   statut: 'non_verifie' | 'en_cours' | 'verifie' | 'expire' | 'rejete';
   dateVerification?: string;
   dateExpiration?: string;
-  methodeVerification?: 'parrainage' | 'zkp' | 'document';
+  methodeVerification?: 'stripe_identity' | 'zkp' | 'document';
   parrains?: { username: string; dateAttestation: string }[];
   niveauConfiance: number; // 0-100
   historiqueVerifications: {
@@ -230,6 +230,7 @@ export interface RegisterData {
   pays: string;
   modeVisibilite?: ModeVisibilite;
   pseudonyme?: string;
+  nullifierHash?: string;
 }
 
 export interface StoredUser extends User {

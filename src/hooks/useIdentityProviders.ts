@@ -21,10 +21,14 @@ export interface UseIdentityProvidersReturn {
   available: IdentityProviderOption[];
   /** Providers a venir (status = 'coming_soon') */
   comingSoon: IdentityProviderOption[];
-  /** Y a-t-il au moins un provider eID disponible (hors Web of Trust) ? */
+  /** Providers eID nationaux disponibles (hors Stripe Identity) */
+  nationalProviders: IdentityProviderOption[];
+  /** Provider Stripe Identity (si disponible) */
+  stripeProvider: IdentityProviderOption | null;
+  /** Y a-t-il au moins un provider eID disponible (hors Stripe Identity payant) ? */
   hasEid: boolean;
-  /** Y a-t-il un Web of Trust dans la liste ? (toujours true) */
-  hasWebOfTrust: boolean;
+  /** Le pays requiert-il un paiement pour la verification ? (Stripe Identity disponible) */
+  requiresPayment: boolean;
 }
 
 // ── Hook ─────────────────────────────────────────────────────────
@@ -32,14 +36,16 @@ export interface UseIdentityProvidersReturn {
 /**
  * Retourne les providers d'identite disponibles pour un pays.
  *
- * Trie par priorite : etatique > bancaire > autre > Web of Trust.
+ * Trie par priorite : etatique > bancaire > autre > payant.
  * Distingue les providers disponibles de ceux a venir.
+ * Separe les providers nationaux de Stripe Identity pour le double-choix.
  *
  * @param countryCode - Code ISO 3166-1 alpha-2 (ex: "FR", "DE", "")
  *
  * @example
- * const { providers, available, hasEid } = useIdentityProviders('FR');
- * // providers = [FranceConnect (available), Web of Trust (available)]
+ * const { nationalProviders, stripeProvider, hasEid } = useIdentityProviders('FR');
+ * // nationalProviders = [FranceConnect]
+ * // stripeProvider = Stripe Identity
  * // hasEid = true
  */
 export function useIdentityProviders(countryCode: string): UseIdentityProvidersReturn {
@@ -49,8 +55,10 @@ export function useIdentityProviders(countryCode: string): UseIdentityProvidersR
         providers: [],
         available: [],
         comingSoon: [],
+        nationalProviders: [],
+        stripeProvider: null,
         hasEid: false,
-        hasWebOfTrust: false,
+        requiresPayment: false,
       };
     }
 
@@ -65,9 +73,11 @@ export function useIdentityProviders(countryCode: string): UseIdentityProvidersR
 
     const available = providers.filter((p) => p.status === 'available');
     const comingSoon = providers.filter((p) => p.status === 'coming_soon');
-    const hasEid = available.some((p) => p.category !== 'fallback');
-    const hasWebOfTrust = providers.some((p) => p.provider === 'web_of_trust');
+    const nationalProviders = available.filter((p) => p.provider !== 'stripe_identity');
+    const stripeProvider = available.find((p) => p.provider === 'stripe_identity') || null;
+    const hasEid = available.some((p) => p.category !== 'paid');
+    const requiresPayment = available.some((p) => !!p.price);
 
-    return { providers, available, comingSoon, hasEid, hasWebOfTrust };
+    return { providers, available, comingSoon, nationalProviders, stripeProvider, hasEid, requiresPayment };
   }, [countryCode]);
 }

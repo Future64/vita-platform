@@ -105,12 +105,12 @@ describe('authorize', () => {
     expect(url.searchParams.get('response_type')).toBe('code');
     expect(url.searchParams.get('client_id')).toBe('test-client-id');
     expect(url.searchParams.get('redirect_uri')).toBe(MOCK_REDIRECT_URI);
-    expect(url.searchParams.get('scope')).toBe('openid given_name family_name birthdate');
+    expect(url.searchParams.get('scope')).toBe('openid given_name family_name birthdate email gender');
     expect(url.searchParams.get('state')).toBe(MOCK_STATE);
     expect(url.searchParams.get('nonce')).toBe('nonce-123');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.get('code_challenge')).toBeTruthy();
-    expect(url.searchParams.get('acr_values')).toBe('eidas2');
+    expect(url.searchParams.get('acr_values')).toBe('eidas1');
   });
 
   it('echoue si FC_CLIENT_ID est manquant', async () => {
@@ -132,7 +132,7 @@ describe('authorize', () => {
 
 describe('handleCallback', () => {
   function mockFetchSuccess() {
-    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas2', nonce: 'nonce-123' });
+    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas1', nonce: 'nonce-123' });
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
@@ -148,6 +148,9 @@ describe('handleCallback', () => {
       if (urlStr.includes('/userinfo')) {
         return new Response(JSON.stringify({
           sub: MOCK_SUB,
+          email: 'jean@example.fr',
+          gender: 'male',
+          birthdate: '1990-05-15',
         }), { status: 200 });
       }
 
@@ -155,7 +158,7 @@ describe('handleCallback', () => {
     });
   }
 
-  it('retourne le sub et le niveau eIDAS sans donnees personnelles', async () => {
+  it('retourne le sub, le niveau eIDAS, et les champs prefill', async () => {
     mockFetchSuccess();
 
     const result = await provider.handleCallback({
@@ -169,15 +172,18 @@ describe('handleCallback', () => {
     expect(result.sub).toBe(MOCK_SUB);
     expect(result.providerId).toBe('franceconnect');
     expect(result.countryCode).toBe('FR');
-    expect(result.assuranceLevel).toBe('substantial');
+    expect(result.assuranceLevel).toBe('low');
     expect(result.verifiedAt).toBeInstanceOf(Date);
 
-    // Verification : aucune donnee personnelle dans le resultat
+    // Extended fields for prefill (not stored in DB)
+    expect(result.email).toBe('jean@example.fr');
+    expect(result.gender).toBe('male');
+    expect(result.birthdate).toBe('1990-05-15');
+
+    // Verification : aucune donnee personnelle non-attendue
     const resultKeys = Object.keys(result);
     expect(resultKeys).not.toContain('given_name');
     expect(resultKeys).not.toContain('family_name');
-    expect(resultKeys).not.toContain('birthdate');
-    expect(resultKeys).not.toContain('email');
   });
 
   it('lance user_cancelled si le code est absent', async () => {
@@ -258,7 +264,7 @@ describe('handleCallback', () => {
   });
 
   it('lance userinfo_failed si /userinfo echoue', async () => {
-    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas2' });
+    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas1' });
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
@@ -291,7 +297,7 @@ describe('handleCallback', () => {
 
   it('inclut le code_verifier PKCE dans la requete token', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas2' });
+    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas1' });
 
     fetchSpy.mockImplementation(async (url) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
@@ -437,7 +443,7 @@ describe('flux complet', () => {
     expect(authResult.codeVerifier).toBeDefined();
 
     // 2. Callback (mock FC responses)
-    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas2', nonce: 'nonce-full-flow' });
+    const idToken = buildMockJwt({ sub: MOCK_SUB, acr: 'eidas1', nonce: 'nonce-full-flow' });
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       const urlStr = typeof url === 'string' ? url : url.toString();

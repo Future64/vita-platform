@@ -145,6 +145,7 @@ class ApiClient {
     pays: string;
     mode_visibilite?: string;
     pseudonyme?: string;
+    nullifier_hash?: string;
   }) {
     // Map frontend field names to backend RegisterRequest fields
     return this.request<{
@@ -162,6 +163,7 @@ class ApiClient {
       pays_residence: data.pays,
       mode_visibilite: data.mode_visibilite,
       pseudonyme: data.pseudonyme,
+      nullifier_hash: data.nullifier_hash,
     });
   }
 
