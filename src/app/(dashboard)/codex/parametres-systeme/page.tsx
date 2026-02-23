@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BookOpen,
   PenTool,
@@ -23,12 +23,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/ui/stat-card";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import {
   SYSTEM_PARAMETERS,
   PARAMETERS_BY_CATEGORY,
   CATEGORY_METADATA,
 } from "@/lib/mockParameters";
-import type { ParameterCategory } from "@/types/parameters";
+import type { SystemParameter, ParameterCategory } from "@/types/parameters";
 
 const sidebarItems: SidebarItem[] = [
   { icon: BookOpen, label: "Constitution", href: "/codex" },
@@ -52,9 +54,53 @@ const FILTER_OPTIONS: { value: ParameterCategory | "all"; label: string }[] = [
 ];
 
 export default function ParametresSystemePage() {
+  const { isMockMode } = useAuth();
+  const [parameters, setParameters] = useState<SystemParameter[]>(SYSTEM_PARAMETERS);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<ParameterCategory | "all">("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Fetch parameters from API when available
+  useEffect(() => {
+    if (isMockMode) return;
+
+    async function loadParameters() {
+      try {
+        const apiParams = await api.getParametres();
+        if (Array.isArray(apiParams) && apiParams.length > 0) {
+          // Map API response to SystemParameter type
+          const mapped = apiParams.map((p: unknown) => {
+            const param = p as Record<string, unknown>;
+            const category = String(param.categorie || param.category || "technique") as ParameterCategory;
+            return {
+              id: String(param.id || param.nom || ""),
+              name: String(param.nom || param.name || ""),
+              description: String(param.description || ""),
+              category,
+              currentValue: param.valeur != null ? (typeof param.valeur === "number" || typeof param.valeur === "boolean" ? param.valeur : String(param.valeur)) : (param.currentValue != null ? (typeof param.currentValue === "number" || typeof param.currentValue === "boolean" ? param.currentValue : String(param.currentValue)) : ""),
+              unit: param.unite ? String(param.unite) : undefined,
+              allowedRange: param.valeur_min != null && param.valeur_max != null
+                ? { min: Number(param.valeur_min), max: Number(param.valeur_max) }
+                : undefined,
+              requiredQuorum: param.quorum_modification != null ? Number(param.quorum_modification) : undefined,
+              history: [],
+            } as SystemParameter;
+          });
+          setParameters(mapped);
+        }
+      } catch {
+        // Keep mock data on error
+      }
+    }
+
+    loadParameters();
+  }, [isMockMode]);
+
+  const paramsByCategory = useMemo(() => ({
+    immuable: parameters.filter((p) => p.category === "immuable"),
+    gouvernance: parameters.filter((p) => p.category === "gouvernance"),
+    technique: parameters.filter((p) => p.category === "technique"),
+  }), [parameters]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -66,7 +112,7 @@ export default function ParametresSystemePage() {
   };
 
   const filteredParams = useMemo(() => {
-    let params = SYSTEM_PARAMETERS;
+    let params = parameters;
 
     if (activeFilter !== "all") {
       params = params.filter((p) => p.category === activeFilter);
@@ -82,7 +128,7 @@ export default function ParametresSystemePage() {
     }
 
     return params;
-  }, [search, activeFilter]);
+  }, [parameters, search, activeFilter]);
 
   const groupedParams = useMemo(() => {
     const groups: Record<ParameterCategory, typeof filteredParams> = {
@@ -107,7 +153,7 @@ export default function ParametresSystemePage() {
           Parametres en vigueur
         </h1>
         <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
-          {SYSTEM_PARAMETERS.length} parametres &middot; Configuration complete du systeme VITA
+          {parameters.length} parametres &middot; Configuration complete du systeme VITA
         </p>
       </div>
 
@@ -116,17 +162,17 @@ export default function ParametresSystemePage() {
         <StatCard
           variant="pink"
           label="Immuables"
-          value={PARAMETERS_BY_CATEGORY.immuable.length}
+          value={paramsByCategory.immuable.length}
         />
         <StatCard
           variant="violet"
           label="Gouvernance"
-          value={PARAMETERS_BY_CATEGORY.gouvernance.length}
+          value={paramsByCategory.gouvernance.length}
         />
         <StatCard
           variant="cyan"
           label="Techniques"
-          value={PARAMETERS_BY_CATEGORY.technique.length}
+          value={paramsByCategory.technique.length}
         />
       </div>
 

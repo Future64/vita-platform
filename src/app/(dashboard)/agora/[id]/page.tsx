@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -53,6 +53,8 @@ import {
   type Message,
   type EvenementHistorique,
 } from "@/lib/mockProposals";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 const sidebarItems: SidebarItem[] = [
@@ -116,6 +118,7 @@ export default function ProposalDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { toast } = useToast();
+  const { isMockMode } = useAuth();
   const [activeTab, setActiveTab] = useState("detail");
   const [expandedFil, setExpandedFil] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -123,9 +126,62 @@ export default function ProposalDetailPage() {
   const [categorieFilter, setCategorieFilter] = useState<string>("all");
   const [reactions, setReactions] = useState<Record<string, Record<string, boolean>>>({});
 
-  const proposal = useMemo(() => getProposalById(id), [id]);
+  const mockProposal = useMemo(() => getProposalById(id), [id]);
+  const [proposal, setProposal] = useState(mockProposal);
   const debat = useMemo(() => getDebatsForProposal(id), [id]);
   const historique = useMemo(() => getHistoriqueForProposal(id), [id]);
+
+  useEffect(() => {
+    if (isMockMode) return;
+    async function load() {
+      try {
+        const raw = await api.getProposition(id) as Record<string, unknown>;
+        if (raw && raw.id) {
+          const statusMap: Record<string, string> = {
+            cosignature: "cosigning", deliberation: "deliberation",
+            vote: "voting", adopte: "adopted", rejete: "rejected", applique: "applied",
+          };
+          const domainColorMap: Record<string, string> = {
+            economie: "orange", environnement: "green", technique: "cyan",
+            gouvernance: "violet", social: "pink",
+          };
+          const statusColorMap: Record<string, string> = {
+            cosigning: "violet", deliberation: "cyan", voting: "green",
+            adopted: "green", rejected: "red", applied: "blue",
+          };
+          const statusLabelMap: Record<string, string> = {
+            cosigning: "Co-signature", deliberation: "Deliberation", voting: "Vote",
+            adopted: "Adopte", rejected: "Rejete", applied: "Applique",
+          };
+          const status = statusMap[String(raw.statut || "")] || String(raw.status || "deliberation");
+          const domain = String(raw.categorie || raw.domain || "autre");
+          const mapped = {
+            ...mockProposal,
+            id: String(raw.id),
+            title: String(raw.titre || raw.title || mockProposal?.title || ""),
+            description: String(raw.description || mockProposal?.description || ""),
+            domain: domain.charAt(0).toUpperCase() + domain.slice(1),
+            domainColor: (domainColorMap[domain.toLowerCase()] || "violet") as "violet" | "orange" | "green" | "cyan" | "pink",
+            status,
+            statusLabel: statusLabelMap[status] || status,
+            statusColor: (statusColorMap[status] || "cyan") as "violet" | "cyan" | "green" | "red" | "blue",
+            votesFor: raw.votes_pour != null ? Number(raw.votes_pour) : mockProposal?.votesFor,
+            votesAgainst: raw.votes_contre != null ? Number(raw.votes_contre) : mockProposal?.votesAgainst,
+            totalVotes: raw.total_votes != null ? Number(raw.total_votes) : mockProposal?.totalVotes,
+            date: String(raw.date || raw.date_creation || mockProposal?.date || ""),
+            author: {
+              name: `${raw.auteur_prenom || ""} ${raw.auteur_nom || ""}`.trim() || mockProposal?.author?.name || "Anonyme",
+              initials: `${String(raw.auteur_prenom || "?")[0]}${String(raw.auteur_nom || "")[0]}`,
+            },
+          };
+          setProposal(mapped as typeof mockProposal);
+        }
+      } catch {
+        // Keep mock proposal
+      }
+    }
+    load();
+  }, [id, isMockMode, mockProposal]);
 
   const filteredFils = useMemo(() => {
     if (!debat) return [];

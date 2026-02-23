@@ -172,127 +172,126 @@ export default function GrievancesPage() {
           const isFermee = dol.statut === "fermee";
 
           return (
-            <Card
-              key={dol.id}
-              className="p-5 transition-all"
-              style={
-                isSeuilAtteint && !isConvertie
-                  ? { borderColor: "rgba(245, 158, 11, 0.4)" }
-                  : isFermee
-                  ? { opacity: 0.6 }
-                  : undefined
-              }
-            >
-              {/* Top row: badge + status */}
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant={CATEGORIE_COLORS[dol.categorie]}>
-                  {CATEGORIE_LABELS[dol.categorie]}
-                </Badge>
-                {isSeuilAtteint && !isConvertie && (
-                  <Badge variant="orange">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Seuil atteint — Prête pour proposition
+            <Link key={dol.id} href={`/agora/doleances/${dol.id}`} className="block">
+              <Card
+                className="p-5 transition-all cursor-pointer hover:border-[var(--border-light)]"
+                style={
+                  isSeuilAtteint && !isConvertie
+                    ? { borderColor: "rgba(245, 158, 11, 0.4)" }
+                    : isFermee
+                    ? { opacity: 0.6 }
+                    : undefined
+                }
+              >
+                {/* Top row: badge + status */}
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Badge variant={CATEGORIE_COLORS[dol.categorie]}>
+                    {CATEGORIE_LABELS[dol.categorie]}
                   </Badge>
-                )}
-                {isConvertie && (
-                  <Link href={`/agora/${dol.propositionId}`}>
-                    <Badge variant="green" className="cursor-pointer hover:opacity-80">
+                  {isSeuilAtteint && !isConvertie && (
+                    <Badge variant="orange">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Seuil atteint — Prête pour proposition
+                    </Badge>
+                  )}
+                  {isConvertie && (
+                    <Badge variant="green">
                       <ArrowRight className="h-3 w-3" />
                       Convertie en proposition
                     </Badge>
-                  </Link>
-                )}
-                {isFermee && (
-                  <Badge variant="red">
-                    <X className="h-3 w-3" />
-                    Fermée
-                  </Badge>
-                )}
-              </div>
+                  )}
+                  {isFermee && (
+                    <Badge variant="red">
+                      <X className="h-3 w-3" />
+                      Fermée
+                    </Badge>
+                  )}
+                </div>
 
-              {/* Title */}
-              <h3 className="mb-1 text-base font-semibold text-[var(--text-primary)]">
-                {dol.titre}
-              </h3>
+                {/* Title */}
+                <h3 className="mb-1 text-base font-semibold text-[var(--text-primary)]">
+                  {dol.titre}
+                </h3>
 
-              {/* Description */}
-              <p className="mb-3 text-sm text-[var(--text-secondary)] line-clamp-2">
-                {dol.description}
-              </p>
+                {/* Description */}
+                <p className="mb-3 text-sm text-[var(--text-secondary)] line-clamp-2">
+                  {dol.description}
+                </p>
 
-              {/* Support bar */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1">
+                {/* Support bar */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {effectiveSoutiens} / {dol.seuilProposition} soutiens
+                    </span>
+                    <span className="text-xs font-mono" style={{ color: barColor }}>
+                      {Math.min(Math.round(ratio * 100), 100)}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${ratio >= 0.75 && ratio < 1 ? "animate-pulse" : ""}`}
+                      style={{
+                        width: `${Math.min(ratio * 100, 100)}%`,
+                        backgroundColor: barColor,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Author */}
+                  <div className="flex items-center gap-2">
+                    <Avatar size="sm">
+                      <AvatarFallback>{dol.auteur.initiales}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-[var(--text-primary)]">
+                      @{dol.auteur.username}
+                    </span>
+                  </div>
+
+                  {/* Date */}
                   <span className="text-xs text-[var(--text-muted)]">
-                    {effectiveSoutiens} / {dol.seuilProposition} soutiens
+                    {dol.dateCreation}
                   </span>
-                  <span className="text-xs font-mono" style={{ color: barColor }}>
-                    {Math.min(Math.round(ratio * 100), 100)}%
+
+                  {/* Comments */}
+                  <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                    <MessageCircle className="h-3 w-3" />
+                    {dol.commentaires}
                   </span>
+
+                  {/* Actions */}
+                  <div className="ml-auto flex items-center gap-2" onClick={(e) => e.preventDefault()}>
+                    {/* Support button */}
+                    {!isFermee && !isConvertie && (
+                      <PermissionGate permission="vote_proposal">
+                        <Button
+                          variant={isSupported ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); handleSupport(dol.id); }}
+                          disabled={isSupported}
+                          className={isSupported ? "text-violet-500" : ""}
+                        >
+                          <Heart className={`h-3.5 w-3.5 ${isSupported ? "fill-violet-500" : ""}`} />
+                          {isSupported ? "Soutenu" : "Soutenir"}
+                        </Button>
+                      </PermissionGate>
+                    )}
+
+                    {/* Convert button for threshold-reached */}
+                    {isSeuilAtteint && !isConvertie && (
+                      <PermissionGate permission="create_proposal">
+                        <Button variant="primary" size="sm" onClick={(e) => e.preventDefault()}>
+                          Convertir en proposition
+                        </Button>
+                      </PermissionGate>
+                    )}
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${ratio >= 0.75 && ratio < 1 ? "animate-pulse" : ""}`}
-                    style={{
-                      width: `${Math.min(ratio * 100, 100)}%`,
-                      backgroundColor: barColor,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Author */}
-                <div className="flex items-center gap-2">
-                  <Avatar size="sm">
-                    <AvatarFallback>{dol.auteur.initiales}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-[var(--text-primary)]">
-                    @{dol.auteur.username}
-                  </span>
-                </div>
-
-                {/* Date */}
-                <span className="text-xs text-[var(--text-muted)]">
-                  {dol.dateCreation}
-                </span>
-
-                {/* Comments */}
-                <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                  <MessageCircle className="h-3 w-3" />
-                  {dol.commentaires}
-                </span>
-
-                {/* Actions */}
-                <div className="ml-auto flex items-center gap-2">
-                  {/* Support button */}
-                  {!isFermee && !isConvertie && (
-                    <PermissionGate permission="vote_proposal">
-                      <Button
-                        variant={isSupported ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={() => handleSupport(dol.id)}
-                        disabled={isSupported}
-                        className={isSupported ? "text-violet-500" : ""}
-                      >
-                        <Heart className={`h-3.5 w-3.5 ${isSupported ? "fill-violet-500" : ""}`} />
-                        {isSupported ? "Soutenu" : "Soutenir"}
-                      </Button>
-                    </PermissionGate>
-                  )}
-
-                  {/* Convert button for threshold-reached */}
-                  {isSeuilAtteint && !isConvertie && (
-                    <PermissionGate permission="create_proposal">
-                      <Button variant="primary" size="sm">
-                        Convertir en proposition
-                      </Button>
-                    </PermissionGate>
-                  )}
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           );
         })}
 

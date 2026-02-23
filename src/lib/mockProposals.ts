@@ -1222,6 +1222,14 @@ export function getProposalById(id: string): AgoraProposal | undefined {
   return ALL_PROPOSALS.find((p) => p.id === id);
 }
 
+export function getDoleanceById(id: string): Doleance | undefined {
+  return MOCK_DOLEANCES.find((d) => d.id === id);
+}
+
+export function getArchiveById(id: string): ArchivedProposal | undefined {
+  return MOCK_ARCHIVES.find((a) => a.id === id);
+}
+
 export function getParameterProposals(): AgoraProposal[] {
   return ALL_PROPOSALS.filter((p) => p.type === "modification_parametre");
 }

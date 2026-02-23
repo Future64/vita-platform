@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Wallet,
   Send,
@@ -17,7 +17,10 @@ import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { MOCK_WALLET } from "@/lib/mockBourse";
+import type { Transaction } from "@/types/bourse";
 import { useToast } from "@/components/ui/Toast";
 
 const sidebarItems: SidebarItem[] = [
@@ -34,8 +37,44 @@ const ACCOUNT_ID = "vita-42x7k9m2-demo";
 
 export default function RecevoirPage() {
   const { toast } = useToast();
+  const { user, isMockMode } = useAuth();
   const [requestedAmount, setRequestedAmount] = useState("");
   const [copied, setCopied] = useState<"id" | "link" | null>(null);
+  const [receivedTxs, setReceivedTxs] = useState<Transaction[]>(
+    MOCK_WALLET.transactions.filter((tx) => tx.type === "reception").slice(0, 5)
+  );
+
+  const accountId = user?.id || ACCOUNT_ID;
+
+  useEffect(() => {
+    if (isMockMode || !user) return;
+    async function load() {
+      try {
+        const txs = await api.getTransactions(user!.id, 20, 0);
+        if (Array.isArray(txs) && txs.length > 0) {
+          const mapped = txs
+            .map((raw: unknown) => {
+              const t = raw as Record<string, unknown>;
+              return {
+                id: String(t.id || ""),
+                type: (t.type_transaction === "reception" || t.to_id === user!.id) ? "reception" as const : "envoi" as const,
+                montant: Number(t.amount || t.montant || 0),
+                date: String(t.created_at || t.date || ""),
+                contrepartie: String(t.from_username || t.contrepartie || "Anonyme"),
+                motif: t.note ? String(t.note) : t.motif ? String(t.motif) : undefined,
+                statut: "confirmee" as const,
+              };
+            })
+            .filter((tx) => tx.type === "reception")
+            .slice(0, 5);
+          if (mapped.length > 0) setReceivedTxs(mapped);
+        }
+      } catch {
+        // Keep mock data
+      }
+    }
+    load();
+  }, [isMockMode, user]);
 
   const handleCopy = useCallback((text: string, type: "id" | "link") => {
     navigator.clipboard.writeText(text);
@@ -45,13 +84,8 @@ export default function RecevoirPage() {
   }, [toast]);
 
   const paymentLink = requestedAmount
-    ? `vita://pay/${ACCOUNT_ID}?amount=${requestedAmount}`
-    : `vita://pay/${ACCOUNT_ID}`;
-
-  // Recent received transactions
-  const receivedTxs = MOCK_WALLET.transactions
-    .filter((tx) => tx.type === "reception")
-    .slice(0, 5);
+    ? `vita://pay/${accountId}?amount=${requestedAmount}`
+    : `vita://pay/${accountId}`;
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
@@ -118,11 +152,11 @@ export default function RecevoirPage() {
                   </p>
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-[var(--bg-elevated)] px-4 py-2.5">
                     <span className="font-mono text-sm font-semibold text-[var(--text-primary)] truncate">
-                      {ACCOUNT_ID}
+                      {accountId}
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopy(ACCOUNT_ID, "id")}
+                      onClick={() => handleCopy(accountId, "id")}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                     >
                       {copied === "id" ? (

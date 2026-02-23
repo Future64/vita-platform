@@ -588,6 +588,24 @@ class ApiClient {
     return this.request<unknown[]>("GET", `/credit/loans/${accountId}`);
   }
 
+  // ── STATISTICS ──────────────────────────────────────────────
+
+  async getStatisticsSummary() {
+    return this.request<{
+      verified_accounts: number;
+      total_accounts: number;
+      monetary_mass: string;
+      total_emissions: number;
+      transactions_24h: number;
+      volume_24h: string;
+      active_proposals: number;
+      total_proposals: number;
+      common_fund_balance: string;
+      audit_chain_intact: boolean;
+      timestamp: string;
+    }>("GET", "/statistics/summary");
+  }
+
   // ── HEALTH ───────────────────────────────────────────────────
 
   async health() {

@@ -89,6 +89,32 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    // Daily VITA emission — runs every 60s, distributes 1 Ѵ to all verified accounts at midnight UTC
+    let emission_pool = pool.clone();
+    tokio::spawn(async move {
+        // Track last emission date to avoid redundant batch runs
+        let mut last_emission_date = chrono::Utc::now().date_naive();
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+            let today = chrono::Utc::now().date_naive();
+            if today != last_emission_date {
+                info!("Midnight UTC crossed — starting daily emission for {}", today);
+                match monetary::emission::emit_daily_all(&emission_pool).await {
+                    Ok(result) => {
+                        info!(
+                            "Daily emission complete: {}/{} accounts credited for {}",
+                            result.successful, result.total_accounts, result.date
+                        );
+                        last_emission_date = today;
+                    }
+                    Err(e) => {
+                        tracing::error!("Daily emission failed: {}", e);
+                    }
+                }
+            }
+        }
+    });
+
     // Daily Merkle tree builder — runs every hour, builds yesterday's tree if missing
     let merkle_pool = pool.clone();
     tokio::spawn(async move {

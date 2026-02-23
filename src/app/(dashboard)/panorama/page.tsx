@@ -41,6 +41,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { formatNumber } from "@/lib/format";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import {
   PANORAMA_DATA,
   ACTIVE_VOTES,
@@ -93,7 +95,43 @@ function ChartTooltip({ active, payload, label, suffix }: {
 }
 
 export default function PanoramaPage() {
-  const d = PANORAMA_DATA;
+  const { isMockMode } = useAuth();
+  const [d, setD] = useState(PANORAMA_DATA);
+  const [activeVotes, setActiveVotes] = useState(ACTIVE_VOTES);
+
+  // Try to load real data from API where available
+  useEffect(() => {
+    if (isMockMode) return;
+
+    async function loadRealData() {
+      try {
+        // Fetch aggregated statistics summary
+        const stats = await api.getStatisticsSummary().catch(() => null);
+        if (stats) {
+          setD((prev) => ({
+            ...prev,
+            utilisateursVerifies: stats.verified_accounts || prev.utilisateursVerifies,
+            masseMonetaireTotal: stats.monetary_mass ? Number(stats.monetary_mass) : prev.masseMonetaireTotal,
+            transactionsAujourdHui: stats.transactions_24h || prev.transactionsAujourdHui,
+            propositionsActives: stats.active_proposals || prev.propositionsActives,
+          }));
+        }
+
+        // Fetch active proposals count for sidebar badge
+        const propositions = await api.getPropositions({ statut: "vote" }).catch(() => null);
+        if (Array.isArray(propositions)) {
+          setD((prev) => ({
+            ...prev,
+            propositionsActives: propositions.length,
+          }));
+        }
+      } catch {
+        // Keep mock data on error
+      }
+    }
+
+    loadRealData();
+  }, [isMockMode]);
 
   // Live activity feed with 30s auto-update
   const [activities, setActivities] = useState<ActivityItem[]>(d.activiteRecente);

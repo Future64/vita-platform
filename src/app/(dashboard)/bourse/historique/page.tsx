@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Wallet,
   Send,
@@ -19,13 +19,15 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { MOCK_WALLET } from "@/lib/mockBourse";
 import { useToast } from "@/components/ui/Toast";
-import type { TransactionType } from "@/types/bourse";
+import type { Transaction, TransactionType } from "@/types/bourse";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Wallet, label: "Solde", href: "/bourse" },
@@ -79,17 +81,67 @@ function getPeriodStart(period: PeriodFilter): Date | null {
   return now;
 }
 
+// Map backend transaction to frontend type
+function mapApiTransaction(apiTx: Record<string, unknown>): Transaction {
+  const txType = String(apiTx.tx_type || apiTx.type || "");
+  const fromId = apiTx.from_account_id || apiTx.from_id;
+
+  let type: Transaction["type"] = "envoi";
+  if (txType === "Emission" || txType === "emission") {
+    type = "emission";
+  } else if (!fromId) {
+    type = "emission";
+  } else {
+    type = apiTx._direction === "in" ? "reception" : "envoi";
+  }
+
+  return {
+    id: String(apiTx.id || ""),
+    type,
+    montant: Number(apiTx.amount || apiTx.net_amount || 0),
+    date: String(apiTx.created_at || new Date().toISOString()),
+    contrepartie: apiTx.counterpart_name ? String(apiTx.counterpart_name) : undefined,
+    motif: apiTx.note ? String(apiTx.note) : undefined,
+    statut: "confirmee",
+  };
+}
+
 export default function HistoriquePage() {
   const { toast } = useToast();
-  const wallet = MOCK_WALLET;
+  const { user, isMockMode } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_WALLET.transactions);
+  const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [search, setSearch] = useState("");
 
+  // Fetch transactions from API
+  useEffect(() => {
+    async function fetchTransactions() {
+      if (!user || isMockMode) {
+        setTransactions(MOCK_WALLET.transactions);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const txData = await api.getTransactions(user.id, 100, 0);
+        if (Array.isArray(txData)) {
+          setTransactions(txData.map((tx) => mapApiTransaction(tx as Record<string, unknown>)));
+        }
+      } catch {
+        setTransactions(MOCK_WALLET.transactions);
+      }
+      setIsLoading(false);
+    }
+
+    fetchTransactions();
+  }, [user, isMockMode]);
+
   const filteredTransactions = useMemo(() => {
     const periodStart = getPeriodStart(periodFilter);
 
-    return wallet.transactions.filter((tx) => {
+    return transactions.filter((tx) => {
       if (filterType !== "all" && tx.type !== filterType) return false;
       if (periodStart && new Date(tx.date) < periodStart) return false;
       if (search) {
@@ -100,7 +152,7 @@ export default function HistoriquePage() {
       }
       return true;
     });
-  }, [wallet.transactions, filterType, periodFilter, search]);
+  }, [transactions, filterType, periodFilter, search]);
 
   // Financial summary
   const summary = useMemo(() => {
@@ -137,6 +189,16 @@ export default function HistoriquePage() {
     URL.revokeObjectURL(url);
     toast.success("Historique exporte");
   }, [filteredTransactions, toast]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
+        <div className="flex h-64 items-center justify-center">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-500" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BookOpen,
   PenTool,
@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/ui/stat-card";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { REGISTER_ENTRIES } from "@/lib/mockCodex";
 import type { RegisterEntry } from "@/types/codex";
 
@@ -81,9 +83,61 @@ const FILTER_OPTIONS: { value: TypeFilter; label: string }[] = [
 ];
 
 export default function RegistrePage() {
+  const { isMockMode } = useAuth();
+  const [entries, setEntries] = useState<RegisterEntry[]>(REGISTER_ENTRIES);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (isMockMode) return;
+    async function load() {
+      try {
+        const data = await api.getAmendments();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((raw: unknown) => {
+            const a = raw as Record<string, unknown>;
+            const typeMap: Record<string, RegisterEntry["type"]> = {
+              constitutionnel: "constitutionnel",
+              legislatif: "legislatif",
+              parametre: "parametre",
+              technique: "technique",
+            };
+            const statusMap: Record<string, RegisterEntry["status"]> = {
+              propose: "proposed",
+              adopte: "adopted",
+              rejete: "rejected",
+              applique: "applied",
+              conteste: "appeal",
+            };
+            return {
+              id: String(a.id || ""),
+              date: String(a.date || a.date_creation || ""),
+              type: typeMap[String(a.type || a.categorie || "technique")] || "technique",
+              title: String(a.titre || a.title || ""),
+              description: String(a.description || ""),
+              proposalId: a.proposition_id ? String(a.proposition_id) : undefined,
+              voteResult: a.votes_pour != null ? {
+                pour: Number(a.votes_pour),
+                contre: Number(a.votes_contre),
+                participation: Number(a.participation || 0),
+              } : undefined,
+              status: statusMap[String(a.statut || a.status || "")] || "proposed",
+              author: String(a.auteur || a.author || "Systeme"),
+              diff: a.ancienne_valeur ? {
+                before: String(a.ancienne_valeur),
+                after: String(a.nouvelle_valeur),
+              } : undefined,
+            } as RegisterEntry;
+          });
+          setEntries(mapped);
+        }
+      } catch {
+        // Keep mock data on error
+      }
+    }
+    load();
+  }, [isMockMode]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -95,17 +149,17 @@ export default function RegistrePage() {
   };
 
   const filteredEntries = useMemo(() => {
-    let entries = [...REGISTER_ENTRIES].sort(
+    let result = [...entries].sort(
       (a, b) => b.date.localeCompare(a.date)
     );
 
     if (typeFilter !== "all") {
-      entries = entries.filter((e) => e.type === typeFilter);
+      result = result.filter((e) => e.type === typeFilter);
     }
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      entries = entries.filter(
+      result = result.filter(
         (e) =>
           e.title.toLowerCase().includes(q) ||
           e.description.toLowerCase().includes(q) ||
@@ -113,16 +167,16 @@ export default function RegistrePage() {
       );
     }
 
-    return entries;
-  }, [search, typeFilter]);
+    return result;
+  }, [entries, search, typeFilter]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const e of REGISTER_ENTRIES) {
+    for (const e of entries) {
       counts[e.type] = (counts[e.type] || 0) + 1;
     }
     return counts;
-  }, []);
+  }, [entries]);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Codex">
@@ -135,7 +189,7 @@ export default function RegistrePage() {
           Registre des Modifications
         </h1>
         <p className="text-xs md:text-sm text-[var(--text-muted)] mt-1">
-          {REGISTER_ENTRIES.length} entrees &middot; Journal chronologique de toutes les modifications du systeme VITA
+          {entries.length} entrees &middot; Journal chronologique de toutes les modifications du systeme VITA
         </p>
       </div>
 

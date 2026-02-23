@@ -20,8 +20,10 @@ import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { MOCK_WALLET } from "@/lib/mockBourse";
-import type { Transaction } from "@/types/bourse";
+import type { Transaction, WalletData } from "@/types/bourse";
 
 const sidebarItems: SidebarItem[] = [
   { icon: Wallet, label: "Solde", href: "/bourse" },
@@ -100,7 +102,6 @@ function useAnimatedCounter(target: number, duration: number = 1500): number {
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(eased * target);
       if (progress < 1) {
@@ -136,13 +137,121 @@ function useCountdown(targetIso: string) {
   return remaining;
 }
 
+// Next midnight UTC
+function nextMidnightUTC(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 1);
+  d.setUTCHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+// Map backend transaction to frontend type
+function mapApiTransaction(apiTx: Record<string, unknown>): Transaction {
+  const txType = String(apiTx.tx_type || apiTx.type || "");
+  const fromId = apiTx.from_account_id || apiTx.from_id;
+
+  let type: Transaction["type"] = "envoi";
+  if (txType === "Emission" || txType === "emission") {
+    type = "emission";
+  } else if (!fromId) {
+    type = "emission";
+  } else {
+    // If we're the recipient, it's a reception
+    type = apiTx._direction === "in" ? "reception" : "envoi";
+  }
+
+  return {
+    id: String(apiTx.id || ""),
+    type,
+    montant: Number(apiTx.amount || apiTx.net_amount || 0),
+    date: String(apiTx.created_at || new Date().toISOString()),
+    contrepartie: apiTx.counterpart_name ? String(apiTx.counterpart_name) : undefined,
+    motif: apiTx.note ? String(apiTx.note) : undefined,
+    statut: "confirmee",
+  };
+}
+
 export default function BoursePage() {
-  const wallet = MOCK_WALLET;
+  const { user, isMockMode } = useAuth();
+  const [wallet, setWallet] = useState<WalletData>(MOCK_WALLET);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch wallet data from API or use mock
+  useEffect(() => {
+    async function fetchWallet() {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (isMockMode) {
+        setWallet(MOCK_WALLET);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Use user.id as the account ID for wallet operations
+        const accountId = user.id;
+
+        const [accountData, txData, emissionData] = await Promise.all([
+          api.getAccount(accountId).catch(() => null),
+          api.getTransactions(accountId, 20, 0).catch(() => []),
+          api.getEmissionHistory(accountId).catch(() => []),
+        ]);
+
+        const account = accountData as Record<string, unknown> | null;
+        const transactions = Array.isArray(txData) ? txData.map((tx) => mapApiTransaction(tx as Record<string, unknown>)) : [];
+        const emissions = Array.isArray(emissionData) ? emissionData : [];
+
+        const balance = account ? Number(account.balance || 0) : 0;
+        const totalReceived = account ? Number(account.total_received || 0) : 0;
+        const totalEmissions = emissions.length;
+
+        // Check if today's emission was already claimed
+        const todayStr = new Date().toISOString().split("T")[0];
+        const emissionToday = emissions.some((e: unknown) => {
+          const em = e as Record<string, unknown>;
+          return String(em.emission_date || "").startsWith(todayStr);
+        });
+
+        // Compute total sent (balance = totalReceived + totalEmissions - totalSent)
+        const totalSent = totalReceived + totalEmissions - balance;
+
+        setWallet({
+          solde: balance,
+          emissionAujourdHui: emissionToday,
+          prochaineEmission: nextMidnightUTC(),
+          totalRecu: totalReceived,
+          totalEnvoye: Math.max(0, totalSent),
+          totalEmissions,
+          transactions,
+        });
+      } catch {
+        // Fallback to mock on error
+        setWallet(MOCK_WALLET);
+      }
+      setIsLoading(false);
+    }
+
+    fetchWallet();
+  }, [user, isMockMode]);
+
   const animatedSolde = useAnimatedCounter(wallet.solde);
   const countdown = useCountdown(wallet.prochaineEmission);
 
   const recentTxs = useMemo(() => wallet.transactions.slice(0, 5), [wallet.transactions]);
   const joursDeVie = Math.floor(wallet.solde);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">
+        <div className="flex h-64 items-center justify-center">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-500" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Bourse">

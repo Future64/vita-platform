@@ -31,6 +31,14 @@ export function useApiQuery<T>({
   const [isMock, setIsMock] = useState(false);
   const mountedRef = useRef(true);
 
+  // Store callbacks in refs to avoid re-creating fetchData on every render.
+  // Without this, inline queryFn/mockFn create a new fetchData every render,
+  // which triggers the useEffect, causing an infinite fetch loop.
+  const queryFnRef = useRef(queryFn);
+  queryFnRef.current = queryFn;
+  const mockFnRef = useRef(mockFn);
+  mockFnRef.current = mockFn;
+
   const fetchData = useCallback(async () => {
     if (!enabled) {
       setLoading(false);
@@ -41,7 +49,7 @@ export function useApiQuery<T>({
     setError(null);
 
     try {
-      const result = await queryFn();
+      const result = await queryFnRef.current();
       if (mountedRef.current) {
         setData(result);
         setIsMock(false);
@@ -51,9 +59,9 @@ export function useApiQuery<T>({
 
       // Network error — try mock fallback
       if (err instanceof TypeError || (err instanceof ApiError && err.status === 0)) {
-        if (mockFn) {
+        if (mockFnRef.current) {
           console.warn("[VITA] Backend indisponible, utilisation des donnees mock");
-          setData(mockFn());
+          setData(mockFnRef.current());
           setIsMock(true);
           return;
         }
@@ -63,8 +71,8 @@ export function useApiQuery<T>({
         setError(err.message);
       } else {
         setError("Connexion au serveur impossible");
-        if (mockFn) {
-          setData(mockFn());
+        if (mockFnRef.current) {
+          setData(mockFnRef.current());
           setIsMock(true);
         }
       }
@@ -73,7 +81,7 @@ export function useApiQuery<T>({
         setLoading(false);
       }
     }
-  }, [queryFn, mockFn, enabled]);
+  }, [enabled]);
 
   useEffect(() => {
     mountedRef.current = true;

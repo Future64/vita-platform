@@ -177,12 +177,12 @@ export default function ArchivesPage() {
           const againstPct = arch.totalVotes > 0 ? Math.round((arch.votesAgainst / arch.totalVotes) * 100) : 0;
 
           return (
-            <Card
-              key={arch.id}
-              className="overflow-hidden"
-              style={{ borderLeftWidth: "3px", borderLeftColor: isAdopte ? "#10b981" : "#ef4444" }}
-            >
-              <div className="p-4 md:p-5">
+            <Link key={arch.id} href={`/agora/archives/${arch.id}`} className="block">
+              <Card
+                className="overflow-hidden cursor-pointer hover:border-[var(--border-light)] transition-all"
+                style={{ borderLeftWidth: "3px", borderLeftColor: isAdopte ? "#10b981" : "#ef4444" }}
+              >
+                <div className="p-4 md:p-5">
                 {/* Top row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -246,6 +246,7 @@ export default function ArchivesPage() {
                 </div>
               </div>
             </Card>
+            </Link>
           );
         })}
 

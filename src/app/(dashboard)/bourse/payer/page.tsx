@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -28,6 +28,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import { MOCK_WALLET, searchUsers, type MockUser } from "@/lib/mockBourse";
 import { useToast } from "@/components/ui/Toast";
 
@@ -101,7 +103,23 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 function PayerPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const wallet = MOCK_WALLET;
+  const { user, isMockMode } = useAuth();
+  const [solde, setSolde] = useState(MOCK_WALLET.solde);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (isMockMode || !user) return;
+    async function loadBalance() {
+      try {
+        const account = await api.getAccount(user!.id) as Record<string, unknown>;
+        if (account?.balance != null) setSolde(Number(account.balance));
+        else if (account?.solde != null) setSolde(Number(account.solde));
+      } catch {
+        // Keep mock balance
+      }
+    }
+    loadBalance();
+  }, [isMockMode, user]);
 
   const [step, setStep] = useState(1);
   const [recipientQuery, setRecipientQuery] = useState("");
@@ -114,13 +132,34 @@ function PayerPageContent() {
   const amountNum = parseFloat(amount) || 0;
   const potContribution = amountNum * COMMON_POT_RATE;
   const netAmount = amountNum - potContribution;
-  const isOverHalf = amountNum > wallet.solde * 0.5;
+  const isOverHalf = amountNum > solde * 0.5;
   const potLabel = `${(COMMON_POT_RATE * 100).toFixed(0)}%`;
 
   const canGoStep2 = selectedUser !== null;
-  const canGoStep3 = amountNum > 0 && amountNum <= wallet.solde;
+  const canGoStep3 = amountNum > 0 && amountNum <= solde;
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    if (!isMockMode && user && selectedUser) {
+      setSending(true);
+      try {
+        const result = await api.transfer({
+          from_id: user.id,
+          to_id: selectedUser.id,
+          amount: amountNum.toFixed(6),
+          note: motif || undefined,
+        });
+        if (result?.new_sender_balance != null) {
+          setSolde(Number(result.new_sender_balance));
+        }
+        setSuccess(true);
+        toast.success("Transaction confirmee !");
+      } catch {
+        toast.error("Erreur lors du transfert. Veuillez reessayer.");
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
     setSuccess(true);
     toast.success("Transaction confirmee !");
   }
@@ -185,7 +224,7 @@ function PayerPageContent() {
                   <div className="border-t border-[var(--border)] pt-3 flex justify-between">
                     <span className="text-[var(--text-secondary)]">Nouveau solde</span>
                     <span className="font-mono font-semibold text-[var(--text-primary)]">
-                      {(wallet.solde - amountNum).toFixed(3)} Ѵ
+                      {(solde - amountNum).toFixed(3)} Ѵ
                     </span>
                   </div>
                 </div>
@@ -339,7 +378,7 @@ function PayerPageContent() {
                       Montant
                     </div>
                     <span className="text-xs font-normal text-[var(--text-muted)]">
-                      Disponible : {wallet.solde.toFixed(2)} Ѵ
+                      Disponible : {solde.toFixed(2)} Ѵ
                     </span>
                   </div>
                 </label>
@@ -359,14 +398,14 @@ function PayerPageContent() {
                   </span>
                 </div>
 
-                {amountNum > wallet.solde && (
+                {amountNum > solde && (
                   <p className="mt-2 flex items-center gap-1 text-xs text-red-500">
                     <AlertCircle className="h-3 w-3" />
                     Solde insuffisant
                   </p>
                 )}
 
-                {isOverHalf && amountNum <= wallet.solde && (
+                {isOverHalf && amountNum <= solde && (
                   <div className="mt-2 flex items-start gap-2 rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2">
                     <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
                     <p className="text-xs text-orange-400">
@@ -375,7 +414,7 @@ function PayerPageContent() {
                   </div>
                 )}
 
-                {amountNum > 0 && amountNum <= wallet.solde && (
+                {amountNum > 0 && amountNum <= solde && (
                   <div className="mt-3 space-y-1.5 text-xs">
                     <div className="flex justify-between text-[var(--text-muted)]">
                       <span>Contribution pot commun ({potLabel})</span>
@@ -483,7 +522,7 @@ function PayerPageContent() {
                   <div className="rounded-lg border border-[var(--border)] p-3 text-center">
                     <p className="text-xs text-[var(--text-muted)]">Solde après transaction</p>
                     <p className="text-lg font-bold text-[var(--text-primary)]">
-                      {(wallet.solde - amountNum).toFixed(3)} Ѵ
+                      {(solde - amountNum).toFixed(3)} Ѵ
                     </p>
                   </div>
                 </div>
@@ -495,9 +534,9 @@ function PayerPageContent() {
                 <ArrowLeft className="h-4 w-4" />
                 Modifier
               </Button>
-              <Button className="flex-1" onClick={handleConfirm}>
-                Confirmer le paiement
-                <ArrowRight className="h-4 w-4" />
+              <Button className="flex-1" onClick={handleConfirm} disabled={sending}>
+                {sending ? "Envoi en cours..." : "Confirmer le paiement"}
+                {!sending && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
           </div>

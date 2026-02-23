@@ -9,12 +9,11 @@ import {
   Vote,
   Archive,
   Plus,
-  GitBranch,
   Settings,
   ArrowRight,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/input";
@@ -22,44 +21,133 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VoteBar } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PermissionGate } from "@/components/auth/PermissionGate";
-import { MOCK_PROPOSALS } from "@/lib/mockProposals";
+import { useGovernance } from "@/hooks/useGovernance";
+import type { AgoraProposal } from "@/lib/mockProposals";
 
-const sidebarItems: SidebarItem[] = [
-  { icon: Flame, label: "En cours", href: "/agora", badge: String(MOCK_PROPOSALS.length), badgeVariant: "pink" },
-  { icon: Scroll, label: "Doleances", href: "/agora/grievances", badge: "8", badgeVariant: "orange" },
-  { icon: FileText, label: "Propositions", href: "/agora/proposals" },
-  { icon: Vote, label: "Votes actifs", href: "/agora/votes", badge: "3", badgeVariant: "green" },
-  { icon: Archive, label: "Archives", href: "/agora/archives" },
-];
+// Map backend proposition shape to AgoraProposal for display
+function mapApiProposal(raw: unknown): AgoraProposal {
+  const p = raw as Record<string, unknown>;
+
+  const statusMap: Record<string, AgoraProposal["status"]> = {
+    cosignature: "cosigning",
+    deliberation: "deliberation",
+    vote: "voting",
+    adopte: "adopted",
+    rejete: "rejected",
+    applique: "applied",
+  };
+
+  const domainColorMap: Record<string, AgoraProposal["domainColor"]> = {
+    economie: "orange",
+    environnement: "green",
+    technique: "cyan",
+    gouvernance: "violet",
+    social: "pink",
+    sante: "red",
+    ecologie: "green",
+    education: "blue",
+  };
+
+  const statusColorMap: Record<string, AgoraProposal["statusColor"]> = {
+    cosigning: "violet",
+    deliberation: "cyan",
+    voting: "green",
+    adopted: "green",
+    rejected: "red",
+    applied: "blue",
+  };
+
+  const statusLabelMap: Record<string, string> = {
+    cosigning: "Co-signature",
+    deliberation: "Deliberation",
+    voting: "Vote",
+    adopted: "Adopte",
+    rejected: "Rejete",
+    applied: "Applique",
+  };
+
+  const status = statusMap[String(p.statut || "")] || String(p.status || "deliberation") as AgoraProposal["status"];
+  const domain = String(p.categorie || p.domain || "autre");
+  const auteurPrenom = String(p.auteur_prenom || p.auteur_username || "");
+  const auteurNom = String(p.auteur_nom || "");
+  const initials = (auteurPrenom[0] || "?") + (auteurNom[0] || "");
+
+  return {
+    id: String(p.id || ""),
+    title: String(p.titre || p.title || ""),
+    description: String(p.description || ""),
+    domain: domain.charAt(0).toUpperCase() + domain.slice(1),
+    domainColor: domainColorMap[domain.toLowerCase()] || "violet",
+    status,
+    statusLabel: statusLabelMap[status] || status,
+    statusColor: statusColorMap[status] || "cyan",
+    author: { name: `${auteurPrenom} ${auteurNom}`.trim() || "Anonyme", initials },
+    votesFor: p.votes_pour != null ? Number(p.votes_pour) : (p.votesFor != null ? Number(p.votesFor) : undefined),
+    votesAgainst: p.votes_contre != null ? Number(p.votes_contre) : (p.votesAgainst != null ? Number(p.votesAgainst) : undefined),
+    votesAbstain: p.votes_abstention != null ? Number(p.votes_abstention) : undefined,
+    totalVotes: p.total_votes != null ? Number(p.total_votes) : undefined,
+    date: String(p.date || p.date_creation || ""),
+    createdAt: String(p.date_creation || p.createdAt || ""),
+    votingEndsAt: p.date_fin_vote ? String(p.date_fin_vote) : undefined,
+    comments: Number(p.comments || p.commentaires || 0),
+    supporters: Number(p.supporters || p.soutiens || 0),
+    type: p.type_proposition === "modification_parametre" || p.type === "modification_parametre" ? "modification_parametre" : undefined,
+    parameterProposal: p.parameterProposal as AgoraProposal["parameterProposal"],
+  };
+}
 
 type TabFilter = "all" | "voting" | "deliberation" | "parametre";
 
 export default function AgoraPage() {
+  const { propositions, loading, isMock } = useGovernance();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
 
+  // Map raw propositions to AgoraProposal shape
+  const proposals: AgoraProposal[] = useMemo(() => {
+    return propositions.map(mapApiProposal);
+  }, [propositions]);
+
+  const sidebarItems: SidebarItem[] = [
+    { icon: Flame, label: "En cours", href: "/agora", badge: String(proposals.length), badgeVariant: "pink" },
+    { icon: Scroll, label: "Doleances", href: "/agora/grievances", badge: "8", badgeVariant: "orange" },
+    { icon: FileText, label: "Propositions", href: "/agora/proposals" },
+    { icon: Vote, label: "Votes actifs", href: "/agora/votes", badge: "3", badgeVariant: "green" },
+    { icon: Archive, label: "Archives", href: "/agora/archives" },
+  ];
+
   const filteredProposals = useMemo(() => {
-    let proposals = [...MOCK_PROPOSALS];
+    let filtered = [...proposals];
 
     if (activeTab === "voting") {
-      proposals = proposals.filter((p) => p.status === "voting");
+      filtered = filtered.filter((p) => p.status === "voting");
     } else if (activeTab === "deliberation") {
-      proposals = proposals.filter((p) => p.status === "deliberation" || p.status === "cosigning");
+      filtered = filtered.filter((p) => p.status === "deliberation" || p.status === "cosigning");
     } else if (activeTab === "parametre") {
-      proposals = proposals.filter((p) => p.type === "modification_parametre");
+      filtered = filtered.filter((p) => p.type === "modification_parametre");
     }
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      proposals = proposals.filter(
+      filtered = filtered.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q)
       );
     }
 
-    return proposals;
-  }, [search, activeTab]);
+    return filtered;
+  }, [proposals, search, activeTab]);
+
+  if (loading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
+        <div className="flex h-64 items-center justify-center">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-500" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Agora">
@@ -70,7 +158,8 @@ export default function AgoraPage() {
             Propositions
           </h1>
           <p className="text-xs md:text-sm text-[var(--text-muted)]">
-            {MOCK_PROPOSALS.length} propositions actives
+            {proposals.length} propositions actives
+            {isMock && <span className="ml-2 text-amber-500">(mode demo)</span>}
           </p>
         </div>
         <PermissionGate permission="create_proposal">

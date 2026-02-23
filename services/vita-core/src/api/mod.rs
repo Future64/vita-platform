@@ -8,6 +8,7 @@ mod emissions;
 pub mod governance;
 mod health;
 pub mod identity;
+pub mod statistics;
 mod transactions;
 mod valuation;
 
@@ -19,6 +20,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         web::scope("/api/v1")
             // ── Public routes (no auth required) ───────────────────
             .route("/health", web::get().to(health::health_check))
+
+            // Statistics (public, read-only)
+            .route("/statistics/summary", web::get().to(statistics::get_summary))
 
             // Auth (public)
             .route("/auth/register", web::post().to(auth::register))
