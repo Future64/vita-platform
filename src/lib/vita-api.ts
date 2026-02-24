@@ -270,6 +270,89 @@ export function getCodexExportPdfUrl(): string {
   return `${API_BASE}/codex/export/pdf`;
 }
 
+// --- Forge ---
+
+export interface ForgeDocumentSummary {
+  id: string;
+  title: string;
+  version: number;
+  codex_ref: number | null;
+  locked: boolean;
+  updated_at: string;
+}
+
+export interface ForgeDocument {
+  id: string;
+  title: string;
+  content: string;
+  version: number;
+  codex_ref: number | null;
+  locked: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ForgeDiff {
+  id: string;
+  document_id: string;
+  author_id: string;
+  title: string;
+  description: string | null;
+  content_new: string;
+  status: string;
+  votes_for: number;
+  votes_against: number;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewer_id: string | null;
+  author_pseudo: string | null;
+}
+
+export interface ForgeDocumentDetail {
+  document: ForgeDocument;
+  diffs: ForgeDiff[];
+}
+
+export interface ForgeHistoryEntry {
+  id: string;
+  document_id: string;
+  version: number;
+  content: string;
+  diff_id: string | null;
+  author_id: string | null;
+  created_at: string;
+}
+
+export async function getForgeDocuments(): Promise<ForgeDocumentSummary[]> {
+  const res = await fetch(`${API_BASE}/forge/documents`, { headers: headers() });
+  return handleResponse<ForgeDocumentSummary[]>(res);
+}
+
+export async function getForgeDocument(id: string): Promise<ForgeDocumentDetail> {
+  const res = await fetch(`${API_BASE}/forge/documents/${id}`, { headers: headers() });
+  return handleResponse<ForgeDocumentDetail>(res);
+}
+
+export async function getForgeDocumentHistory(id: string): Promise<ForgeHistoryEntry[]> {
+  const res = await fetch(`${API_BASE}/forge/documents/${id}/history`, { headers: headers() });
+  return handleResponse<ForgeHistoryEntry[]>(res);
+}
+
+// --- Delegations ---
+
+export interface DelegateInfo {
+  id: string;
+  display_name: string | null;
+  role: string | null;
+  delegation_count: number | null;
+  created_at: string | null;
+}
+
+export async function getDelegates(): Promise<DelegateInfo[]> {
+  const res = await fetch(`${API_BASE}/governance/delegates`, { headers: headers() });
+  return handleResponse<DelegateInfo[]>(res);
+}
+
 // --- Health ---
 
 export async function healthCheck(): Promise<{ status: string; version: string }> {

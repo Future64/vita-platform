@@ -13,6 +13,7 @@ import {
   Settings,
   Code,
   History,
+  GitBranch,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -24,6 +25,8 @@ import {
   getCodexArticle,
   getCodexArticleVersions,
   getCodexAmendments,
+  getForgeDocuments,
+  type ForgeDocumentSummary,
 } from "@/lib/vita-api";
 
 const sidebarItems: SidebarItem[] = [
@@ -41,6 +44,7 @@ export default function ArticleDetailPage() {
   const [article, setArticle] = useState<CodexArticle | null>(null);
   const [versions, setVersions] = useState<CodexVersion[]>([]);
   const [amendments, setAmendments] = useState<CodexAmendment[]>([]);
+  const [forgeDoc, setForgeDoc] = useState<ForgeDocumentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +72,17 @@ export default function ArticleDetailPage() {
           );
         } catch {
           // Amendments are optional
+        }
+
+        // Find matching Forge document for non-immutable articles
+        if (!art.immutable) {
+          try {
+            const forgeDocs = await getForgeDocuments();
+            const match = forgeDocs.find((d) => d.codex_ref === art.number);
+            if (match) setForgeDoc(match);
+          } catch {
+            // Forge is optional
+          }
         }
       } catch (err) {
         console.error("Codex article load error:", err);
@@ -397,6 +412,14 @@ export default function ArticleDetailPage() {
                       Proposer un amendement
                     </Button>
                   </Link>
+                  {forgeDoc && (
+                    <Link href={`/forge/${forgeDoc.id}`} className="block">
+                      <Button variant="secondary" className="w-full">
+                        <GitBranch className="h-4 w-4" />
+                        Modifier dans la Forge
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </CardContent>
             </Card>

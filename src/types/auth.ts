@@ -6,6 +6,9 @@ export type UserRole =
   | 'admin'          // Administrateur — gestion utilisateurs et parametres
   | 'moderateur'     // Moderateur — gestion du contenu
   | 'auditeur'       // Auditeur — lecture seule avancee, rapports
+  | 'gardien'        // Gardien — 500+ delegations, pilier de VITA
+  | 'mandataire'     // Mandataire — 200+ delegations, influence reconnue
+  | 'referent'       // Referent — 50+ delegations, confiance communautaire
   | 'delegue'        // Delegue — droits etendus via delegation democratique
   | 'citoyen'        // Citoyen verifie — acces standard complet
   | 'nouveau'        // Nouveau — acces limite (pas encore verifie)

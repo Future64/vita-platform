@@ -5,6 +5,7 @@ mod codex;
 mod credit;
 mod crypto;
 mod emissions;
+mod forge;
 pub mod governance;
 mod health;
 pub mod identity;
@@ -99,6 +100,15 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/governance/parametres/{nom}", web::get().to(governance::get_parametre))
             .route("/governance/parametres/{nom}/historique", web::get().to(governance::get_historique_parametre))
 
+            // Forge (public — read-only)
+            .route("/forge/documents", web::get().to(forge::list_documents))
+            .route("/forge/documents/{id}", web::get().to(forge::get_document))
+            .route("/forge/documents/{id}/history", web::get().to(forge::get_document_history))
+
+            // Delegations (public — read-only)
+            .route("/governance/delegates", web::get().to(governance::list_delegates))
+            .route("/governance/delegations/mine", web::get().to(governance::get_my_delegations))
+
             // ── Protected routes (JWT required via AuthUser extractor) ──
 
             // Accounts
@@ -130,6 +140,15 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
             // Codex (write operations)
             .route("/codex/amendments", web::post().to(codex::create_amendment))
+
+            // Forge (write operations — auth required)
+            .route("/forge/documents/{id}/diffs", web::post().to(forge::create_diff))
+            .route("/forge/diffs/{id}/vote", web::post().to(forge::vote_diff))
+            .route("/forge/diffs/{id}/merge", web::post().to(forge::merge_diff))
+
+            // Delegations (write operations — auth required)
+            .route("/governance/delegate", web::post().to(governance::create_delegation))
+            .route("/governance/delegate", web::delete().to(governance::revoke_delegation))
 
             // Governance (write operations — auth required)
             .route("/governance/doleances", web::post().to(governance::create_doleance))

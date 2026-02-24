@@ -32,6 +32,7 @@ import {
   X,
   Search,
   Loader2,
+  Users,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -48,6 +49,7 @@ import { formatNumber } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { ROLE_METADATA } from "@/lib/permissions";
+import { api } from "@/lib/api";
 import { PhotoUpload } from "@/components/modules/civis/PhotoUpload";
 import { AvatarGenere } from "@/components/modules/civis/AvatarGenere";
 import type { ModeVisibilite, IdentitePublique, IdentiteProfessionnelle } from "@/types/auth";
@@ -168,6 +170,60 @@ function UnsavedChangesModal({ onDiscard, onStay }: { onDiscard: () => void; onS
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Delegations Card ───
+function DelegationsCard() {
+  const [delegations, setDelegations] = useState<Array<{
+    id: string;
+    delegate_id: string;
+    delegate_name: string | null;
+    scope: string;
+    created_at: string;
+  }>>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    api.getMyDelegations()
+      .then(setDelegations)
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Mes delegations
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {delegations.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)]">
+            Vous n&apos;avez pas encore delegue votre voix.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {delegations.map((del) => (
+              <div key={del.id} className="flex items-center justify-between text-sm">
+                <span className="text-[var(--text-primary)]">{del.delegate_name || "Anonyme"}</span>
+                <span className="text-xs text-[var(--text-muted)]">{del.scope}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <a
+          href="/agora/delegues"
+          className="mt-3 block text-xs text-violet-500 hover:underline"
+        >
+          Gerer mes delegations
+        </a>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1668,6 +1724,8 @@ export default function CivisProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <DelegationsCard />
             </div>
           </div>
         </TabsContent>

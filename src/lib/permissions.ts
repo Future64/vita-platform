@@ -10,6 +10,9 @@ import {
   User,
   UserPlus,
   Ban,
+  Landmark,
+  Handshake,
+  Users,
 } from "lucide-react";
 
 // --- Matrice de permissions par role ---
@@ -76,6 +79,34 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'edit_own_profile', 'view_all_profiles',
     'access_admin_panel', 'view_audit_logs', 'view_system_stats',
     'receive_vita',
+  ],
+
+  gardien: [
+    ...CITOYEN_PERMISSIONS,
+    'moderate_proposal',
+    'approve_demande_integration',
+    'integrer_version',
+    'validate_amendment',
+    'view_all_profiles',
+    'view_system_stats',
+    'view_audit_logs',
+  ],
+
+  mandataire: [
+    ...CITOYEN_PERMISSIONS,
+    'approve_demande_integration',
+    'integrer_version',
+    'validate_amendment',
+    'view_all_profiles',
+    'view_system_stats',
+  ],
+
+  referent: [
+    ...CITOYEN_PERMISSIONS,
+    'approve_demande_integration',
+    'validate_amendment',
+    'view_all_profiles',
+    'view_system_stats',
   ],
 
   delegue: [
@@ -168,13 +199,37 @@ export const ROLE_METADATA: Record<UserRole, RoleMetadata> = {
     icon: FileSearch,
     order: 4,
   },
+  gardien: {
+    key: 'gardien',
+    label: 'Gardien',
+    description: 'Pilier de VITA — 500+ delegations recues',
+    color: '#f59e0b',
+    icon: Landmark,
+    order: 5,
+  },
+  mandataire: {
+    key: 'mandataire',
+    label: 'Mandataire',
+    description: 'Influence reconnue — 200+ delegations recues',
+    color: '#10b981',
+    icon: Handshake,
+    order: 6,
+  },
+  referent: {
+    key: 'referent',
+    label: 'Referent',
+    description: 'Confiance communautaire — 50+ delegations recues',
+    color: '#06b6d4',
+    icon: Users,
+    order: 7,
+  },
   delegue: {
     key: 'delegue',
     label: 'Delegue',
     description: 'Droits etendus via delegation democratique',
     color: '#10b981',
     icon: UserCheck,
-    order: 5,
+    order: 8,
   },
   citoyen: {
     key: 'citoyen',
@@ -182,7 +237,7 @@ export const ROLE_METADATA: Record<UserRole, RoleMetadata> = {
     description: 'Acces standard complet, verifie',
     color: '#8b5cf6',
     icon: User,
-    order: 6,
+    order: 9,
   },
   nouveau: {
     key: 'nouveau',
@@ -190,7 +245,7 @@ export const ROLE_METADATA: Record<UserRole, RoleMetadata> = {
     description: 'Acces limite, en attente de verification',
     color: '#6b7280',
     icon: UserPlus,
-    order: 7,
+    order: 10,
   },
   observateur: {
     key: 'observateur',
@@ -198,7 +253,7 @@ export const ROLE_METADATA: Record<UserRole, RoleMetadata> = {
     description: 'Lecture seule sur tous les modules',
     color: '#94a3b8',
     icon: Eye,
-    order: 8,
+    order: 11,
   },
   suspendu: {
     key: 'suspendu',
@@ -206,7 +261,7 @@ export const ROLE_METADATA: Record<UserRole, RoleMetadata> = {
     description: 'Acces minimal, compte suspendu',
     color: '#dc2626',
     icon: Ban,
-    order: 9,
+    order: 12,
   },
 };
 

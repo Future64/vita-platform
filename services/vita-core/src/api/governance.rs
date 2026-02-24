@@ -539,3 +539,278 @@ pub async fn check_and_close_votes(
 
     Ok(results)
 }
+
+// ── Delegations ───────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CreateDelegationBody {
+    pub delegate_id: String,
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RevokeDelegationBody {
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+pub struct DelegateRow {
+    pub id: Uuid,
+    pub display_name: Option<String>,
+    pub role: Option<String>,
+    pub delegation_count: Option<i64>,
+    pub created_at: Option<chrono::DateTime<Utc>>,
+}
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+pub struct MyDelegationRow {
+    pub id: Uuid,
+    pub delegate_id: Uuid,
+    pub delegate_name: Option<String>,
+    pub scope: String,
+    pub created_at: chrono::DateTime<Utc>,
+}
+
+/// GET /api/v1/governance/delegates — List delegates with delegation count
+pub async fn list_delegates(
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, VitaError> {
+    let rows = sqlx::query_as::<_, DelegateRow>(
+        r#"SELECT
+               a.id, a.display_name,
+               u.role,
+               dw.delegation_count,
+               u.date_inscription as created_at
+           FROM accounts a
+           JOIN users u ON u.id = a.user_id
+           LEFT JOIN delegation_weights dw ON dw.account_id = a.id
+           WHERE u.role IN ('referent', 'mandataire', 'gardien', 'dieu')
+             AND u.email_verified = TRUE
+           ORDER BY COALESCE(dw.delegation_count, 0) DESC, u.date_inscription ASC"#,
+    )
+    .fetch_all(pool.get_ref())
+    .await?;
+
+    Ok(HttpResponse::Ok().json(rows))
+}
+
+/// GET /api/v1/governance/delegations/mine — My active delegations
+pub async fn get_my_delegations(
+    pool: web::Data<PgPool>,
+    user: AuthUser,
+) -> Result<HttpResponse, VitaError> {
+    let user_id = parse_user_uuid(&user)?;
+
+    // Find account_id for user
+    let account_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM accounts WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    let account_id = account_id
+        .ok_or_else(|| VitaError::NotFound("Compte introuvable".into()))?;
+
+    let rows = sqlx::query_as::<_, MyDelegationRow>(
+        r#"SELECT
+               d.id, d.delegate_id,
+               a.display_name as delegate_name,
+               d.scope, d.created_at
+           FROM delegations d
+           LEFT JOIN accounts a ON a.id = d.delegate_id
+           WHERE d.delegator_id = $1
+           ORDER BY d.created_at DESC"#,
+    )
+    .bind(account_id)
+    .fetch_all(pool.get_ref())
+    .await?;
+
+    Ok(HttpResponse::Ok().json(rows))
+}
+
+/// POST /api/v1/governance/delegate
+pub async fn create_delegation(
+    pool: web::Data<PgPool>,
+    user: AuthUser,
+    body: web::Json<CreateDelegationBody>,
+) -> Result<HttpResponse, VitaError> {
+    require_verified(&user)?;
+    let user_id = parse_user_uuid(&user)?;
+
+    let delegate_id = Uuid::parse_str(&body.delegate_id)
+        .map_err(|_| VitaError::BadRequest("delegate_id invalide".into()))?;
+
+    // Find delegator's account_id
+    let delegator_account: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM accounts WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    let delegator_account = delegator_account
+        .ok_or_else(|| VitaError::NotFound("Compte delegant introuvable".into()))?;
+
+    // Prevent self-delegation
+    if delegator_account == delegate_id {
+        return Err(VitaError::BadRequest(
+            "Vous ne pouvez pas vous deleguer a vous-meme".into(),
+        ));
+    }
+
+    let scope = body.scope.as_deref().unwrap_or("all");
+
+    // Upsert
+    sqlx::query(
+        r#"INSERT INTO delegations (delegator_id, delegate_id, scope)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (delegator_id, scope)
+           DO UPDATE SET delegate_id = EXCLUDED.delegate_id, created_at = NOW()"#,
+    )
+    .bind(delegator_account)
+    .bind(delegate_id)
+    .bind(scope)
+    .execute(pool.get_ref())
+    .await?;
+
+    // Recalculate role
+    check_and_promote_role(pool.get_ref(), delegate_id).await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({ "ok": true })))
+}
+
+/// DELETE /api/v1/governance/delegate
+pub async fn revoke_delegation(
+    pool: web::Data<PgPool>,
+    user: AuthUser,
+    body: web::Json<RevokeDelegationBody>,
+) -> Result<HttpResponse, VitaError> {
+    let user_id = parse_user_uuid(&user)?;
+
+    let delegator_account: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM accounts WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    let delegator_account = delegator_account
+        .ok_or_else(|| VitaError::NotFound("Compte introuvable".into()))?;
+
+    let scope = body.scope.as_deref().unwrap_or("all");
+
+    let old_delegate: Option<Uuid> = sqlx::query_scalar(
+        "DELETE FROM delegations WHERE delegator_id = $1 AND scope = $2 RETURNING delegate_id",
+    )
+    .bind(delegator_account)
+    .bind(scope)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    // Recalculate old delegate's role
+    if let Some(old_id) = old_delegate {
+        check_and_promote_role(pool.get_ref(), old_id).await?;
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({ "ok": true })))
+}
+
+// ── Role promotion ────────────────────────────────────────────────────
+
+const THRESHOLD_REFERENT: i64 = 50;
+const THRESHOLD_MANDATAIRE: i64 = 200;
+const THRESHOLD_GARDIEN: i64 = 500;
+
+async fn check_and_promote_role(
+    pool: &PgPool,
+    account_id: Uuid,
+) -> Result<(), VitaError> {
+    // Count delegations received
+    let delegation_count: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(COUNT(*), 0) FROM delegations WHERE delegate_id = $1",
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await?;
+
+    // Determine target role
+    let new_role = if delegation_count >= THRESHOLD_GARDIEN {
+        "gardien"
+    } else if delegation_count >= THRESHOLD_MANDATAIRE {
+        "mandataire"
+    } else if delegation_count >= THRESHOLD_REFERENT {
+        "referent"
+    } else {
+        "citoyen"
+    };
+
+    // Get current role (via user)
+    let current_role: Option<String> = sqlx::query_scalar(
+        "SELECT u.role FROM users u JOIN accounts a ON a.user_id = u.id WHERE a.id = $1",
+    )
+    .bind(account_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let current_role = match current_role {
+        Some(r) => r,
+        None => return Ok(()), // No user found — skip
+    };
+
+    // Don't downgrade admin/dieu roles
+    if ["dieu", "super_admin", "admin"].contains(&current_role.as_str()) {
+        return Ok(());
+    }
+
+    if current_role != new_role {
+        sqlx::query(
+            "UPDATE users SET role = $1 FROM accounts WHERE accounts.user_id = users.id AND accounts.id = $2",
+        )
+        .bind(new_role)
+        .bind(account_id)
+        .execute(pool)
+        .await?;
+
+        // Create notification
+        let (titre, contenu) = match new_role {
+            "referent" => (
+                "Vous etes maintenant Referent",
+                "La communaute vous fait confiance. Vous avez recu 50+ delegations.",
+            ),
+            "mandataire" => (
+                "Vous etes maintenant Mandataire",
+                "Votre influence grandit. 200+ membres vous deleguent leur voix.",
+            ),
+            "gardien" => (
+                "Vous etes maintenant Gardien",
+                "Vous etes l'un des piliers de VITA. 500+ delegations recues.",
+            ),
+            _ => (
+                "Votre role a change",
+                "Votre niveau de delegation a evolue.",
+            ),
+        };
+
+        // Find user_id for notification
+        let notify_user_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT user_id FROM accounts WHERE id = $1",
+        )
+        .bind(account_id)
+        .fetch_optional(pool)
+        .await?;
+
+        if let Some(uid) = notify_user_id {
+            let _ = sqlx::query(
+                "INSERT INTO notifications (user_id, type, titre, contenu, lien) VALUES ($1, 'role_change', $2, $3, '/civis')",
+            )
+            .bind(uid)
+            .bind(titre)
+            .bind(contenu)
+            .execute(pool)
+            .await;
+        }
+    }
+
+    Ok(())
+}

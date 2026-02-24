@@ -679,6 +679,59 @@ class ApiClient {
     }>("GET", "/statistics/summary");
   }
 
+  // ── FORGE ────────────────────────────────────────────────────
+
+  async createForgeDiff(documentId: string, body: { title: string; description?: string; content_new: string }) {
+    return this.request<{ diff_id: string }>(
+      "POST",
+      `/forge/documents/${documentId}/diffs`,
+      body
+    );
+  }
+
+  async voteForgeDiff(diffId: string, choice: "for" | "against") {
+    return this.request<{ ok: boolean }>(
+      "POST",
+      `/forge/diffs/${diffId}/vote`,
+      { choice }
+    );
+  }
+
+  async mergeForgeDiff(diffId: string) {
+    return this.request<{ ok: boolean }>(
+      "POST",
+      `/forge/diffs/${diffId}/merge`
+    );
+  }
+
+  // ── DELEGATIONS ─────────────────────────────────────────────
+
+  async createDelegation(delegateId: string, scope?: string) {
+    return this.request<{ ok: boolean }>(
+      "POST",
+      "/governance/delegate",
+      { delegate_id: delegateId, scope: scope ?? "all" }
+    );
+  }
+
+  async revokeDelegation(scope?: string) {
+    return this.request<{ ok: boolean }>(
+      "DELETE",
+      "/governance/delegate",
+      { scope: scope ?? "all" }
+    );
+  }
+
+  async getMyDelegations() {
+    return this.request<Array<{
+      id: string;
+      delegate_id: string;
+      delegate_name: string | null;
+      scope: string;
+      created_at: string;
+    }>>("GET", "/governance/delegations/mine");
+  }
+
   // ── HEALTH ───────────────────────────────────────────────────
 
   async health() {

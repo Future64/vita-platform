@@ -8,6 +8,7 @@ import {
   FileText,
   Vote,
   Archive,
+  Users,
   Plus,
   Settings,
   ArrowRight,
@@ -114,6 +115,7 @@ export default function AgoraPage() {
     { icon: Scroll, label: "Doleances", href: "/agora/grievances", badge: "8", badgeVariant: "orange" },
     { icon: FileText, label: "Propositions", href: "/agora/proposals" },
     { icon: Vote, label: "Votes actifs", href: "/agora/votes", badge: "3", badgeVariant: "green" },
+    { icon: Users, label: "Delegues", href: "/agora/delegues" },
     { icon: Archive, label: "Archives", href: "/agora/archives" },
   ];
 
