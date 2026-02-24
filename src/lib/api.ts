@@ -148,11 +148,11 @@ class ApiClient {
     nullifier_hash?: string;
   }) {
     // Map frontend field names to backend RegisterRequest fields
+    // Backend now returns { message, email, user_id } instead of AuthResponse
     return this.request<{
-      user: { id: string; username: string };
-      access_token: string;
-      refresh_token: string;
-      expires_in: number;
+      message: string;
+      email: string;
+      user_id: string;
     }>("POST", "/auth/register", {
       username: data.username,
       email: data.email,
@@ -165,6 +165,23 @@ class ApiClient {
       pseudonyme: data.pseudonyme,
       nullifier_hash: data.nullifier_hash,
     });
+  }
+
+  async verifyEmail(token: string) {
+    return this.request<{
+      user: { id: string; username: string };
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    }>("POST", "/auth/verify-email", { token });
+  }
+
+  async resendVerification(email: string) {
+    return this.request<{ message: string }>(
+      "POST",
+      "/auth/resend-verification",
+      { email }
+    );
   }
 
   async login(data: { username_or_email: string; password: string }) {

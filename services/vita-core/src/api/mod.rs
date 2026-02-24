@@ -28,6 +28,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/auth/register", web::post().to(auth::register))
             .route("/auth/login", web::post().to(auth::login))
             .route("/auth/refresh", web::post().to(auth::refresh))
+            .route("/auth/verify-email", web::post().to(auth::verify_email))
+            .route("/auth/resend-verification", web::post().to(auth::resend_verification))
 
             // Codex (public, read-only)
             .route("/codex/titles", web::get().to(codex::get_titles))

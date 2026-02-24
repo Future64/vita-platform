@@ -546,8 +546,19 @@ export default function RegisterPage() {
       });
 
       if (result === true) {
+        // Mock mode — no email verification, go straight to welcome
         toast.success("Bienvenue sur VITA !");
-        router.push("/panorama");
+        router.push("/auth/welcome");
+      } else if (
+        typeof result === "object" &&
+        result !== null &&
+        "needsVerification" in result &&
+        result.needsVerification
+      ) {
+        // API mode — email verification required
+        router.push(
+          `/auth/verify-email-pending?email=${encodeURIComponent(result.email)}`
+        );
       } else {
         const errorMsg =
           typeof result === "string"

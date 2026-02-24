@@ -11,6 +11,7 @@ use crate::auth::jwt;
 use crate::auth::middleware::{AuthUser, JwtSecret};
 use crate::auth::password;
 use crate::error::VitaError;
+use crate::services::email::EmailService;
 
 // ── Request / Response types ────────────────────────────────────────
 
@@ -57,6 +58,16 @@ pub struct UpdateProfileRequest {
 pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VerifyEmailRequest {
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResendVerificationRequest {
+    pub email: String,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -200,7 +211,8 @@ fn validate_username(username: &str) -> Result<(), VitaError> {
 /// POST /api/v1/auth/register
 pub async fn register(
     pool: web::Data<PgPool>,
-    jwt_secret: web::Data<JwtSecret>,
+    _jwt_secret: web::Data<JwtSecret>,
+    email_service: web::Data<EmailService>,
     body: web::Json<RegisterRequest>,
 ) -> Result<HttpResponse, VitaError> {
     // Validate input
@@ -239,7 +251,7 @@ pub async fn register(
         None
     };
 
-    // Insert user
+    // Insert user (email_verified = false by default)
     let user = sqlx::query_as::<_, UserRow>(
         r#"INSERT INTO users (
             email, password_hash, prenom_legal, nom_legal, date_naissance,
@@ -298,43 +310,24 @@ pub async fn register(
     .execute(pool.get_ref())
     .await?;
 
-    // Generate tokens
-    let access_expiry = jwt_expiry_access();
-    let refresh_expiry = jwt_expiry_refresh();
-    let user_id_str = user.id.to_string();
-
-    let access_token = jwt::generate_access_token(
-        &user_id_str,
-        &user.role,
-        &user.username,
-        &user.verification_statut,
-        &jwt_secret.0,
-        access_expiry,
-    )?;
-    let refresh_token = jwt::generate_refresh_token(
-        &user_id_str,
-        &user.role,
-        &user.username,
-        &user.verification_statut,
-        &jwt_secret.0,
-        refresh_expiry,
-    )?;
-
-    // Store session
-    let token_hash = format!("{:x}", sha2::Digest::finalize(sha2::Sha256::new_with_prefix(access_token.as_bytes())));
-    let refresh_hash = format!("{:x}", sha2::Digest::finalize(sha2::Sha256::new_with_prefix(refresh_token.as_bytes())));
-    let expires_at = Utc::now() + chrono::Duration::seconds(access_expiry as i64);
+    // Generate email verification token
+    let token = hex::encode(rand::random::<[u8; 32]>());
+    let expires_at = Utc::now() + chrono::Duration::hours(24);
 
     sqlx::query(
-        r#"INSERT INTO sessions (user_id, token_hash, refresh_token_hash, expires_at)
-           VALUES ($1, $2, $3, $4)"#,
+        r#"INSERT INTO email_verification_tokens (user_id, token, expires_at)
+           VALUES ($1, $2, $3)"#,
     )
     .bind(user.id)
-    .bind(&token_hash)
-    .bind(&refresh_hash)
+    .bind(&token)
     .bind(expires_at)
     .execute(pool.get_ref())
     .await?;
+
+    // Send verification email (fire-and-forget — don't fail register if email fails)
+    let _ = email_service
+        .send_verification_email(&user.email, &token, &user.username)
+        .await;
 
     // Audit
     audit::audit(
@@ -348,22 +341,11 @@ pub async fn register(
         Some(("user", user.id)),
     );
 
-    Ok(HttpResponse::Created().json(AuthResponse {
-        user: UserPublic {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            verification_statut: user.verification_statut,
-            mode_visibilite: user.mode_visibilite,
-            prenom_affiche: user.prenom_affiche,
-            nom_affiche: user.nom_affiche,
-            date_inscription: user.date_inscription.to_rfc3339(),
-        },
-        access_token,
-        refresh_token,
-        expires_in: access_expiry,
-    }))
+    Ok(HttpResponse::Created().json(serde_json::json!({
+        "message": "verification_email_sent",
+        "email": user.email,
+        "user_id": user.id.to_string()
+    })))
 }
 
 /// POST /api/v1/auth/login
@@ -405,6 +387,22 @@ pub async fn login(
         return Err(VitaError::Unauthorized(
             "Email ou mot de passe incorrect".into(),
         ));
+    }
+
+    // Check email verified
+    let email_verified: bool = sqlx::query_scalar(
+        "SELECT email_verified FROM users WHERE id = $1",
+    )
+    .bind(user.id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    if !email_verified {
+        return Ok(HttpResponse::Forbidden().json(serde_json::json!({
+            "error": "email_not_verified",
+            "email": user.email,
+            "message": "Veuillez confirmer votre email avant de vous connecter"
+        })));
     }
 
     // Check suspension
@@ -764,5 +762,183 @@ pub async fn change_password(
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Mot de passe mis a jour. Toutes les sessions ont ete revoquees."
+    })))
+}
+
+/// POST /api/v1/auth/verify-email (public)
+pub async fn verify_email(
+    pool: web::Data<PgPool>,
+    jwt_secret: web::Data<JwtSecret>,
+    body: web::Json<VerifyEmailRequest>,
+) -> Result<HttpResponse, VitaError> {
+    // Look up token
+    #[derive(sqlx::FromRow)]
+    struct TokenRow {
+        id: Uuid,
+        user_id: Uuid,
+        used: bool,
+        expires_at: chrono::DateTime<Utc>,
+    }
+
+    let token_row = sqlx::query_as::<_, TokenRow>(
+        r#"SELECT id, user_id, used, expires_at
+           FROM email_verification_tokens
+           WHERE token = $1"#,
+    )
+    .bind(&body.token)
+    .fetch_optional(pool.get_ref())
+    .await?
+    .ok_or_else(|| VitaError::BadRequest("invalid_token".into()))?;
+
+    if token_row.used {
+        return Err(VitaError::BadRequest("invalid_token".into()));
+    }
+
+    if token_row.expires_at < Utc::now() {
+        return Err(VitaError::BadRequest("token_expired".into()));
+    }
+
+    // Mark email as verified
+    sqlx::query("UPDATE users SET email_verified = TRUE WHERE id = $1")
+        .bind(token_row.user_id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Mark token as used
+    sqlx::query("UPDATE email_verification_tokens SET used = TRUE WHERE id = $1")
+        .bind(token_row.id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Fetch user to generate tokens
+    let user = sqlx::query_as::<_, UserRow>(
+        r#"SELECT id, email, username, role, verification_statut, mode_visibilite,
+                  prenom_affiche, nom_affiche, pseudonyme, bio, photo_profil,
+                  pays_affiche, date_inscription, derniere_connexion, password_hash,
+                  niveau_confiance, verification_date, verification_expiration
+           FROM users WHERE id = $1"#,
+    )
+    .bind(token_row.user_id)
+    .fetch_one(pool.get_ref())
+    .await?;
+
+    // Generate tokens (same logic as login)
+    let access_expiry = jwt_expiry_access();
+    let refresh_expiry = jwt_expiry_refresh();
+    let user_id_str = user.id.to_string();
+
+    let access_token = jwt::generate_access_token(
+        &user_id_str,
+        &user.role,
+        &user.username,
+        &user.verification_statut,
+        &jwt_secret.0,
+        access_expiry,
+    )?;
+    let refresh_token = jwt::generate_refresh_token(
+        &user_id_str,
+        &user.role,
+        &user.username,
+        &user.verification_statut,
+        &jwt_secret.0,
+        refresh_expiry,
+    )?;
+
+    // Store session
+    let token_hash = format!("{:x}", sha2::Digest::finalize(sha2::Sha256::new_with_prefix(access_token.as_bytes())));
+    let refresh_hash = format!("{:x}", sha2::Digest::finalize(sha2::Sha256::new_with_prefix(refresh_token.as_bytes())));
+    let expires_at = Utc::now() + chrono::Duration::seconds(access_expiry as i64);
+
+    sqlx::query(
+        r#"INSERT INTO sessions (user_id, token_hash, refresh_token_hash, expires_at)
+           VALUES ($1, $2, $3, $4)"#,
+    )
+    .bind(user.id)
+    .bind(&token_hash)
+    .bind(&refresh_hash)
+    .bind(expires_at)
+    .execute(pool.get_ref())
+    .await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        None,
+        "user.email_verified",
+        "auth",
+        "info",
+        &format!("Email verifie pour @{}", &user.username),
+        None,
+        Some(("user", user.id)),
+    );
+
+    Ok(HttpResponse::Ok().json(AuthResponse {
+        user: UserPublic {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            verification_statut: user.verification_statut,
+            mode_visibilite: user.mode_visibilite,
+            prenom_affiche: user.prenom_affiche,
+            nom_affiche: user.nom_affiche,
+            date_inscription: user.date_inscription.to_rfc3339(),
+        },
+        access_token,
+        refresh_token,
+        expires_in: access_expiry,
+    }))
+}
+
+/// POST /api/v1/auth/resend-verification (public)
+pub async fn resend_verification(
+    pool: web::Data<PgPool>,
+    email_service: web::Data<EmailService>,
+    body: web::Json<ResendVerificationRequest>,
+) -> Result<HttpResponse, VitaError> {
+    // Find user by email (non-verified, active) — always return 200 to avoid info leak
+    let user_opt = sqlx::query_as::<_, UserRow>(
+        r#"SELECT id, email, username, role, verification_statut, mode_visibilite,
+                  prenom_affiche, nom_affiche, pseudonyme, bio, photo_profil,
+                  pays_affiche, date_inscription, derniere_connexion, password_hash,
+                  niveau_confiance, verification_date, verification_expiration
+           FROM users
+           WHERE email = $1 AND email_verified = FALSE AND actif = TRUE"#,
+    )
+    .bind(&body.email)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    if let Some(user) = user_opt {
+        // Invalidate old tokens
+        sqlx::query(
+            "UPDATE email_verification_tokens SET used = TRUE WHERE user_id = $1 AND used = FALSE",
+        )
+        .bind(user.id)
+        .execute(pool.get_ref())
+        .await?;
+
+        // Generate new token
+        let token = hex::encode(rand::random::<[u8; 32]>());
+        let expires_at = Utc::now() + chrono::Duration::hours(24);
+
+        sqlx::query(
+            r#"INSERT INTO email_verification_tokens (user_id, token, expires_at)
+               VALUES ($1, $2, $3)"#,
+        )
+        .bind(user.id)
+        .bind(&token)
+        .bind(expires_at)
+        .execute(pool.get_ref())
+        .await?;
+
+        // Send email
+        let _ = email_service
+            .send_verification_email(&user.email, &token, &user.username)
+            .await;
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Si cette adresse est associee a un compte non verifie, un email a ete envoye."
     })))
 }

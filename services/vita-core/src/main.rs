@@ -9,6 +9,7 @@ pub mod error;
 pub mod governance;
 pub mod identity;
 pub mod monetary;
+pub mod services;
 pub mod transaction;
 mod valuation;
 pub mod ws;
@@ -136,6 +137,9 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    // Create email service
+    let email_service = web::Data::new(services::email::EmailService::new());
+
     // Create shared WebSocket server
     let ws_server = web::Data::new(ws::WsServer::new());
     info!("WebSocket server initialized");
@@ -158,6 +162,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(params.clone()))
             .app_data(web::Data::new(jwt_secret.clone()))
+            .app_data(email_service.clone())
             .app_data(ws_server.clone())
             .wrap(cors)
             .wrap(middleware::Logger::default())

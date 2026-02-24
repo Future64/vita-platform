@@ -29,6 +29,16 @@ import { api, ApiError } from "@/lib/api";
 
 // --- Context type ---
 
+type RegisterResult =
+  | true
+  | string
+  | { needsVerification: true; email: string };
+
+type LoginResult =
+  | true
+  | false
+  | { needsVerification: true; email: string };
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -36,8 +46,9 @@ interface AuthContextType {
   isMockMode: boolean;
   simulatedRole: UserRole | null;
   activeRole: UserRole;
-  login: (emailOrUsername: string, password: string) => Promise<boolean>;
-  register: (data: RegisterData) => Promise<boolean | string>;
+  login: (emailOrUsername: string, password: string) => Promise<LoginResult>;
+  register: (data: RegisterData) => Promise<RegisterResult>;
+  verifyEmail: (token: string) => Promise<true | string>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   updatePreferences: (prefs: Partial<UserPreferences>) => void;
@@ -312,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --- Login: try API, fallback to mock ---
 
-  const login = useCallback(async (emailOrUsername: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (emailOrUsername: string, password: string): Promise<LoginResult> => {
     if (!isMockMode) {
       try {
         const result = await api.login({
@@ -332,8 +343,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isNetworkError(err)) {
           activateMockMode();
           // Fall through to mock login
+        } else if (err instanceof ApiError) {
+          // Check for email_not_verified response (403)
+          try {
+            const parsed = JSON.parse(err.message);
+            if (parsed.error === "email_not_verified" && parsed.email) {
+              return { needsVerification: true, email: parsed.email };
+            }
+          } catch {
+            // Not JSON — regular auth error
+          }
+          return false;
         } else {
-          // API reachable but login failed (wrong credentials)
           return false;
         }
       }
@@ -360,7 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --- Register: try API, fallback to mock ---
 
-  const register = useCallback(async (data: RegisterData): Promise<boolean | string> => {
+  const register = useCallback(async (data: RegisterData): Promise<RegisterResult> => {
     if (!isMockMode) {
       try {
         const result = await api.register({
@@ -375,13 +396,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           pseudonyme: data.pseudonyme,
           nullifier_hash: data.nullifierHash,
         });
-        api.setToken(result.access_token);
-        if (typeof window !== "undefined" && result.refresh_token) {
-          localStorage.setItem("vita_refresh_token", result.refresh_token);
+        // Backend now returns { message: "verification_email_sent", email, user_id }
+        if (result.message === "verification_email_sent") {
+          return { needsVerification: true, email: result.email };
         }
-        // Fetch full profile
-        const profile = await api.getMe();
-        setUser(apiProfileToUser(profile));
         return true;
       } catch (err) {
         if (isNetworkError(err)) {
@@ -402,10 +420,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Mock register
+    // Mock register — no email verification, direct login
     const users = getStoredUsers();
     if (users.some((u) => u.email === data.email || u.username === data.username)) {
-      return false;
+      return "Email ou username deja utilise";
     }
 
     const identiteVerifiee = defaultIdentiteVerifiee(data);
@@ -445,6 +463,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(storedToUser(newUser));
     return true;
   }, [isMockMode, activateMockMode]);
+
+  // --- Verify email ---
+
+  const verifyEmail = useCallback(async (token: string): Promise<true | string> => {
+    try {
+      const result = await api.verifyEmail(token);
+      api.setToken(result.access_token);
+      if (typeof window !== "undefined" && result.refresh_token) {
+        localStorage.setItem("vita_refresh_token", result.refresh_token);
+      }
+      // Fetch full profile
+      const profile = await api.getMe();
+      setUser(apiProfileToUser(profile));
+      return true;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        try {
+          const parsed = JSON.parse(err.message);
+          return parsed.error || parsed.message || err.message;
+        } catch {
+          return err.message || "Erreur lors de la verification";
+        }
+      }
+      return "Erreur lors de la verification";
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // --- Logout ---
 
@@ -641,6 +686,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeRole,
         login,
         register,
+        verifyEmail,
         logout,
         updateProfile,
         updatePreferences,

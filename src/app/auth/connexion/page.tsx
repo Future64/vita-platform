@@ -27,11 +27,21 @@ export default function ConnexionPage() {
     setError(null);
     setSubmitting(true);
 
-    const success = await login(identifier, password);
+    const result = await login(identifier, password);
 
-    if (success) {
+    if (result === true) {
       toast.success("Connecte avec succes");
       router.push("/panorama");
+    } else if (
+      typeof result === "object" &&
+      result !== null &&
+      "needsVerification" in result &&
+      result.needsVerification
+    ) {
+      // Email not verified — redirect to pending page
+      router.push(
+        `/auth/verify-email-pending?email=${encodeURIComponent(result.email)}`
+      );
     } else {
       toast.error("Identifiants incorrects");
       setError("Identifiants incorrects");

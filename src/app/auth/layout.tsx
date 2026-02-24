@@ -2,25 +2,38 @@
 
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+
+// Pages that render their own full-screen layout (no card wrapper, no redirect)
+const FULL_SCREEN_PATHS = ["/auth/welcome"];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isFullScreen = FULL_SCREEN_PATHS.includes(pathname);
 
   useEffect(() => {
+    // Don't redirect on full-screen pages (like welcome)
+    if (isFullScreen) return;
     if (!isLoading && isAuthenticated) {
       router.replace("/panorama");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, isFullScreen]);
 
-  if (isLoading) {
+  if (isLoading && !isFullScreen) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-base)]">
         <div className="animate-pulse text-[var(--text-muted)]">Chargement...</div>
       </div>
     );
+  }
+
+  // Full-screen pages render directly without the card wrapper
+  if (isFullScreen) {
+    return <>{children}</>;
   }
 
   if (isAuthenticated) {
