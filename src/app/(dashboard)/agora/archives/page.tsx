@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Flame,
   Scroll,
@@ -68,6 +68,7 @@ function ChartTooltip({ active, payload, label }: {
 }
 
 export default function ArchivesPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -177,9 +178,10 @@ export default function ArchivesPage() {
           const againstPct = arch.totalVotes > 0 ? Math.round((arch.votesAgainst / arch.totalVotes) * 100) : 0;
 
           return (
-            <Link key={arch.id} href={`/agora/archives/${arch.id}`} className="block">
               <Card
+                key={arch.id}
                 className="overflow-hidden cursor-pointer hover:border-[var(--border-light)] transition-all"
+                onClick={() => router.push(`/agora/archives/${arch.id}`)}
                 style={{ borderLeftWidth: "3px", borderLeftColor: isAdopte ? "#10b981" : "#ef4444" }}
               >
                 <div className="p-4 md:p-5">
@@ -246,7 +248,6 @@ export default function ArchivesPage() {
                 </div>
               </div>
             </Card>
-            </Link>
           );
         })}
 

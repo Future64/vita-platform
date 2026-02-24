@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Flame,
   Scroll,
@@ -53,6 +54,7 @@ function getSupportBarColor(ratio: number): string {
 }
 
 export default function GrievancesPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [categorieFilter, setCategorieFilter] = useState<CategorieFilter>("all");
   const [statutFilter, setStatutFilter] = useState<StatutFilter>("all");
@@ -172,9 +174,10 @@ export default function GrievancesPage() {
           const isFermee = dol.statut === "fermee";
 
           return (
-            <Link key={dol.id} href={`/agora/doleances/${dol.id}`} className="block">
               <Card
+                key={dol.id}
                 className="p-5 transition-all cursor-pointer hover:border-[var(--border-light)]"
+                onClick={() => router.push(`/agora/doleances/${dol.id}`)}
                 style={
                   isSeuilAtteint && !isConvertie
                     ? { borderColor: "rgba(245, 158, 11, 0.4)" }
@@ -263,14 +266,14 @@ export default function GrievancesPage() {
                   </span>
 
                   {/* Actions */}
-                  <div className="ml-auto flex items-center gap-2" onClick={(e) => e.preventDefault()}>
+                  <div className="ml-auto flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {/* Support button */}
                     {!isFermee && !isConvertie && (
                       <PermissionGate permission="vote_proposal">
                         <Button
                           variant={isSupported ? "secondary" : "outline"}
                           size="sm"
-                          onClick={(e) => { e.preventDefault(); handleSupport(dol.id); }}
+                          onClick={() => handleSupport(dol.id)}
                           disabled={isSupported}
                           className={isSupported ? "text-violet-500" : ""}
                         >
@@ -283,7 +286,7 @@ export default function GrievancesPage() {
                     {/* Convert button for threshold-reached */}
                     {isSeuilAtteint && !isConvertie && (
                       <PermissionGate permission="create_proposal">
-                        <Button variant="primary" size="sm" onClick={(e) => e.preventDefault()}>
+                        <Button variant="primary" size="sm">
                           Convertir en proposition
                         </Button>
                       </PermissionGate>
@@ -291,7 +294,6 @@ export default function GrievancesPage() {
                   </div>
                 </div>
               </Card>
-            </Link>
           );
         })}
 
