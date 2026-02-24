@@ -28,6 +28,7 @@ import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchInput } from "@/components/ui/input";
 import { VoteBar } from "@/components/ui/progress";
 import { formatNumber } from "@/lib/format";
@@ -252,9 +253,11 @@ export default function ArchivesPage() {
         })}
 
         {filteredArchives.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucune proposition archivée ne correspond à votre recherche.
-          </div>
+          <EmptyState
+            icon={Archive}
+            title="Les archives sont vides"
+            description="Les propositions cloturees apparaitront ici avec leurs resultats de vote."
+          />
         )}
       </div>
 

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VoteBar } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { formatNumber } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
@@ -271,9 +272,11 @@ export default function VotesActifsPage() {
         })}
 
         {votingProposals.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucun vote actif pour le moment.
-          </div>
+          <EmptyState
+            icon={Vote}
+            title="Aucun vote actif pour le moment"
+            description="Les propositions soumises au vote de la communaute apparaitront ici."
+          />
         )}
       </div>
     </DashboardLayout>

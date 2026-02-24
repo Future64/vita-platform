@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   MOCK_PROPOSALS,
@@ -204,9 +205,11 @@ export default function PropositionsPage() {
         ))}
 
         {proposals.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucune proposition ne correspond à votre recherche.
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Aucune proposition en discussion"
+            description="Les propositions soumises a la communaute pour debat apparaitront ici."
+          />
         )}
       </div>
     </DashboardLayout>

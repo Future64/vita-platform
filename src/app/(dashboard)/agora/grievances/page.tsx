@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   MOCK_DOLEANCES,
@@ -298,9 +299,12 @@ export default function GrievancesPage() {
         })}
 
         {filteredDoleances.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucune doléance ne correspond à votre recherche.
-          </div>
+          <EmptyState
+            icon={Flame}
+            title="Aucune doleance pour l'instant"
+            description="Exprimez un probleme ou un besoin a la communaute."
+            action={{ label: "Rediger une doleance", onClick: () => setShowModal(true) }}
+          />
         )}
       </div>
 

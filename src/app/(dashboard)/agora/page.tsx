@@ -20,6 +20,7 @@ import { SearchInput } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VoteBar } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useGovernance } from "@/hooks/useGovernance";
 import type { AgoraProposal } from "@/lib/mockProposals";
@@ -287,9 +288,12 @@ export default function AgoraPage() {
         ))}
 
         {filteredProposals.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)]">
-            Aucune proposition ne correspond a votre recherche.
-          </div>
+          <EmptyState
+            icon={Vote}
+            title="Aucune proposition en cours"
+            description="Soyez le premier a soumettre une proposition a la communaute VITA."
+            action={{ label: "Soumettre une proposition", href: "/agora/proposals" }}
+          />
         )}
       </div>
     </DashboardLayout>

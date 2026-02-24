@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ListItem } from "@/components/ui/list-item";
 import Link from "next/link";
 import {
@@ -123,9 +124,11 @@ export default function ForgePage() {
             <CardContent>
               <div className="space-y-4">
                 {filteredProjects.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-                    Aucun projet trouvé pour &ldquo;{search}&rdquo;
-                  </div>
+                  <EmptyState
+                    icon={Code}
+                    title="Aucun projet trouve"
+                    description="La Forge permet de proposer des modifications aux textes fondateurs de VITA."
+                  />
                 ) : (
                   filteredProjects.map((project) => {
                     const badge = statusBadge[project.status];

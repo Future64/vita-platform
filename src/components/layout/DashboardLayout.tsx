@@ -8,6 +8,7 @@ import { SearchModal } from "./SearchModal";
 import { OnboardingChecklist, OnboardingCelebration } from "@/components/onboarding/OnboardingChecklist";
 import { TourGuide } from "@/components/onboarding/TourGuide";
 import { VerificationBanner } from "@/components/verification/VerificationBanner";
+import { MobileNav } from "./MobileNav";
 import { MockModeBanner } from "./MockModeBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_METADATA } from "@/lib/permissions";
@@ -95,11 +96,12 @@ export function DashboardLayout({
           />
         )}
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
             {children}
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

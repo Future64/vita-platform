@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { VerificationProvider } from "@/contexts/VerificationContext";
 import { ToastProvider } from "@/components/ui/Toast";
+import { SessionExpiredBanner } from "@/components/ui/SessionExpiredBanner";
 import { I18nProvider } from "@/contexts/I18nProvider";
 
 const inter = Inter({
@@ -28,6 +29,13 @@ export const metadata: Metadata = {
   description: "Système de gouvernance mondiale et monnaie universelle basée sur la valeur humaine",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,7 +50,10 @@ export default function RootLayout({
               <NotificationProvider>
                 <VerificationProvider>
                   <OnboardingProvider>
-                    <ToastProvider>{children}</ToastProvider>
+                    <ToastProvider>
+                      <SessionExpiredBanner />
+                      {children}
+                    </ToastProvider>
                   </OnboardingProvider>
                 </VerificationProvider>
               </NotificationProvider>

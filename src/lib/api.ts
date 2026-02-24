@@ -96,7 +96,7 @@ class ApiClient {
       // Refresh echoue — deconnecter
       this.clearTokens();
       if (typeof window !== "undefined") {
-        window.location.href = "/auth/connexion";
+        window.dispatchEvent(new Event("vita:unauthorized"));
       }
       throw new ApiError(401, "Session expiree");
     }
