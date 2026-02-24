@@ -106,6 +106,21 @@ async fn main() -> std::io::Result<()> {
                             "Daily emission complete: {}/{} accounts credited for {}",
                             result.successful, result.total_accounts, result.date
                         );
+                        // Insert persistent notifications for all credited accounts
+                        let _ = sqlx::query(
+                            r#"INSERT INTO notifications (user_id, type, titre, contenu, lien)
+                               SELECT a.user_id, 'emission_quotidienne',
+                                      'Votre V quotidien est arrive',
+                                      'Vous avez recu 1 V aujourd''hui. Bonne journee !',
+                                      '/bourse'
+                               FROM emission_log e
+                               JOIN accounts a ON a.id = e.account_id
+                               WHERE e.emission_date = $1
+                                 AND a.user_id IS NOT NULL"#,
+                        )
+                        .bind(today)
+                        .execute(&emission_pool)
+                        .await;
                         last_emission_date = today;
                     }
                     Err(e) => {

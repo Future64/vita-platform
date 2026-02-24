@@ -8,6 +8,7 @@ mod emissions;
 pub mod governance;
 mod health;
 pub mod identity;
+pub mod notifications;
 pub mod statistics;
 mod transactions;
 mod valuation;
@@ -124,6 +125,11 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .route("/identity/parrains-potentiels", web::get().to(identity::search_parrains))
                     .route("/identity/verifications", web::get().to(identity::get_historique_verifications))
                     .route("/identity/cron/check-expirations", web::post().to(identity::cron_check_expirations))
+
+                    // Notifications
+                    .route("/notifications", web::get().to(notifications::get_notifications))
+                    .route("/notifications/mark-read", web::post().to(notifications::mark_all_read))
+                    .route("/notifications/{id}/read", web::post().to(notifications::mark_one_read))
 
                     // Audit — hash chain integrity
                     .route("/audit/logs", web::get().to(audit::get_logs))

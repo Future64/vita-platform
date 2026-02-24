@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::api::notifications::insert_notification;
 use crate::audit;
 use crate::auth::middleware::{AuthUser, require_role};
 use crate::error::VitaError;
@@ -75,6 +76,17 @@ pub async fn claim_emission(
             lien: Some("/bourse".to_string()),
         },
     );
+
+    // Persist notification in DB
+    let _ = insert_notification(
+        pool.get_ref(),
+        uuid::Uuid::parse_str(&user.user_id).unwrap_or_default(),
+        "emission_quotidienne",
+        "Votre V quotidien est arrive",
+        &format!("Vous avez recu {} V aujourd'hui. Bonne journee !", log.amount),
+        Some("/bourse"),
+    )
+    .await;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "emission_date": log.emission_date,

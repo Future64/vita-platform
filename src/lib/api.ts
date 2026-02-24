@@ -502,6 +502,37 @@ class ApiClient {
     return this.request<unknown[]>("GET", "/identity/verifications");
   }
 
+  // ── NOTIFICATIONS ───────────────────────────────────────────
+
+  async getNotifications() {
+    return this.request<{
+      notifications: Array<{
+        id: string;
+        type: string;
+        titre: string;
+        contenu: string;
+        lien: string | null;
+        lue: boolean;
+        created_at: string;
+      }>;
+      unread_count: number;
+    }>("GET", "/notifications");
+  }
+
+  async markAllNotificationsRead() {
+    return this.request<{ ok: boolean }>(
+      "POST",
+      "/notifications/mark-read"
+    );
+  }
+
+  async markNotificationRead(id: string) {
+    return this.request<{ ok: boolean }>(
+      "POST",
+      `/notifications/${id}/read`
+    );
+  }
+
   // ── AUDIT ────────────────────────────────────────────────────
 
   async getAuditLogs(filters?: Record<string, unknown>) {
