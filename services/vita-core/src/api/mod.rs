@@ -13,12 +13,38 @@ pub mod statistics;
 mod transactions;
 mod valuation;
 
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::web;
+use std::time::Duration;
 use crate::auth::middleware::AuthMiddleware;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    // ── Rate limiter configurations (per IP) ─────────────────────
+    // Auth: strict — 5 requests/sec, burst 10 (login, register, password reset)
+    let auth_limiter = GovernorConfigBuilder::default()
+        .period(Duration::from_millis(200)) // 1 token every 200ms = 5 req/s
+        .burst_size(10)
+        .finish()
+        .unwrap();
+
+    // Transfers: strict — 2 requests/sec, burst 5
+    let transfer_limiter = GovernorConfigBuilder::default()
+        .period(Duration::from_millis(500)) // 1 token every 500ms = 2 req/s
+        .burst_size(5)
+        .finish()
+        .unwrap();
+
+    // General API: 30 requests/sec, burst 60
+    let api_limiter = GovernorConfigBuilder::default()
+        .period(Duration::from_millis(33)) // 1 token every ~33ms ≈ 30 req/s
+        .burst_size(60)
+        .finish()
+        .unwrap();
+
     cfg.service(
         web::scope("/api/v1")
+            // Global rate limiter (30 req/s per IP)
+            .wrap(Governor::new(&api_limiter))
             // Optional auth: extracts AuthUser if valid JWT present,
             // continues without it otherwise.
             // Protected handlers enforce auth via the AuthUser extractor.
@@ -30,14 +56,24 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             // Statistics (public, read-only)
             .route("/statistics/summary", web::get().to(statistics::get_summary))
 
-            // Auth (public)
-            .route("/auth/register", web::post().to(auth::register))
-            .route("/auth/login", web::post().to(auth::login))
-            .route("/auth/refresh", web::post().to(auth::refresh))
-            .route("/auth/verify-email", web::post().to(auth::verify_email))
-            .route("/auth/resend-verification", web::post().to(auth::resend_verification))
-            .route("/auth/forgot-password", web::post().to(auth::forgot_password))
-            .route("/auth/reset-password", web::post().to(auth::reset_password))
+            // ── Auth routes (stricter rate limit: 5 req/s per IP) ──
+            .service(
+                web::scope("/auth")
+                    .wrap(Governor::new(&auth_limiter))
+                    // Public
+                    .route("/register", web::post().to(auth::register))
+                    .route("/login", web::post().to(auth::login))
+                    .route("/refresh", web::post().to(auth::refresh))
+                    .route("/verify-email", web::post().to(auth::verify_email))
+                    .route("/resend-verification", web::post().to(auth::resend_verification))
+                    .route("/forgot-password", web::post().to(auth::forgot_password))
+                    .route("/reset-password", web::post().to(auth::reset_password))
+                    // Protected
+                    .route("/logout", web::post().to(auth::logout))
+                    .route("/me", web::get().to(auth::get_me))
+                    .route("/me", web::put().to(auth::update_me))
+                    .route("/me/password", web::put().to(auth::change_password))
+            )
 
             // Codex (public, read-only)
             .route("/codex/titles", web::get().to(codex::get_titles))
@@ -65,12 +101,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
             // ── Protected routes (JWT required via AuthUser extractor) ──
 
-            // Auth (protected)
-            .route("/auth/logout", web::post().to(auth::logout))
-            .route("/auth/me", web::get().to(auth::get_me))
-            .route("/auth/me", web::put().to(auth::update_me))
-            .route("/auth/me/password", web::put().to(auth::change_password))
-
             // Accounts
             .route("/accounts", web::post().to(accounts::create_account))
             .route("/accounts/{id}", web::get().to(accounts::get_account))
@@ -81,13 +111,17 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/emissions/batch", web::post().to(emissions::batch_emission))
             .route("/emissions/{account_id}", web::get().to(emissions::get_emission_history))
 
-            // Transactions
-            .route("/transactions/transfer", web::post().to(transactions::create_transfer))
-            .route("/transactions/transfer-confidentiel", web::post().to(transactions::create_confidential_transfer))
-            .route("/transactions/{id}/commitment", web::get().to(transactions::get_commitment))
-            .route("/transactions/{id}/verify-commitment", web::post().to(transactions::verify_commitment))
-            .route("/transactions/{id}/blinding-factor", web::get().to(transactions::get_blinding_factor))
-            .route("/transactions/{account_id}", web::get().to(transactions::get_transaction_history))
+            // ── Transactions (stricter rate limit: 2 req/s per IP) ──
+            .service(
+                web::scope("/transactions")
+                    .wrap(Governor::new(&transfer_limiter))
+                    .route("/transfer", web::post().to(transactions::create_transfer))
+                    .route("/transfer-confidentiel", web::post().to(transactions::create_confidential_transfer))
+                    .route("/{id}/commitment", web::get().to(transactions::get_commitment))
+                    .route("/{id}/verify-commitment", web::post().to(transactions::verify_commitment))
+                    .route("/{id}/blinding-factor", web::get().to(transactions::get_blinding_factor))
+                    .route("/{account_id}", web::get().to(transactions::get_transaction_history))
+            )
 
             // Credit
             .route("/credit/eligibility/{account_id}", web::get().to(credit::get_eligibility))

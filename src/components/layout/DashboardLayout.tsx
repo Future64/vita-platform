@@ -9,6 +9,7 @@ import { OnboardingChecklist, OnboardingCelebration } from "@/components/onboard
 import { TourGuide } from "@/components/onboarding/TourGuide";
 import { VerificationBanner } from "@/components/verification/VerificationBanner";
 import { MobileNav } from "./MobileNav";
+import { Footer } from "./Footer";
 import { MockModeBanner } from "./MockModeBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_METADATA } from "@/lib/permissions";
@@ -101,6 +102,7 @@ export function DashboardLayout({
           </div>
         </main>
       </div>
+      <Footer />
       <MobileNav />
     </div>
   );

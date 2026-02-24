@@ -101,6 +101,15 @@ class ApiClient {
       throw new ApiError(401, "Session expiree");
     }
 
+    if (res.status === 429) {
+      const retryAfter = res.headers.get("retry-after");
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : 5;
+      throw new ApiError(
+        429,
+        `Trop de requetes. Reessayez dans ${seconds} seconde${seconds > 1 ? "s" : ""}.`
+      );
+    }
+
     if (!res.ok) {
       const errorBody = await res.text();
       throw new ApiError(res.status, errorBody);

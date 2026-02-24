@@ -1033,9 +1033,9 @@ export default function RegisterPage() {
               />
               <span className="text-sm text-[var(--text-secondary)]">
                 J&apos;accepte les{" "}
-                <span className="text-violet-500 hover:underline cursor-pointer">
+                <Link href="/terms" target="_blank" className="text-violet-500 hover:underline">
                   conditions generales
-                </span>
+                </Link>
               </span>
             </label>
 
@@ -1053,9 +1053,9 @@ export default function RegisterPage() {
               />
               <span className="text-sm text-[var(--text-secondary)]">
                 J&apos;accepte la{" "}
-                <span className="text-violet-500 hover:underline cursor-pointer">
+                <Link href="/privacy" target="_blank" className="text-violet-500 hover:underline">
                   politique de confidentialite
-                </span>
+                </Link>
               </span>
             </label>
           </div>
