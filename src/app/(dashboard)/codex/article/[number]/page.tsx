@@ -60,11 +60,15 @@ export default function ArticleDetailPage() {
         setArticle(art);
         setVersions(vers);
 
-        // Fetch amendments for this article
-        const allAmendments = await getCodexAmendments();
-        setAmendments(
-          allAmendments.filter((a) => a.article_id === art.id)
-        );
+        // Fetch amendments for this article (optional — don't break page if it fails)
+        try {
+          const allAmendments = await getCodexAmendments();
+          setAmendments(
+            allAmendments.filter((a) => a.article_id === art.id)
+          );
+        } catch {
+          // Amendments are optional
+        }
       } catch (err) {
         console.error("Codex article load error:", err);
         setError("Article introuvable");

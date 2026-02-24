@@ -3,6 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::auth::middleware::AuthUser;
 use crate::codex;
 use crate::error::VitaError;
 
@@ -70,6 +71,7 @@ pub async fn get_article_versions(
 /// POST /api/v1/codex/amendments — Create an amendment proposal.
 pub async fn create_amendment(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     body: web::Json<CreateAmendmentBody>,
 ) -> Result<HttpResponse, VitaError> {
     let amendment = codex::create_amendment(

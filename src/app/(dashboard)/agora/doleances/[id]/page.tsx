@@ -96,7 +96,9 @@ export default function DoleanceDetailPage() {
   const [doleance, setDoleance] = useState<Doleance | undefined>(mockDoleance);
 
   useEffect(() => {
-    if (isMockMode) return;
+    // Skip API call in mock mode or when the ID is a mock ID (not a UUID)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isMockMode || !isUuid) return;
     async function load() {
       try {
         const raw = (await api.getDoleance(id)) as Record<string, unknown>;

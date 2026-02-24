@@ -132,7 +132,8 @@ export default function ProposalDetailPage() {
   const historique = useMemo(() => getHistoriqueForProposal(id), [id]);
 
   useEffect(() => {
-    if (isMockMode) return;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isMockMode || !isUuid) return;
     async function load() {
       try {
         const raw = await api.getProposition(id) as Record<string, unknown>;

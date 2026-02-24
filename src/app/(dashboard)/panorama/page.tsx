@@ -222,7 +222,7 @@ export default function PanoramaPage() {
           </CardHeader>
           <CardContent>
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={d.historiqueUtilisateurs}>
                   <defs>
                     <linearGradient id="gradUsers" x1="0" y1="0" x2="0" y2="1">
@@ -271,7 +271,7 @@ export default function PanoramaPage() {
           </CardHeader>
           <CardContent>
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <BarChart data={d.historiqueTransactions}>
                   <defs>
                     <linearGradient id="gradBar" x1="0" y1="0" x2="0" y2="1">
@@ -310,7 +310,7 @@ export default function PanoramaPage() {
           </CardHeader>
           <CardContent>
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <LineChart data={d.historiqueParticipation}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
                   <XAxis
@@ -363,7 +363,7 @@ export default function PanoramaPage() {
           </CardHeader>
           <CardContent>
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={d.historiqueMasseMonetaire}>
                   <defs>
                     <linearGradient id="gradMasse" x1="0" y1="0" x2="0" y2="1">

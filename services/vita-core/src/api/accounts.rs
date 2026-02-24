@@ -42,6 +42,7 @@ pub struct AccountInfoResponse {
 /// In production this will be replaced by client-side Ed25519 key generation.
 pub async fn create_account(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     body: web::Json<CreateAccountRequest>,
 ) -> Result<HttpResponse, VitaError> {
     // Generate a random 32-byte key (prototype placeholder for Ed25519)
@@ -72,6 +73,7 @@ pub async fn create_account(
 /// GET /api/v1/accounts/{id} — Get account info.
 pub async fn get_account(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
     let account_id = path.into_inner();

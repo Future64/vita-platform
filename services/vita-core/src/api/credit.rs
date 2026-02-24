@@ -4,6 +4,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::auth::middleware::AuthUser;
 use crate::credit::{eligibility, mutual};
 use crate::error::VitaError;
 
@@ -16,6 +17,7 @@ pub struct CreditRequest {
 /// GET /api/v1/credit/eligibility/{account_id}
 pub async fn get_eligibility(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
     let account_id = path.into_inner();
@@ -26,6 +28,7 @@ pub async fn get_eligibility(
 /// POST /api/v1/credit/request
 pub async fn request_credit(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     body: web::Json<CreditRequest>,
 ) -> Result<HttpResponse, VitaError> {
     let loan = mutual::request_credit(pool.get_ref(), body.account_id, body.amount).await?;
@@ -35,6 +38,7 @@ pub async fn request_credit(
 /// GET /api/v1/credit/loans/{account_id}
 pub async fn get_loans(
     pool: web::Data<PgPool>,
+    _user: AuthUser,
     path: web::Path<Uuid>,
 ) -> Result<HttpResponse, VitaError> {
     let account_id = path.into_inner();

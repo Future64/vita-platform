@@ -97,8 +97,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // ── Load notifications: API or mock ──────────────────────────
   useEffect(() => {
-    if (isMockMode || !isAuthenticated) {
-      // Mock mode: load mock data
+    if (isMockMode || !isAuthenticated || !api.getToken()) {
+      // Mock mode or no API token: load mock data
       setNotifications(
         [...MOCK_NOTIFICATIONS, ...MOCK_VERIFICATION_NOTIFICATIONS].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -130,7 +130,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // ── Polling: refresh notifications every 30s in API mode ─────
   useEffect(() => {
-    if (isMockMode || !isAuthenticated) return;
+    if (isMockMode || !isAuthenticated || !api.getToken()) return;
 
     const interval = setInterval(async () => {
       try {

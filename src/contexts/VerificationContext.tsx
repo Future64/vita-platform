@@ -147,9 +147,11 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
       // Try real API if not in mock mode
       if (!isMockMode) {
         try {
+          // Only fetch parrainages for verified users (endpoint requires verified status)
+          const isVerified = user.identiteVerifiee?.statut === "verifie";
           const [apiDemande, apiParrainages] = await Promise.all([
             api.getDemandeActive().catch(() => null),
-            api.getParrainagesRecus().catch(() => []),
+            isVerified ? api.getParrainagesRecus().catch(() => []) : Promise.resolve([]),
           ]);
 
           const loadedDemandes: DemandeVerification[] = [];

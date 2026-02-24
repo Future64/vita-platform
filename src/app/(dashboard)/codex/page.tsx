@@ -49,17 +49,18 @@ export default function CodexPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [t, a] = await Promise.all([
-          getCodexTitles(),
-          getCodexAmendments(),
-        ]);
+        const t = await getCodexTitles();
         setTitles(t);
-        setAmendments(a);
       } catch {
         setError("Impossible de charger la Constitution");
-      } finally {
-        setLoading(false);
       }
+      try {
+        const a = await getCodexAmendments();
+        setAmendments(a);
+      } catch {
+        // Amendments are optional — don't break the page
+      }
+      setLoading(false);
     }
     load();
   }, []);

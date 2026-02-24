@@ -125,7 +125,8 @@ export default function ArchiveDetailPage() {
   const [archive, setArchive] = useState<ArchivedProposal | undefined>(mockArchive);
 
   useEffect(() => {
-    if (isMockMode) return;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isMockMode || !isUuid) return;
     async function load() {
       try {
         // Archives are closed propositions — fetch via getProposition + getResultats

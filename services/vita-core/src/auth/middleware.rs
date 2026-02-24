@@ -133,38 +133,37 @@ where
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.strip_prefix("Bearer "));
 
-            let token = match auth_header {
-                Some(t) => t.to_string(),
-                None => {
-                    let resp = HttpResponse::Unauthorized().json(serde_json::json!({
-                        "error": "Missing or invalid Authorization header",
-                        "code": "UNAUTHORIZED"
-                    }));
-                    return Ok(req.into_response(resp).map_into_right_body());
-                }
-            };
-
-            // Validate token
-            match validate_token(&token, &secret) {
-                Ok(claims) => {
-                    if claims.token_type != "access" {
-                        let resp = HttpResponse::Unauthorized().json(serde_json::json!({
-                            "error": "Invalid token type",
-                            "code": "UNAUTHORIZED"
-                        }));
-                        return Ok(req.into_response(resp).map_into_right_body());
+            match auth_header {
+                Some(token) => {
+                    // Token present — must be valid
+                    match validate_token(token, &secret) {
+                        Ok(claims) => {
+                            if claims.token_type != "access" {
+                                let resp = HttpResponse::Unauthorized().json(serde_json::json!({
+                                    "error": "Invalid token type",
+                                    "code": "UNAUTHORIZED"
+                                }));
+                                return Ok(req.into_response(resp).map_into_right_body());
+                            }
+                            let auth_user = AuthUser::from_claims(&claims);
+                            req.extensions_mut().insert(auth_user);
+                            let res = service.call(req).await?;
+                            Ok(res.map_into_left_body())
+                        }
+                        Err(_) => {
+                            let resp = HttpResponse::Unauthorized().json(serde_json::json!({
+                                "error": "Invalid or expired token",
+                                "code": "UNAUTHORIZED"
+                            }));
+                            Ok(req.into_response(resp).map_into_right_body())
+                        }
                     }
-                    let auth_user = AuthUser::from_claims(&claims);
-                    req.extensions_mut().insert(auth_user);
+                }
+                None => {
+                    // No token — continue without AuthUser.
+                    // Protected handlers use AuthUser extractor which returns 401.
                     let res = service.call(req).await?;
                     Ok(res.map_into_left_body())
-                }
-                Err(_) => {
-                    let resp = HttpResponse::Unauthorized().json(serde_json::json!({
-                        "error": "Invalid or expired token",
-                        "code": "UNAUTHORIZED"
-                    }));
-                    Ok(req.into_response(resp).map_into_right_body())
                 }
             }
         })
