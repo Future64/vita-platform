@@ -70,6 +70,17 @@ pub struct ResendVerificationRequest {
     pub email: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ForgotPasswordRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    pub password: String,
+}
+
 #[derive(Debug, Serialize, sqlx::FromRow)]
 struct UserRow {
     id: Uuid,
@@ -940,5 +951,147 @@ pub async fn resend_verification(
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Si cette adresse est associee a un compte non verifie, un email a ete envoye."
+    })))
+}
+
+/// POST /api/v1/auth/forgot-password (public)
+pub async fn forgot_password(
+    pool: web::Data<PgPool>,
+    email_service: web::Data<EmailService>,
+    body: web::Json<ForgotPasswordRequest>,
+) -> Result<HttpResponse, VitaError> {
+    validate_email(&body.email)?;
+
+    // Always return 200 even if email doesn't exist (prevent email enumeration)
+    let user_opt = sqlx::query_as::<_, UserRow>(
+        r#"SELECT id, email, username, role, verification_statut, mode_visibilite,
+                  prenom_affiche, nom_affiche, pseudonyme, bio, photo_profil,
+                  pays_affiche, date_inscription, derniere_connexion, password_hash,
+                  niveau_confiance, verification_date, verification_expiration
+           FROM users
+           WHERE email = $1 AND email_verified = TRUE AND actif = TRUE"#,
+    )
+    .bind(&body.email)
+    .fetch_optional(pool.get_ref())
+    .await?;
+
+    if let Some(user) = user_opt {
+        // Invalidate any existing unused reset tokens for this user
+        sqlx::query(
+            "UPDATE password_reset_tokens SET used = TRUE WHERE user_id = $1 AND used = FALSE",
+        )
+        .bind(user.id)
+        .execute(pool.get_ref())
+        .await?;
+
+        // Generate new reset token
+        let token = hex::encode(rand::random::<[u8; 32]>());
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+
+        sqlx::query(
+            r#"INSERT INTO password_reset_tokens (user_id, token, expires_at)
+               VALUES ($1, $2, $3)"#,
+        )
+        .bind(user.id)
+        .bind(&token)
+        .bind(expires_at)
+        .execute(pool.get_ref())
+        .await?;
+
+        // Send reset email (fire-and-forget)
+        let _ = email_service
+            .send_password_reset_email(&user.email, &token, &user.username)
+            .await;
+
+        // Audit
+        audit::audit(
+            pool.get_ref().clone(),
+            None,
+            "user.password_reset_requested",
+            "auth",
+            "info",
+            &format!("Demande de reinitialisation de mot de passe pour @{}", &user.username),
+            None,
+            Some(("user", user.id)),
+        );
+    }
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Si cet email est associe a un compte, un lien de reinitialisation a ete envoye."
+    })))
+}
+
+/// POST /api/v1/auth/reset-password (public)
+pub async fn reset_password(
+    pool: web::Data<PgPool>,
+    body: web::Json<ResetPasswordRequest>,
+) -> Result<HttpResponse, VitaError> {
+    validate_password(&body.password)?;
+
+    // Look up the token
+    #[derive(sqlx::FromRow)]
+    struct ResetTokenRow {
+        id: Uuid,
+        user_id: Uuid,
+        used: bool,
+        expires_at: chrono::DateTime<Utc>,
+    }
+
+    let token_row = sqlx::query_as::<_, ResetTokenRow>(
+        r#"SELECT id, user_id, used, expires_at
+           FROM password_reset_tokens
+           WHERE token = $1"#,
+    )
+    .bind(&body.token)
+    .fetch_optional(pool.get_ref())
+    .await?
+    .ok_or_else(|| VitaError::BadRequest("Lien invalide ou expire".into()))?;
+
+    if token_row.used {
+        return Err(VitaError::BadRequest("Ce lien a deja ete utilise".into()));
+    }
+
+    if token_row.expires_at < Utc::now() {
+        return Err(VitaError::BadRequest(
+            "Ce lien a expire (validite 1 heure). Veuillez recommencer.".into(),
+        ));
+    }
+
+    // Hash the new password
+    let new_hash = password::hash_password(&body.password)?;
+
+    // Update the user's password
+    sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
+        .bind(&new_hash)
+        .bind(token_row.user_id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Mark the token as used
+    sqlx::query("UPDATE password_reset_tokens SET used = TRUE WHERE id = $1")
+        .bind(token_row.id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Revoke all existing sessions (security: force re-login)
+    sqlx::query("UPDATE sessions SET revoked = true WHERE user_id = $1")
+        .bind(token_row.user_id)
+        .execute(pool.get_ref())
+        .await?;
+
+    // Audit
+    audit::audit(
+        pool.get_ref().clone(),
+        None,
+        "user.password_reset_completed",
+        "auth",
+        "info",
+        "Mot de passe reinitialise avec succes",
+        None,
+        Some(("user", token_row.user_id)),
+    );
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "Mot de passe modifie avec succes."
     })))
 }

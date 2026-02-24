@@ -135,4 +135,91 @@ impl EmailService {
             }
         }
     }
+
+    /// Send a password reset email. In log-only mode, prints the reset link.
+    pub async fn send_password_reset_email(
+        &self,
+        to: &str,
+        token: &str,
+        username: &str,
+    ) -> Result<(), String> {
+        let reset_url = format!("{}/auth/reset-password?token={}", self.app_url, token);
+
+        let html_body = format!(
+            r#"<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background-color:#111118;border-radius:16px;border:1px solid rgba(255,255,255,0.1);padding:40px;">
+        <tr><td align="center" style="padding-bottom:24px;">
+          <div style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:12px;width:48px;height:48px;line-height:48px;text-align:center;font-size:24px;font-weight:bold;color:white;">&#1142;</div>
+          <div style="margin-top:8px;font-size:24px;font-weight:bold;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">VITA</div>
+        </td></tr>
+        <tr><td align="center" style="padding-bottom:16px;">
+          <h1 style="margin:0;font-size:20px;color:#ffffff;">Reinitialisation de mot de passe</h1>
+        </td></tr>
+        <tr><td style="padding-bottom:24px;color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6;text-align:center;">
+          Bonjour <strong style="color:#ffffff;">@{username}</strong>,<br><br>
+          Vous avez demande a reinitialiser votre mot de passe VITA.<br>
+          Cliquez sur le bouton ci-dessous pour creer un nouveau mot de passe.
+        </td></tr>
+        <tr><td align="center" style="padding-bottom:24px;">
+          <a href="{reset_url}" style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#a855f7);color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+            Creer un nouveau mot de passe
+          </a>
+        </td></tr>
+        <tr><td style="padding-bottom:16px;color:rgba(255,255,255,0.5);font-size:12px;text-align:center;">
+          Ou copiez ce lien dans votre navigateur :<br>
+          <a href="{reset_url}" style="color:#8b5cf6;word-break:break-all;">{reset_url}</a>
+        </td></tr>
+        <tr><td style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-top:8px;">
+          <p style="margin:0;color:#fca5a5;font-size:12px;text-align:center;">
+            Ce lien est valable <strong>1 heure</strong>. Si vous n'avez pas fait cette demande, ignorez cet email — votre mot de passe n'a pas change.
+          </p>
+        </td></tr>
+        <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;margin-top:16px;color:rgba(255,255,255,0.4);font-size:11px;text-align:center;">
+          VITA — 1 humain = 1 compte = 1 &#1142;/jour
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"#,
+            username = username,
+            reset_url = reset_url,
+        );
+
+        match &self.transport {
+            Some(transport) => {
+                let email = Message::builder()
+                    .from(
+                        self.from
+                            .parse()
+                            .map_err(|e| format!("Invalid from address: {}", e))?,
+                    )
+                    .to(to.parse().map_err(|e| format!("Invalid to address: {}", e))?)
+                    .subject("VITA — Reinitialisation de votre mot de passe")
+                    .header(ContentType::TEXT_HTML)
+                    .body(html_body)
+                    .map_err(|e| format!("Failed to build email: {}", e))?;
+
+                transport
+                    .send(email)
+                    .await
+                    .map_err(|e| format!("Failed to send email: {}", e))?;
+
+                info!("Password reset email sent to {}", to);
+                Ok(())
+            }
+            None => {
+                warn!(
+                    "EmailService [LOG-ONLY] password reset for @{}: {}",
+                    username, reset_url
+                );
+                Ok(())
+            }
+        }
+    }
 }

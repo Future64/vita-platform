@@ -184,6 +184,22 @@ class ApiClient {
     );
   }
 
+  async forgotPassword(email: string) {
+    return this.request<{ message: string }>(
+      "POST",
+      "/auth/forgot-password",
+      { email }
+    );
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.request<{ message: string }>(
+      "POST",
+      "/auth/reset-password",
+      { token, password }
+    );
+  }
+
   async login(data: { username_or_email: string; password: string }) {
     return this.request<{
       user: { id: string; username: string };

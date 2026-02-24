@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 
-export default function ConnexionPage() {
+function ConnexionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -51,10 +53,6 @@ export default function ConnexionPage() {
     }
   }
 
-  function handleForgotPassword() {
-    toast.info("Fonctionnalite a venir");
-  }
-
   const inputStyle = {
     borderColor: "var(--border)",
     backgroundColor: "var(--bg-elevated)",
@@ -69,6 +67,12 @@ export default function ConnexionPage() {
       <p className="mb-4 md:mb-6 text-xs md:text-sm text-[var(--text-muted)]">
         Accedez a votre espace VITA
       </p>
+
+      {resetSuccess && (
+        <div className="mb-3 md:mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-2.5 md:p-3 text-xs md:text-sm text-green-400 text-center">
+          Mot de passe modifie avec succes. Connectez-vous.
+        </div>
+      )}
 
       {error && (
         <div className="mb-3 md:mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 md:p-3 text-xs md:text-sm text-red-400">
@@ -137,13 +141,12 @@ export default function ConnexionPage() {
               Se souvenir de moi
             </span>
           </label>
-          <button
-            type="button"
-            onClick={handleForgotPassword}
+          <Link
+            href="/auth/forgot-password"
             className="text-xs md:text-sm font-medium text-violet-500 hover:underline"
           >
             Mot de passe oublie ?
-          </button>
+          </Link>
         </div>
 
         {/* Submit */}
@@ -209,5 +212,17 @@ export default function ConnexionPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function ConnexionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center text-[var(--text-muted)]">Chargement...</div>
+      }
+    >
+      <ConnexionContent />
+    </Suspense>
   );
 }
