@@ -2,40 +2,41 @@
 
 import { useState, useEffect, useMemo } from "react";
 import {
-  FileText,
+  FolderGit2,
   GitPullRequest,
   Search,
-  Lock,
-  Unlock,
+  Users,
+  Plus,
   ChevronRight,
-  History,
+  GitBranch,
+  BookOpen,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { getForgeDocuments, type ForgeDocumentSummary } from "@/lib/vita-api";
+import { getForgeProjects, type ForgeProject } from "@/lib/vita-api";
 
 const sidebarItems: SidebarItem[] = [
-  { icon: FileText, label: "Documents", href: "/forge" },
-  { icon: History, label: "Historique", href: "/forge/commits" },
+  { icon: FolderGit2, label: "Projets", href: "/forge" },
 ];
 
 export default function ForgePage() {
-  const [documents, setDocuments] = useState<ForgeDocumentSummary[]>([]);
+  const [projects, setProjects] = useState<ForgeProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const docs = await getForgeDocuments();
-        setDocuments(docs);
+        const data = await getForgeProjects();
+        setProjects(data);
       } catch {
-        // API not available — show empty state
+        // API not available
       }
       setLoading(false);
     }
@@ -43,42 +44,45 @@ export default function ForgePage() {
   }, []);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return documents;
+    if (!search.trim()) return projects;
     const q = search.toLowerCase();
-    return documents.filter((d) => d.title.toLowerCase().includes(q));
-  }, [documents, search]);
+    return projects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [projects, search]);
 
-  const lockedCount = documents.filter((d) => d.locked).length;
+  const totalMRs = projects.reduce((sum, p) => sum + (p.mr_count ?? 0), 0);
+  const totalContributors = new Set(
+    projects.flatMap(() => [])
+  ).size || projects.reduce((sum, p) => sum + (p.contributor_count ?? 0), 0);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
       {/* Header */}
-      <div className="mb-4 md:mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
-          Forge Collaborative
-        </h1>
-        <p className="text-xs md:text-sm text-[var(--text-muted)]">
-          Proposez des modifications aux textes fondateurs de VITA
-        </p>
+      <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
+            Forge Collaborative
+          </h1>
+          <p className="text-xs md:text-sm text-[var(--text-muted)]">
+            Co-editez les textes fondateurs de VITA avec un workflow Git-like
+          </p>
+        </div>
+        <Link href="/forge/nouveau">
+          <Button variant="primary">
+            <Plus className="h-4 w-4" />
+            Nouveau projet
+          </Button>
+        </Link>
       </div>
 
       {/* Stats */}
       <div className="mb-4 md:mb-6 grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-3">
-        <StatCard
-          variant="violet"
-          label="Documents"
-          value={documents.length}
-        />
-        <StatCard
-          variant="green"
-          label="Editables"
-          value={documents.length - lockedCount}
-        />
-        <StatCard
-          variant="orange"
-          label="Verrouilles"
-          value={lockedCount}
-        />
+        <StatCard variant="violet" label="Projets" value={projects.length} />
+        <StatCard variant="pink" label="Merge Requests" value={totalMRs} />
+        <StatCard variant="green" label="Contributeurs" value={totalContributors} />
       </div>
 
       {/* Search */}
@@ -87,7 +91,7 @@ export default function ForgePage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <Input
-              placeholder="Rechercher un document..."
+              placeholder="Rechercher un projet..."
               className="pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -96,60 +100,63 @@ export default function ForgePage() {
         </CardContent>
       </Card>
 
-      {/* Document List */}
+      {/* Project List */}
       {loading ? (
         <div className="flex items-center justify-center h-40">
           <div className="animate-pulse text-[var(--text-muted)]">
-            Chargement des documents...
+            Chargement des projets...
           </div>
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={FileText}
-          title="Aucun document"
+          icon={FolderGit2}
+          title="Aucun projet"
           description={
             search
-              ? "Aucun document ne correspond a votre recherche."
-              : "Les documents editables du Codex apparaitront ici."
+              ? "Aucun projet ne correspond a votre recherche."
+              : "Les projets de la Forge apparaitront ici."
           }
         />
       ) : (
         <div className="space-y-2">
-          {filtered.map((doc) => (
-            <Link key={doc.id} href={`/forge/${doc.id}`}>
+          {filtered.map((project) => (
+            <Link key={project.id} href={`/forge/${project.id}`}>
               <div className="group rounded-lg border border-[var(--border)] p-3.5 md:p-4 transition-all hover:border-violet-500/50 hover:bg-[var(--bg-elevated)] cursor-pointer">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <FileText className="h-4 w-4 text-violet-500 flex-shrink-0" />
+                      <FolderGit2 className="h-4 w-4 text-violet-500 flex-shrink-0" />
                       <h3 className="font-semibold text-[var(--text-primary)] truncate">
-                        {doc.title}
+                        {project.title}
                       </h3>
-                      {doc.locked ? (
-                        <Badge className="text-xs bg-orange-500/15 text-orange-400">
-                          <Lock className="h-3 w-3" />
-                          Verrouille
-                        </Badge>
-                      ) : (
-                        <Badge variant="green" className="text-xs">
-                          <Unlock className="h-3 w-3" />
-                          Editable
+                      {project.codex_ref && (
+                        <Badge variant="blue" className="text-xs">
+                          <BookOpen className="h-3 w-3" />
+                          Art. {project.codex_ref}
                         </Badge>
                       )}
-                      <span className="text-xs text-[var(--text-muted)]">
-                        v{doc.version}
-                      </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
-                      {doc.codex_ref && (
-                        <span className="flex items-center gap-1">
-                          <GitPullRequest className="h-3 w-3" />
-                          Art. {doc.codex_ref}
-                        </span>
-                      )}
+                    {project.description && (
+                      <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">
+                        {project.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
+                      <span className="flex items-center gap-1">
+                        <GitBranch className="h-3 w-3" />
+                        {project.branch_count ?? 0} branche{(project.branch_count ?? 0) > 1 ? "s" : ""}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <GitPullRequest className="h-3 w-3" />
+                        {project.mr_count ?? 0} MR
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {project.contributor_count ?? 0}
+                      </span>
                       <span>
                         Mis a jour le{" "}
-                        {new Date(doc.updated_at).toLocaleDateString("fr-FR")}
+                        {new Date(project.updated_at).toLocaleDateString("fr-FR")}
                       </span>
                     </div>
                   </div>

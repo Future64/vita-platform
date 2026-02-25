@@ -270,72 +270,124 @@ export function getCodexExportPdfUrl(): string {
   return `${API_BASE}/codex/export/pdf`;
 }
 
-// --- Forge ---
+// --- Forge (git-like model) ---
 
-export interface ForgeDocumentSummary {
+export interface ForgeProject {
   id: string;
   title: string;
-  version: number;
+  description: string;
   codex_ref: number | null;
-  locked: boolean;
-  updated_at: string;
-}
-
-export interface ForgeDocument {
-  id: string;
-  title: string;
-  content: string;
-  version: number;
-  codex_ref: number | null;
-  locked: boolean;
+  default_branch: string | null;
   created_at: string;
   updated_at: string;
+  branch_count: number | null;
+  mr_count: number | null;
+  contributor_count: number | null;
 }
 
-export interface ForgeDiff {
+export interface ForgeBranch {
   id: string;
-  document_id: string;
+  project_id: string;
+  name: string;
+  is_default: boolean;
+  head_commit_id: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface ForgeCommit {
+  id: string;
+  branch_id: string;
   author_id: string;
+  message: string;
+  content: string;
+  parent_id: string | null;
+  created_at: string;
+  author_name: string | null;
+}
+
+export interface ForgeMergeRequest {
+  id: string;
+  project_id: string;
+  source_branch_id: string;
+  target_branch_id: string;
   title: string;
-  description: string | null;
-  content_new: string;
+  description: string;
+  author_id: string;
   status: string;
   votes_for: number;
   votes_against: number;
+  merged_by: string | null;
   created_at: string;
-  reviewed_at: string | null;
-  reviewer_id: string | null;
-  author_pseudo: string | null;
+  updated_at: string;
+  author_name: string | null;
+  source_branch_name: string | null;
+  target_branch_name: string | null;
 }
 
-export interface ForgeDocumentDetail {
-  document: ForgeDocument;
-  diffs: ForgeDiff[];
-}
-
-export interface ForgeHistoryEntry {
+export interface ForgeMRComment {
   id: string;
-  document_id: string;
-  version: number;
+  merge_request_id: string;
+  author_id: string;
   content: string;
-  diff_id: string | null;
-  author_id: string | null;
   created_at: string;
+  author_name: string | null;
 }
 
-export async function getForgeDocuments(): Promise<ForgeDocumentSummary[]> {
-  const res = await fetch(`${API_BASE}/forge/documents`, { headers: headers() });
-  return handleResponse<ForgeDocumentSummary[]>(res);
+export interface ForgeContributor {
+  author_id: string;
+  project_id: string;
+  display_name: string | null;
+  commit_count: number | null;
+  mr_count: number | null;
+  last_active: string | null;
 }
 
-export async function getForgeDocument(id: string): Promise<ForgeDocumentDetail> {
-  const res = await fetch(`${API_BASE}/forge/documents/${id}`, { headers: headers() });
-  return handleResponse<ForgeDocumentDetail>(res);
+export interface ForgeProjectDetail {
+  project: ForgeProject;
+  branches: ForgeBranch[];
 }
 
-export async function getForgeDocumentHistory(id: string): Promise<ForgeHistoryEntry[]> {
-  const res = await fetch(`${API_BASE}/forge/documents/${id}/history`, { headers: headers() });
-  return handleResponse<ForgeHistoryEntry[]>(res);
+export interface ForgeMergeRequestDetail {
+  merge_request: ForgeMergeRequest;
+  source_content: string | null;
+  target_content: string | null;
+  comments: ForgeMRComment[];
+}
+
+export async function getForgeProjects(): Promise<ForgeProject[]> {
+  const res = await fetch(`${API_BASE}/forge/projects`, { headers: headers() });
+  return handleResponse<ForgeProject[]>(res);
+}
+
+export async function getForgeProject(id: string): Promise<ForgeProjectDetail> {
+  const res = await fetch(`${API_BASE}/forge/projects/${id}`, { headers: headers() });
+  return handleResponse<ForgeProjectDetail>(res);
+}
+
+export async function getForgeBranchCommits(branchId: string): Promise<ForgeCommit[]> {
+  const res = await fetch(`${API_BASE}/forge/branches/${branchId}/commits`, { headers: headers() });
+  return handleResponse<ForgeCommit[]>(res);
+}
+
+export async function getForgeCommit(id: string): Promise<ForgeCommit> {
+  const res = await fetch(`${API_BASE}/forge/commits/${id}`, { headers: headers() });
+  return handleResponse<ForgeCommit>(res);
+}
+
+export async function getForgeMergeRequest(id: string): Promise<ForgeMergeRequestDetail> {
+  const res = await fetch(`${API_BASE}/forge/merge-requests/${id}`, { headers: headers() });
+  return handleResponse<ForgeMergeRequestDetail>(res);
+}
+
+export async function getForgeProjectMRs(projectId: string): Promise<ForgeMergeRequest[]> {
+  const res = await fetch(`${API_BASE}/forge/projects/${projectId}/merge-requests`, { headers: headers() });
+  return handleResponse<ForgeMergeRequest[]>(res);
+}
+
+export async function getForgeProjectContributors(projectId: string): Promise<ForgeContributor[]> {
+  const res = await fetch(`${API_BASE}/forge/projects/${projectId}/contributors`, { headers: headers() });
+  return handleResponse<ForgeContributor[]>(res);
 }
 
 // --- Delegations ---

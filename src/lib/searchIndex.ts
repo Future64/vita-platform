@@ -7,11 +7,6 @@ import {
 import { TECHNICAL_DOCS, REGISTER_ENTRIES } from "@/lib/mockCodex";
 import { SYSTEM_PARAMETERS } from "@/lib/mockParameters";
 import { ADMIN_USERS } from "@/lib/mockAdmin";
-import {
-  FORGE_PROJECTS,
-  ALL_DEMANDES_INTEGRATION,
-  ALL_REVISIONS,
-} from "@/lib/mockForge";
 
 // ============================================================
 // NORMALIZE — remove accents, lowercase
@@ -273,60 +268,6 @@ function buildIndex(): SearchResult[] {
     });
   }
 
-  // --- Projets Forge ---
-  for (const proj of FORGE_PROJECTS) {
-    index.push({
-      id: `proj-${proj.id}`,
-      type: "revision",
-      titre: proj.name,
-      description: proj.description,
-      lien: `/forge/project/${proj.id}`,
-      icone: "GitBranch",
-      couleur: "#ec4899",
-      metadata: {
-        statut: proj.status === "active" ? "Actif" : proj.status === "archived" ? "Archive" : "Brouillon",
-        date: proj.lastUpdate,
-      },
-      score: 0,
-    });
-  }
-
-  // --- Demandes d'integration (merge requests) ---
-  for (const di of ALL_DEMANDES_INTEGRATION) {
-    index.push({
-      id: `di-${di.id}`,
-      type: "demande_integration",
-      titre: `#${di.number} ${di.title}`,
-      description: di.description,
-      lien: `/forge/project/${di.project}/mr/${di.id}`,
-      icone: "GitMerge",
-      couleur: di.status === "open" ? "#10b981" : di.status === "integrated" ? "#8b5cf6" : "#ef4444",
-      metadata: {
-        statut: di.status === "open" ? "Ouverte" : di.status === "integrated" ? "Integree" : di.status === "approved" ? "Approuvee" : di.status === "voting" ? "En vote" : "Fermee",
-        auteur: di.author,
-        date: di.created,
-      },
-      score: 0,
-    });
-  }
-
-  // --- Revisions (commits) — only index recent ones ---
-  for (const rev of ALL_REVISIONS.slice(0, 20)) {
-    index.push({
-      id: `rev-${rev.ref}`,
-      type: "revision",
-      titre: rev.message,
-      description: `${rev.ref.slice(0, 7)} · ${rev.author} · ${rev.additions}+ ${rev.deletions}-`,
-      lien: `/forge/commits`,
-      icone: "GitCommit",
-      couleur: "#ec4899",
-      metadata: {
-        auteur: rev.author,
-        date: rev.date,
-      },
-      score: 0,
-    });
-  }
 
   cachedIndex = index;
   return index;

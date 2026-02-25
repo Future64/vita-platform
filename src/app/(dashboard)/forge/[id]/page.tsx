@@ -4,241 +4,70 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  FileText,
-  PenTool,
-  Lock,
-  Unlock,
-  ThumbsUp,
-  ThumbsDown,
-  GitMerge,
+  FolderGit2,
+  GitBranch,
+  GitPullRequest,
+  Users,
+  Plus,
   Clock,
-  History,
+  BookOpen,
   CheckCircle2,
   XCircle,
+  GitMerge,
+  AlertCircle,
+  Vote,
 } from "lucide-react";
 import { DashboardLayout, SidebarItem } from "@/components/layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import {
-  getForgeDocument,
-  getForgeDocumentHistory,
-  type ForgeDocumentDetail,
-  type ForgeDiff,
-  type ForgeHistoryEntry,
+  getForgeProject,
+  getForgeProjectMRs,
+  getForgeProjectContributors,
+  type ForgeProjectDetail,
+  type ForgeMergeRequest,
+  type ForgeContributor,
 } from "@/lib/vita-api";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 
 const sidebarItems: SidebarItem[] = [
-  { icon: FileText, label: "Documents", href: "/forge" },
-  { icon: History, label: "Historique", href: "/forge/commits" },
+  { icon: FolderGit2, label: "Projets", href: "/forge" },
 ];
 
-// ── Diff View ───────────────────────────────────────────────────────
-
-function DiffView({ original, proposed }: { original: string; proposed: string }) {
-  const origLines = original.split("\n");
-  const newLines = proposed.split("\n");
-  const maxLen = Math.max(origLines.length, newLines.length);
-
-  const lines: Array<{ text: string; type: "add" | "remove" | "same" }> = [];
-
-  for (let i = 0; i < maxLen; i++) {
-    const origLine = origLines[i];
-    const newLine = newLines[i];
-
-    if (origLine === newLine) {
-      lines.push({ text: newLine ?? "", type: "same" });
-    } else {
-      if (origLine !== undefined && origLine !== newLine) {
-        lines.push({ text: origLine, type: "remove" });
-      }
-      if (newLine !== undefined && newLine !== origLine) {
-        lines.push({ text: newLine, type: "add" });
-      }
-    }
-  }
-
-  return (
-    <div className="rounded-lg border overflow-auto text-xs" style={{ borderColor: "var(--border)", fontFamily: "var(--font-jetbrains-mono), monospace" }}>
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          className="px-3 py-0.5"
-          style={{
-            backgroundColor:
-              line.type === "add"
-                ? "rgba(34, 197, 94, 0.08)"
-                : line.type === "remove"
-                  ? "rgba(239, 68, 68, 0.08)"
-                  : "transparent",
-            borderLeft: `3px solid ${
-              line.type === "add"
-                ? "#22c55e"
-                : line.type === "remove"
-                  ? "#ef4444"
-                  : "transparent"
-            }`,
-            color:
-              line.type === "add"
-                ? "#4ade80"
-                : line.type === "remove"
-                  ? "#f87171"
-                  : "var(--text-muted)",
-          }}
-        >
-          {line.type === "add" ? "+ " : line.type === "remove" ? "- " : "  "}
-          {line.text}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Propose Diff Modal ──────────────────────────────────────────────
-
-function ProposeDiffForm({
-  documentId,
-  currentContent,
-  onClose,
-  onCreated,
-}: {
-  documentId: string;
-  currentContent: string;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [contentNew, setContentNew] = useState(currentContent);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || contentNew === currentContent) return;
-    setSubmitting(true);
-    try {
-      await api.createForgeDiff(documentId, {
-        title,
-        description: description || undefined,
-        content_new: contentNew,
-      });
-      toast.success("Proposition soumise");
-      onCreated();
-      onClose();
-    } catch {
-      toast.error("Erreur lors de la soumission");
-    }
-    setSubmitting(false);
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Proposer une modification</CardTitle>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Annuler
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
-              Titre de la modification
-            </label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Preciser les conditions de quorum"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
-              Description (optionnel)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Expliquez la raison de cette modification..."
-              className="flex w-full rounded-lg border px-4 py-2.5 text-sm transition-colors placeholder:opacity-60 focus:border-violet-500 focus:outline-none min-h-[80px]"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--bg-elevated)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
-              Nouveau contenu
-            </label>
-            <textarea
-              value={contentNew}
-              onChange={(e) => setContentNew(e.target.value)}
-              className="flex w-full rounded-lg border px-4 py-2.5 text-sm transition-colors focus:border-violet-500 focus:outline-none min-h-[200px]"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--bg-elevated)",
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-jetbrains-mono), monospace",
-              }}
-              required
-            />
-          </div>
-          {contentNew !== currentContent && (
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
-                Apercu des changements
-              </label>
-              <DiffView original={currentContent} proposed={contentNew} />
-            </div>
-          )}
-          <Button
-            type="submit"
-            variant="primary"
-            className="w-full"
-            disabled={submitting || !title.trim() || contentNew === currentContent}
-          >
-            {submitting ? "Envoi..." : "Soumettre la proposition"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Main Page ───────────────────────────────────────────────────────
-
-export default function ForgeDocumentPage() {
+export default function ForgeProjectPage() {
   const params = useParams();
   const id = params.id as string;
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  const [data, setData] = useState<ForgeDocumentDetail | null>(null);
-  const [history, setHistory] = useState<ForgeHistoryEntry[]>([]);
+  const [data, setData] = useState<ForgeProjectDetail | null>(null);
+  const [mrs, setMrs] = useState<ForgeMergeRequest[]>([]);
+  const [contributors, setContributors] = useState<ForgeContributor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showPropose, setShowPropose] = useState(false);
-  const [expandedDiff, setExpandedDiff] = useState<string | null>(null);
-  const [tab, setTab] = useState<"content" | "diffs" | "history">("content");
+  const [tab, setTab] = useState<"branches" | "mr" | "contributors">("branches");
+  const [showNewBranch, setShowNewBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   async function load() {
     try {
-      const [doc, hist] = await Promise.all([
-        getForgeDocument(id),
-        getForgeDocumentHistory(id),
+      const [projectData, mrsData, contribData] = await Promise.all([
+        getForgeProject(id),
+        getForgeProjectMRs(id),
+        getForgeProjectContributors(id),
       ]);
-      setData(doc);
-      setHistory(hist);
+      setData(projectData);
+      setMrs(mrsData);
+      setContributors(contribData);
     } catch {
-      setError("Document introuvable");
+      setError("Projet introuvable");
     }
     setLoading(false);
   }
@@ -254,24 +83,19 @@ export default function ForgeDocumentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  async function handleVote(diffId: string, choice: "for" | "against") {
+  async function handleCreateBranch() {
+    if (!newBranchName.trim()) return;
+    setCreating(true);
     try {
-      await api.voteForgeDiff(diffId, choice);
-      toast.success(choice === "for" ? "Vote pour" : "Vote contre");
+      await api.createForgeBranch(id, { name: newBranchName.trim() });
+      toast.success("Branche creee");
+      setShowNewBranch(false);
+      setNewBranchName("");
       load();
     } catch {
-      toast.error("Erreur lors du vote");
+      toast.error("Erreur lors de la creation de la branche");
     }
-  }
-
-  async function handleMerge(diffId: string) {
-    try {
-      await api.mergeForgeDiff(diffId);
-      toast.success("Modification fusionnee");
-      load();
-    } catch {
-      toast.error("Erreur lors de la fusion");
-    }
+    setCreating(false);
   }
 
   if (loading) {
@@ -288,7 +112,7 @@ export default function ForgeDocumentPage() {
     return (
       <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <div className="text-red-400">{error ?? "Document introuvable"}</div>
+          <div className="text-red-400">{error ?? "Projet introuvable"}</div>
           <Link href="/forge">
             <Button variant="secondary">
               <ArrowLeft className="h-4 w-4" />
@@ -300,9 +124,8 @@ export default function ForgeDocumentPage() {
     );
   }
 
-  const { document: doc, diffs } = data;
-  const pendingDiffs = diffs.filter((d) => d.status === "pending");
-  const mergedDiffs = diffs.filter((d) => d.status === "merged");
+  const { project, branches } = data;
+  const openMRs = mrs.filter((m) => m.status === "open" || m.status === "voting");
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} sidebarTitle="Forge">
@@ -315,235 +138,246 @@ export default function ForgeDocumentPage() {
           </Button>
         </Link>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <FileText className="h-5 w-5 text-violet-500" />
-              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
-                {doc.title}
-              </h1>
-              {doc.locked ? (
-                <Badge className="text-xs bg-orange-500/15 text-orange-400">
-                  <Lock className="h-3 w-3" />
-                  Verrouille
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <FolderGit2 className="h-5 w-5 text-violet-500" />
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
+              {project.title}
+            </h1>
+            {project.codex_ref && (
+              <Link href={`/codex/article/${project.codex_ref}`}>
+                <Badge variant="blue" className="text-xs cursor-pointer hover:opacity-80">
+                  <BookOpen className="h-3 w-3" />
+                  Article {project.codex_ref}
                 </Badge>
-              ) : (
-                <Badge variant="green" className="text-xs">
-                  <Unlock className="h-3 w-3" />
-                  Editable
-                </Badge>
-              )}
-              <span className="text-xs text-[var(--text-muted)]">v{doc.version}</span>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-              {doc.codex_ref && (
-                <Link href={`/codex/article/${doc.codex_ref}`} className="text-violet-500 hover:underline">
-                  Article {doc.codex_ref} du Codex
-                </Link>
-              )}
-              <span>{pendingDiffs.length} proposition(s) en attente</span>
-            </div>
+              </Link>
+            )}
           </div>
-          {isAuthenticated && !doc.locked && !showPropose && (
-            <Button variant="primary" onClick={() => setShowPropose(true)}>
-              <PenTool className="h-4 w-4" />
-              Proposer une modification
-            </Button>
+          {project.description && (
+            <p className="text-sm text-[var(--text-secondary)]">
+              {project.description}
+            </p>
           )}
+          <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
+            <span>{branches.length} branche{branches.length > 1 ? "s" : ""}</span>
+            <span>{openMRs.length} MR ouverte{openMRs.length > 1 ? "s" : ""}</span>
+            <span>{contributors.length} contributeur{contributors.length > 1 ? "s" : ""}</span>
+          </div>
         </div>
       </div>
 
-      {/* Propose form */}
-      {showPropose && (
-        <div className="mb-4 md:mb-6">
-          <ProposeDiffForm
-            documentId={doc.id}
-            currentContent={doc.content}
-            onClose={() => setShowPropose(false)}
-            onCreated={() => load()}
-          />
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="flex gap-1 mb-4 md:mb-6 border-b" style={{ borderColor: "var(--border)" }}>
-        {(["content", "diffs", "history"] as const).map((t) => (
+        {([
+          { key: "branches" as const, label: `Branches (${branches.length})`, icon: GitBranch },
+          { key: "mr" as const, label: `Merge Requests (${mrs.length})`, icon: GitPullRequest },
+          { key: "contributors" as const, label: `Contributeurs (${contributors.length})`, icon: Users },
+        ]).map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              tab === t.key
                 ? "border-violet-500 text-violet-500"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             }`}
           >
-            {t === "content" && "Contenu"}
-            {t === "diffs" && `Propositions (${pendingDiffs.length})`}
-            {t === "history" && `Historique (${history.length})`}
+            <t.icon className="h-3.5 w-3.5" />
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Content tab */}
-      {tab === "content" && (
-        <Card>
-          <CardContent className="p-4 md:p-6">
-            <div className="space-y-4">
-              {doc.content.split("\n\n").map((para, idx) => {
-                const trimmed = para.trim();
-                if (!trimmed) return null;
-                return (
-                  <p
-                    key={idx}
-                    className="text-[var(--text-secondary)] leading-relaxed"
-                    style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-                  >
-                    {trimmed}
-                  </p>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Diffs tab */}
-      {tab === "diffs" && (
+      {/* Branches tab */}
+      {tab === "branches" && (
         <div className="space-y-3">
-          {diffs.length === 0 ? (
-            <div className="text-center text-[var(--text-muted)] py-12">
-              Aucune proposition de modification.
-            </div>
-          ) : (
-            diffs.map((diff) => (
-              <Card key={diff.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-[var(--text-primary)]">
-                          {diff.title}
-                        </h3>
-                        <DiffStatusBadge status={diff.status} />
-                      </div>
-                      {diff.description && (
-                        <p className="text-sm text-[var(--text-secondary)] mb-2">
-                          {diff.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                        <span>par {diff.author_pseudo ?? "Anonyme"}</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(diff.created_at).toLocaleDateString("fr-FR")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-green-500 font-medium">{diff.votes_for}</span>
-                      <span className="text-[var(--text-muted)]">/</span>
-                      <span className="text-red-400 font-medium">{diff.votes_against}</span>
-                    </div>
-                  </div>
-
-                  {/* Toggle diff view */}
-                  <button
-                    onClick={() => setExpandedDiff(expandedDiff === diff.id ? null : diff.id)}
-                    className="text-xs text-violet-500 hover:underline mb-2"
+          {isAuthenticated && (
+            <div className="flex justify-end mb-2">
+              {showNewBranch ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newBranchName}
+                    onChange={(e) => setNewBranchName(e.target.value)}
+                    placeholder="nom-de-branche"
+                    className="w-64"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreateBranch();
+                      if (e.key === "Escape") {
+                        setShowNewBranch(false);
+                        setNewBranchName("");
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleCreateBranch}
+                    disabled={creating || !newBranchName.trim()}
                   >
-                    {expandedDiff === diff.id ? "Masquer les changements" : "Voir les changements"}
-                  </button>
+                    {creating ? "..." : "Creer"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewBranch(false);
+                      setNewBranchName("");
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="primary" size="sm" onClick={() => setShowNewBranch(true)}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Nouvelle branche
+                </Button>
+              )}
+            </div>
+          )}
 
-                  {expandedDiff === diff.id && (
-                    <div className="mb-3">
-                      <DiffView original={doc.content} proposed={diff.content_new} />
+          {branches.length === 0 ? (
+            <EmptyState
+              icon={GitBranch}
+              title="Aucune branche"
+              description="Ce projet n'a pas encore de branche."
+            />
+          ) : (
+            branches.map((branch) => (
+              <Link key={branch.id} href={`/forge/${id}/${branch.id}`}>
+                <Card className="hover:border-violet-500/50 transition-all cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GitBranch className="h-4 w-4 text-violet-500" />
+                        <span className="font-semibold text-[var(--text-primary)]">
+                          {branch.name}
+                        </span>
+                        {branch.is_default && (
+                          <Badge variant="violet" className="text-xs">
+                            defaut
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {new Date(branch.created_at).toLocaleDateString("fr-FR")}
+                      </span>
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  {diff.status === "pending" && isAuthenticated && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(diff.id, "for")}
-                        className="text-green-500"
-                      >
-                        <ThumbsUp className="h-3.5 w-3.5" />
-                        Pour
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(diff.id, "against")}
-                        className="text-red-400"
-                      >
-                        <ThumbsDown className="h-3.5 w-3.5" />
-                        Contre
-                      </Button>
-                      <div className="flex-1" />
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleMerge(diff.id)}
-                      >
-                        <GitMerge className="h-3.5 w-3.5" />
-                        Fusionner
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))
           )}
         </div>
       )}
 
-      {/* History tab */}
-      {tab === "history" && (
+      {/* Merge Requests tab */}
+      {tab === "mr" && (
+        <div className="space-y-3">
+          {mrs.length === 0 ? (
+            <EmptyState
+              icon={GitPullRequest}
+              title="Aucune merge request"
+              description="Creez une branche, faites vos modifications, puis ouvrez une merge request."
+            />
+          ) : (
+            mrs.map((mr) => (
+              <Link key={mr.id} href={`/forge/mr/${mr.id}`}>
+                <Card className="hover:border-violet-500/50 transition-all cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <GitPullRequest className="h-4 w-4 text-violet-500" />
+                          <h3 className="font-semibold text-[var(--text-primary)] truncate">
+                            {mr.title}
+                          </h3>
+                          <MRStatusBadge status={mr.status} />
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+                          <span>par {mr.author_name ?? "Anonyme"}</span>
+                          <span>
+                            {mr.source_branch_name} → {mr.target_branch_name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(mr.created_at).toLocaleDateString("fr-FR")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm ml-3">
+                        <span className="text-green-500 font-medium">{mr.votes_for}</span>
+                        <span className="text-[var(--text-muted)]">/</span>
+                        <span className="text-red-400 font-medium">{mr.votes_against}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Contributors tab */}
+      {tab === "contributors" && (
         <Card>
           <CardContent className="p-4 md:p-6">
-            {history.length === 0 ? (
+            {contributors.length === 0 ? (
               <div className="text-center text-[var(--text-muted)] py-8">
-                Pas encore d&apos;historique.
+                Aucun contributeur pour le moment.
               </div>
             ) : (
-              <div className="space-y-4">
-                {history.map((entry, idx) => (
-                  <div key={entry.id} className="relative pl-6 pb-4 last:pb-0">
-                    {idx < history.length - 1 && (
-                      <div
-                        className="absolute left-[9px] top-6 bottom-0 w-px"
-                        style={{ backgroundColor: "rgba(139, 92, 246, 0.3)" }}
-                      />
-                    )}
-                    <div
-                      className="absolute left-0 top-1.5 h-[18px] w-[18px] rounded-full border-2 flex items-center justify-center"
-                      style={{
-                        borderColor: idx === 0 ? "#8b5cf6" : "var(--border)",
-                        backgroundColor: idx === 0 ? "#8b5cf6" : "transparent",
-                      }}
-                    >
-                      {idx === 0 && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="ml-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-[var(--text-primary)]">
-                          Version {entry.version}
-                        </span>
-                        {idx === 0 && (
-                          <Badge variant="violet" className="text-xs">
-                            Precedente
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(entry.created_at).toLocaleDateString("fr-FR")}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: "var(--border)" }}>
+                      <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">
+                        Contributeur
+                      </th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">
+                        Commits
+                      </th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">
+                        MRs
+                      </th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">
+                        Derniere activite
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contributors.map((c) => (
+                      <tr
+                        key={c.author_id}
+                        className="border-b last:border-0"
+                        style={{ borderColor: "var(--border)" }}
+                      >
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-violet-500/20 flex items-center justify-center text-xs font-bold text-violet-400">
+                              {(c.display_name ?? "?")[0].toUpperCase()}
+                            </div>
+                            <span className="text-[var(--text-primary)] font-medium">
+                              {c.display_name ?? "Anonyme"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-[var(--text-secondary)]">
+                          {c.commit_count ?? 0}
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-[var(--text-secondary)]">
+                          {c.mr_count ?? 0}
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-[var(--text-muted)] text-xs">
+                          {c.last_active
+                            ? new Date(c.last_active).toLocaleDateString("fr-FR")
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
@@ -553,26 +387,41 @@ export default function ForgeDocumentPage() {
   );
 }
 
-function DiffStatusBadge({ status }: { status: string }) {
+function MRStatusBadge({ status }: { status: string }) {
   switch (status) {
-    case "pending":
+    case "open":
+      return (
+        <Badge variant="green" className="text-xs">
+          <AlertCircle className="h-3 w-3" />
+          Ouverte
+        </Badge>
+      );
+    case "voting":
       return (
         <Badge variant="orange" className="text-xs">
-          En attente
+          <Vote className="h-3 w-3" />
+          En vote
+        </Badge>
+      );
+    case "approved":
+      return (
+        <Badge variant="blue" className="text-xs">
+          <CheckCircle2 className="h-3 w-3" />
+          Approuvee
         </Badge>
       );
     case "merged":
       return (
-        <Badge variant="green" className="text-xs">
-          <CheckCircle2 className="h-3 w-3" />
-          Fusionne
+        <Badge variant="violet" className="text-xs">
+          <GitMerge className="h-3 w-3" />
+          Fusionnee
         </Badge>
       );
     case "rejected":
       return (
-        <Badge variant="outline" className="text-xs text-red-400">
+        <Badge variant="red" className="text-xs">
           <XCircle className="h-3 w-3" />
-          Rejete
+          Rejetee
         </Badge>
       );
     default:

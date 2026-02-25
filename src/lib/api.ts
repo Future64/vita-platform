@@ -679,28 +679,63 @@ class ApiClient {
     }>("GET", "/statistics/summary");
   }
 
-  // ── FORGE ────────────────────────────────────────────────────
+  // ── FORGE (git-like) ────────────────────────────────────────
 
-  async createForgeDiff(documentId: string, body: { title: string; description?: string; content_new: string }) {
-    return this.request<{ diff_id: string }>(
+  async createForgeProject(body: {
+    title: string;
+    description?: string;
+    content: string;
+    codex_ref?: number;
+  }) {
+    return this.request<{
+      project_id: string;
+      branch_id: string;
+      commit_id: string;
+    }>("POST", "/forge/projects", body);
+  }
+
+  async createForgeBranch(projectId: string, body: { name: string }) {
+    return this.request<{ branch_id: string }>(
       "POST",
-      `/forge/documents/${documentId}/diffs`,
+      `/forge/projects/${projectId}/branches`,
       body
     );
   }
 
-  async voteForgeDiff(diffId: string, choice: "for" | "against") {
+  async createForgeCommit(branchId: string, body: { message: string; content: string }) {
+    return this.request<{ commit_id: string }>(
+      "POST",
+      `/forge/branches/${branchId}/commits`,
+      body
+    );
+  }
+
+  async createForgeMergeRequest(body: {
+    project_id: string;
+    source_branch_id: string;
+    target_branch_id: string;
+    title: string;
+    description?: string;
+  }) {
+    return this.request<{ merge_request_id: string }>(
+      "POST",
+      "/forge/merge-requests",
+      body
+    );
+  }
+
+  async voteForgeMR(mrId: string, choice: "for" | "against") {
     return this.request<{ ok: boolean }>(
       "POST",
-      `/forge/diffs/${diffId}/vote`,
+      `/forge/merge-requests/${mrId}/vote`,
       { choice }
     );
   }
 
-  async mergeForgeDiff(diffId: string) {
+  async mergeForgeMR(mrId: string) {
     return this.request<{ ok: boolean }>(
       "POST",
-      `/forge/diffs/${diffId}/merge`
+      `/forge/merge-requests/${mrId}/merge`
     );
   }
 

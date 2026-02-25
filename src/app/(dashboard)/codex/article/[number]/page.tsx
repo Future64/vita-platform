@@ -25,8 +25,8 @@ import {
   getCodexArticle,
   getCodexArticleVersions,
   getCodexAmendments,
-  getForgeDocuments,
-  type ForgeDocumentSummary,
+  getForgeProjects,
+  type ForgeProject,
 } from "@/lib/vita-api";
 
 const sidebarItems: SidebarItem[] = [
@@ -44,7 +44,7 @@ export default function ArticleDetailPage() {
   const [article, setArticle] = useState<CodexArticle | null>(null);
   const [versions, setVersions] = useState<CodexVersion[]>([]);
   const [amendments, setAmendments] = useState<CodexAmendment[]>([]);
-  const [forgeDoc, setForgeDoc] = useState<ForgeDocumentSummary | null>(null);
+  const [forgeDoc, setForgeDoc] = useState<ForgeProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,11 +74,11 @@ export default function ArticleDetailPage() {
           // Amendments are optional
         }
 
-        // Find matching Forge document for non-immutable articles
+        // Find matching Forge project for non-immutable articles
         if (!art.immutable) {
           try {
-            const forgeDocs = await getForgeDocuments();
-            const match = forgeDocs.find((d) => d.codex_ref === art.number);
+            const forgeProjects = await getForgeProjects();
+            const match = forgeProjects.find((p) => p.codex_ref === art.number);
             if (match) setForgeDoc(match);
           } catch {
             // Forge is optional

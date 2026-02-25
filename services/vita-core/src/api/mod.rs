@@ -101,9 +101,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/governance/parametres/{nom}/historique", web::get().to(governance::get_historique_parametre))
 
             // Forge (public — read-only)
-            .route("/forge/documents", web::get().to(forge::list_documents))
-            .route("/forge/documents/{id}", web::get().to(forge::get_document))
-            .route("/forge/documents/{id}/history", web::get().to(forge::get_document_history))
+            .route("/forge/projects", web::get().to(forge::list_projects))
+            .route("/forge/projects/{id}", web::get().to(forge::get_project))
+            .route("/forge/projects/{id}/merge-requests", web::get().to(forge::list_project_mrs))
+            .route("/forge/projects/{id}/contributors", web::get().to(forge::list_project_contributors))
+            .route("/forge/branches/{id}/commits", web::get().to(forge::get_branch_commits))
+            .route("/forge/commits/{id}", web::get().to(forge::get_commit))
+            .route("/forge/merge-requests/{id}", web::get().to(forge::get_merge_request))
 
             // Delegations (public — read-only)
             .route("/governance/delegates", web::get().to(governance::list_delegates))
@@ -142,9 +146,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/codex/amendments", web::post().to(codex::create_amendment))
 
             // Forge (write operations — auth required)
-            .route("/forge/documents/{id}/diffs", web::post().to(forge::create_diff))
-            .route("/forge/diffs/{id}/vote", web::post().to(forge::vote_diff))
-            .route("/forge/diffs/{id}/merge", web::post().to(forge::merge_diff))
+            .route("/forge/projects", web::post().to(forge::create_project))
+            .route("/forge/projects/{id}/branches", web::post().to(forge::create_branch))
+            .route("/forge/branches/{id}/commits", web::post().to(forge::create_commit))
+            .route("/forge/merge-requests", web::post().to(forge::create_merge_request))
+            .route("/forge/merge-requests/{id}/vote", web::post().to(forge::vote_merge_request))
+            .route("/forge/merge-requests/{id}/merge", web::post().to(forge::merge_merge_request))
 
             // Delegations (write operations — auth required)
             .route("/governance/delegate", web::post().to(governance::create_delegation))
