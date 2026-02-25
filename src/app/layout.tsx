@@ -9,6 +9,7 @@ import { VerificationProvider } from "@/contexts/VerificationContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SessionExpiredBanner } from "@/components/ui/SessionExpiredBanner";
 import { I18nProvider } from "@/contexts/I18nProvider";
+import { MockToggle } from "@/components/dev/MockToggle";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default function RootLayout({
                     <ToastProvider>
                       <SessionExpiredBanner />
                       {children}
+                      <MockToggle />
                     </ToastProvider>
                   </OnboardingProvider>
                 </VerificationProvider>

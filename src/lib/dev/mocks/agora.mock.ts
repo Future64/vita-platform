@@ -1,0 +1,90 @@
+export const agoraProposals = [
+  {
+    id: "prop-1",
+    title: "Augmenter le quorum de 10% a 15%",
+    description: "Le quorum actuel de 10% est trop bas pour les decisions importantes.",
+    status: "open",
+    votes_for: 234,
+    votes_against: 89,
+    votes_abstain: 12,
+    author_pseudo: "martin",
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    voting_ends_at: new Date(Date.now() + 5 * 86400000).toISOString(),
+  },
+  {
+    id: "prop-2",
+    title: "Creer une categorie 'Urgence' pour les votes rapides",
+    description: "Permettre aux Mandataires de declencher un vote urgent en 24h.",
+    status: "open",
+    votes_for: 156,
+    votes_against: 44,
+    votes_abstain: 8,
+    author_pseudo: "sophie",
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    voting_ends_at: new Date(Date.now() + 2 * 86400000).toISOString(),
+  },
+];
+
+export const agoraDoleances = [
+  {
+    id: "dol-1",
+    title: "Difficultes de verification pour les utilisateurs hors UE",
+    content: "Stripe Identity est parfois rejete dans certains pays d'Afrique subsaharienne. Des alternatives locales seraient bienvenues.",
+    status: "open",
+    support_count: 67,
+    tags: ["identite", "accessibilite"],
+    author_pseudo: "amadou",
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    user_has_supported: false,
+  },
+  {
+    id: "dol-2",
+    title: "Interface de la Bourse peu intuitive sur mobile",
+    content: "Le formulaire d'envoi de Ѵ est difficile a utiliser sur petit ecran.",
+    status: "open",
+    support_count: 34,
+    tags: ["ux", "mobile"],
+    author_pseudo: "priya",
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    user_has_supported: true,
+  },
+];
+
+export const agoraArchives = [
+  {
+    id: "arch-1",
+    title: "Fixer le seuil Referent a 50 delegations",
+    result: "adopted",
+    votes_for: 412,
+    votes_against: 78,
+    votes_abstain: 23,
+    votes_total: 513,
+    quorum_reached: true,
+    adoption_threshold: 50,
+    author_pseudo: "lea",
+    opened_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+    closed_at: new Date(Date.now() - 23 * 86400000).toISOString(),
+    codex_article_id: "art-ii-2",
+  },
+  {
+    id: "arch-2",
+    title: "Passer la duree de vote de 72h a 48h",
+    result: "rejected",
+    votes_for: 187,
+    votes_against: 334,
+    votes_abstain: 45,
+    votes_total: 566,
+    quorum_reached: true,
+    adoption_threshold: 50,
+    author_pseudo: "thomas",
+    opened_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    closed_at: new Date(Date.now() - 13 * 86400000).toISOString(),
+    codex_article_id: null,
+  },
+];
+
+export const agoraDelegates = [
+  { id: "u1", pseudo: "alice", role: "mandataire", delegation_count: 234, created_at: "2025-01-01" },
+  { id: "u2", pseudo: "martin", role: "referent", delegation_count: 87, created_at: "2025-01-15" },
+  { id: "u3", pseudo: "sophie", role: "referent", delegation_count: 63, created_at: "2025-02-01" },
+];

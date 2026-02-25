@@ -19,6 +19,17 @@ import type {
   CodexExport,
   CreateAmendmentRequest,
 } from "@/types/vita";
+import { isMocked, mockDelay } from "@/lib/dev/mock-toggle";
+import {
+  forgeProjects as _mockForgeProjects,
+  forgeProjectDetail as _mockForgeProjectDetail,
+  forgeBranchCommits as _mockForgeBranchCommits,
+  forgeMRDetail as _mockForgeMRDetail,
+  forgeProjectMRs as _mockForgeProjectMRs,
+  forgeProjectContributors as _mockForgeProjectContributors,
+} from "@/lib/dev/mocks/forge.mock";
+import { codexArticles as _mockCodexArticles, codexTitles as _mockCodexTitles } from "@/lib/dev/mocks/codex.mock";
+import { agoraDelegates as _mockDelegates } from "@/lib/dev/mocks/agora.mock";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_VITA_API_URL || "/api/v1";
@@ -204,6 +215,7 @@ export async function getCreditLoans(
 // --- Codex (Constitution) ---
 
 export async function getCodexTitles(): Promise<CodexTitleWithArticles[]> {
+  if (isMocked("codex")) { await mockDelay(); return _mockCodexTitles as unknown as CodexTitleWithArticles[]; }
   const res = await fetch(`${API_BASE}/codex/titles`, { headers: headers() });
   return handleResponse<CodexTitleWithArticles[]>(res);
 }
@@ -211,6 +223,7 @@ export async function getCodexTitles(): Promise<CodexTitleWithArticles[]> {
 export async function getCodexArticles(
   titleId?: string
 ): Promise<CodexArticle[]> {
+  if (isMocked("codex")) { await mockDelay(); return _mockCodexArticles as unknown as CodexArticle[]; }
   const params = titleId
     ? `?title_id=${titleId}`
     : "";
@@ -223,6 +236,11 @@ export async function getCodexArticles(
 export async function getCodexArticle(
   number: number
 ): Promise<CodexArticle> {
+  if (isMocked("codex")) {
+    await mockDelay();
+    const a = _mockCodexArticles.find((x) => x.number === number) ?? _mockCodexArticles[0];
+    return a as unknown as CodexArticle;
+  }
   const res = await fetch(`${API_BASE}/codex/articles/${number}`, {
     headers: headers(),
   });
@@ -356,36 +374,43 @@ export interface ForgeMergeRequestDetail {
 }
 
 export async function getForgeProjects(): Promise<ForgeProject[]> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeProjects; }
   const res = await fetch(`${API_BASE}/forge/projects`, { headers: headers() });
   return handleResponse<ForgeProject[]>(res);
 }
 
 export async function getForgeProject(id: string): Promise<ForgeProjectDetail> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeProjectDetail; }
   const res = await fetch(`${API_BASE}/forge/projects/${id}`, { headers: headers() });
   return handleResponse<ForgeProjectDetail>(res);
 }
 
 export async function getForgeBranchCommits(branchId: string): Promise<ForgeCommit[]> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeBranchCommits; }
   const res = await fetch(`${API_BASE}/forge/branches/${branchId}/commits`, { headers: headers() });
   return handleResponse<ForgeCommit[]>(res);
 }
 
 export async function getForgeCommit(id: string): Promise<ForgeCommit> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeBranchCommits[0]; }
   const res = await fetch(`${API_BASE}/forge/commits/${id}`, { headers: headers() });
   return handleResponse<ForgeCommit>(res);
 }
 
 export async function getForgeMergeRequest(id: string): Promise<ForgeMergeRequestDetail> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeMRDetail; }
   const res = await fetch(`${API_BASE}/forge/merge-requests/${id}`, { headers: headers() });
   return handleResponse<ForgeMergeRequestDetail>(res);
 }
 
 export async function getForgeProjectMRs(projectId: string): Promise<ForgeMergeRequest[]> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeProjectMRs; }
   const res = await fetch(`${API_BASE}/forge/projects/${projectId}/merge-requests`, { headers: headers() });
   return handleResponse<ForgeMergeRequest[]>(res);
 }
 
 export async function getForgeProjectContributors(projectId: string): Promise<ForgeContributor[]> {
+  if (isMocked("forge")) { await mockDelay(); return _mockForgeProjectContributors; }
   const res = await fetch(`${API_BASE}/forge/projects/${projectId}/contributors`, { headers: headers() });
   return handleResponse<ForgeContributor[]>(res);
 }
@@ -401,6 +426,7 @@ export interface DelegateInfo {
 }
 
 export async function getDelegates(): Promise<DelegateInfo[]> {
+  if (isMocked("agora")) { await mockDelay(); return _mockDelegates as unknown as DelegateInfo[]; }
   const res = await fetch(`${API_BASE}/governance/delegates`, { headers: headers() });
   return handleResponse<DelegateInfo[]>(res);
 }

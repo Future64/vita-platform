@@ -73,12 +73,6 @@ export default function ForgeProjectPage() {
   }
 
   useEffect(() => {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (!isUuid) {
-      setError("ID invalide");
-      setLoading(false);
-      return;
-    }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
